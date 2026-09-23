@@ -1,0 +1,332 @@
+{
+  "project": "Synqo",
+  "version": "0.1",
+  "date": "2026-09-23",
+  "files": [
+    {
+      "path": "PRD.md",
+      "bytes": 8378,
+      "sha256": "e88f982a58fea6d2f6a8910d1b07a54512aaabf91e2cc63b6c83748f0341f584"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2445,
+      "sha256": "b7824729fe0bfaeb80d55386ad6a9355409c1ce564a716f3115a2f2bf2ecfaca"
+    },
+    {
+      "path": "architecture/README.md",
+      "bytes": 1368,
+      "sha256": "7aadbbfcde7004d9930ff04f53e259ebed570e17945ea37cc6749ff1d571c3eb"
+    },
+    {
+      "path": "architecture/adr/ADR-001-platform-strategy.md",
+      "bytes": 1154,
+      "sha256": "8ba84c2c2fc3184647bc6e0180ba94e7c743be5ad2e30d977a9a06edf40b8e45"
+    },
+    {
+      "path": "architecture/adr/ADR-002A-frontend-react.md",
+      "bytes": 1125,
+      "sha256": "bb6ab4420f07c67e16974ded6e784065a2d0ef9503a957865c734f6317b2d06c"
+    },
+    {
+      "path": "architecture/adr/ADR-002B-frontend-angular.md",
+      "bytes": 712,
+      "sha256": "1e4ebceb0a4f268fe882e270521bca96e07a6937e9ec4138b4d2be2a9d837bba"
+    },
+    {
+      "path": "architecture/adr/ADR-003-spa-vs-nextjs.md",
+      "bytes": 682,
+      "sha256": "b65e8f042b477c92972b08762127ab5ca7e29756b2a5c850653fdfa7f77f8591"
+    },
+    {
+      "path": "architecture/adr/ADR-004-backend-framework.md",
+      "bytes": 1400,
+      "sha256": "52efd03dc9bf6b08f7d82fb3033740d3f30c56ac69a0ea414c44b7bf6ddb48ff"
+    },
+    {
+      "path": "architecture/adr/ADR-005-persistence.md",
+      "bytes": 891,
+      "sha256": "7a35577d6a4a3585d34e59c87b8824c9c9f6bc1eed4041fd9bc5141cb5548f2d"
+    },
+    {
+      "path": "architecture/adr/ADR-006-api-style.md",
+      "bytes": 1048,
+      "sha256": "e0ed383b3f5026382da6e603068a280d2cb8ea268f84b20acaf94dfa84711b60"
+    },
+    {
+      "path": "architecture/adr/ADR-007-monorepo.md",
+      "bytes": 1023,
+      "sha256": "4d9fdbc6af9471b4f085698f44bc6f96244971942f93a7c41a0e30abc9ca9678"
+    },
+    {
+      "path": "architecture/adr/ADR-008-authentication.md",
+      "bytes": 1512,
+      "sha256": "4091f7a36f41a282322f9db60577b5fbad161c9123cf012743b5bc88fd435054"
+    },
+    {
+      "path": "architecture/adr/ADR-009-local-development.md",
+      "bytes": 1026,
+      "sha256": "5a4ebe8ef75df0bc0ae58904d07992d4fec344b0bf916631c9b78a49350662a8"
+    },
+    {
+      "path": "architecture/adr/ADR-010-containerization.md",
+      "bytes": 835,
+      "sha256": "232d851319df6f961e438521b4b53ab5b138b599d4ca78991d700f464d1146eb"
+    },
+    {
+      "path": "architecture/adr/ADR-011-hosting.md",
+      "bytes": 985,
+      "sha256": "5cb3e2faaebc4eeddb52aae452cc43a50f0ca120ac1b10114b2542f02ab38469"
+    },
+    {
+      "path": "architecture/adr/ADR-012-ci-cd.md",
+      "bytes": 939,
+      "sha256": "5db802e091e22f229e92afe696b0325aa8e9a57656784c4bdd9494616b9ac823"
+    },
+    {
+      "path": "architecture/adr/ADR-013-observability.md",
+      "bytes": 685,
+      "sha256": "de2bde35ee2a616226cf49aeb2d0c945935f6ee6f1ae8917128143446c77cac3"
+    },
+    {
+      "path": "architecture/adr/ADR-014-testing.md",
+      "bytes": 1016,
+      "sha256": "f9d50acbce8662a52621c47e16af43eb4504b7fa22e7a27bc4e062b9efc4ec86"
+    },
+    {
+      "path": "architecture/adr/ADR-015-security.md",
+      "bytes": 1294,
+      "sha256": "d94fdc1cbb5bbaab39942bee745e648956648ba61c3bdd999c42564da81ba384"
+    },
+    {
+      "path": "architecture/adr/ADR-016-async-jobs.md",
+      "bytes": 731,
+      "sha256": "3f41e836edc83a97a9a15f28d5bdd46eda2e94610e86048eb7504ba0311216b8"
+    },
+    {
+      "path": "architecture/adr/ADR-017-email-notifications.md",
+      "bytes": 903,
+      "sha256": "9174681e0d2e008427982b235f56ceb4f073db4ab676834ec93b34cfe113f3c2"
+    },
+    {
+      "path": "architecture/adr/ADR-018-external-integrations.md",
+      "bytes": 441,
+      "sha256": "fd12a3113fa921733e4ad2bd133bf419bd0e1c736500e9b2e8d9c3c1910c41f0"
+    },
+    {
+      "path": "architecture/adr/ADR-019-ai-integration.md",
+      "bytes": 1539,
+      "sha256": "1677f64df4cc0395dcc30c4e5c0adfb344a757b6be08c5d78e32571e92167963"
+    },
+    {
+      "path": "architecture/adr/ADR-020-development-process.md",
+      "bytes": 560,
+      "sha256": "a6bc935519aab2a116e631b042ffe43e7d14bec2a469f777d7faf352b6284683"
+    },
+    {
+      "path": "architecture/adr/ADR-021-access-links.md",
+      "bytes": 1270,
+      "sha256": "44fbeaf15d7f2099c41fe554a1bfe7daf140a6a88d5abdf0b5f7b982993d030b"
+    },
+    {
+      "path": "architecture/adr/ADR-022-contextual-authorization.md",
+      "bytes": 1052,
+      "sha256": "045d9f4fce1fff67ea400fd4c846e7ee7993843762e97becf7d3e9c94cac0d06"
+    },
+    {
+      "path": "architecture/adr-reconciliation.md",
+      "bytes": 1582,
+      "sha256": "1a7ccbb4949809ee4f247c2bb54b1d37b43b3c25c7837b561d1c245810f9c814"
+    },
+    {
+      "path": "architecture/decision-register.md",
+      "bytes": 2214,
+      "sha256": "73a00fb4a81bbf1f4bd468f78d70022cf8591a053b3cd74388209c2b4e5eb835"
+    },
+    {
+      "path": "architecture/diagrams/container-view.md",
+      "bytes": 772,
+      "sha256": "c0fbcc890327170698d4b9e151cfce7e1e4ab758ef7d151d0f94bc6458f1b4c2"
+    },
+    {
+      "path": "architecture/diagrams/deployment-view.md",
+      "bytes": 679,
+      "sha256": "8934599fc73e30422b24b2bf63bba3778329bb14ecd812b9bbfb7bc470f6a68e"
+    },
+    {
+      "path": "architecture/diagrams/system-context.md",
+      "bytes": 585,
+      "sha256": "05eb4c0a3f1f7963d19d491d06cb7ff9882c366c2532f9adc3ce04b26bc155c9"
+    },
+    {
+      "path": "product/01-product-vision.md",
+      "bytes": 1773,
+      "sha256": "bdee8afec9704633ad82138ddbb8bd80e7201d3d2aea95580cc2dbdefef8eb52"
+    },
+    {
+      "path": "product/02-scope-and-mvp.md",
+      "bytes": 1874,
+      "sha256": "42e7c72e0651c7c53d7f95740aaad67752d2991eabbc13128c392f020c81b331"
+    },
+    {
+      "path": "product/03-users-and-scenarios.md",
+      "bytes": 1954,
+      "sha256": "8fcf1b33bdb8ea65a3adf7a3f5aa832a432056ee191efc0ffccac230ede159c2"
+    },
+    {
+      "path": "product/04-jobs-to-be-done.md",
+      "bytes": 2230,
+      "sha256": "d2828259c91191577d3d0a9bc76bd6bacbb27f001895a6ebb85ec27dafcd90d7"
+    },
+    {
+      "path": "product/05-ubiquitous-language.md",
+      "bytes": 2714,
+      "sha256": "f686b81357ae47f0c14046ebef9027b8c392146dc3190e0b9d007c31139a7807"
+    },
+    {
+      "path": "product/06-conceptual-domain-model.md",
+      "bytes": 1685,
+      "sha256": "191270498cfd03569a08861e1497beaf73cb6bb4f68a99b1c76ad272bada7fab"
+    },
+    {
+      "path": "product/07-business-rules.md",
+      "bytes": 3940,
+      "sha256": "f65a5455de33a9a29dee3c9dd7a9ac55df54b73a6effb516de12720ae05973ed"
+    },
+    {
+      "path": "product/08-lifecycles.md",
+      "bytes": 1548,
+      "sha256": "b49f2b9582479bc091af6fcb25bac29ccac83c2d29063d3d7c98a17331a87620"
+    },
+    {
+      "path": "product/09-functional-requirements.md",
+      "bytes": 8360,
+      "sha256": "0356002581ad245cc9c8f12c728c85e8ba542fbf2602d7b5f4df3d4f7095331c"
+    },
+    {
+      "path": "product/10-non-functional-requirements.md",
+      "bytes": 2605,
+      "sha256": "1156c5f10fbea1fddcac0446ce456e0efdc521c95e4b0475ff064837abd7eafe"
+    },
+    {
+      "path": "product/11-constraints.md",
+      "bytes": 1252,
+      "sha256": "f172210eb8507d271ab57b4f0fbe2ab30be2d145a40845af4a9fd2737bd2a6d8"
+    },
+    {
+      "path": "product/12-user-stories-and-acceptance-criteria.md",
+      "bytes": 7864,
+      "sha256": "486ad7e2a856d15a7f6d616084b436a486f7e7729c4cd1aabb8a8162dd63b3b1"
+    },
+    {
+      "path": "product/13-information-architecture.md",
+      "bytes": 1481,
+      "sha256": "9f5344c90eb1f0f27ee1cc742ca1ac849f0ffbb4e7c58457a9b0aebe6c182b35"
+    },
+    {
+      "path": "product/14-user-flows.md",
+      "bytes": 3219,
+      "sha256": "ac360731e6424ca19a453968d3dcff4d502b1ad79cbebd62ce460ac8a4488265"
+    },
+    {
+      "path": "product/15-screen-specification.md",
+      "bytes": 2361,
+      "sha256": "153f53a157d11b34d8cc931a12ac8457d43cf154b0d9b4586bcac818709e3cf9"
+    },
+    {
+      "path": "product/16-wireframes/01-landing.md",
+      "bytes": 629,
+      "sha256": "2fddc1311b5ae5c5de66d1401d54745d58254b0cc3f0f4d016f7fdb659c43791"
+    },
+    {
+      "path": "product/16-wireframes/02-create-team.md",
+      "bytes": 1168,
+      "sha256": "2d2907ebe9aeaa539fab57f2908ac0aadcfa959dcce7a265ceaeece44199533c"
+    },
+    {
+      "path": "product/16-wireframes/03-team-home.md",
+      "bytes": 941,
+      "sha256": "3d43010ccdf6d71322d3d914ca9a99bc7bf6519fdc27020c202339346e9f7fd3"
+    },
+    {
+      "path": "product/16-wireframes/04-my-availability.md",
+      "bytes": 1205,
+      "sha256": "0906b16bf5c56d3ea110ac5ccf6b1298021f4e782000cd7adaeacde3e815097b"
+    },
+    {
+      "path": "product/16-wireframes/05-collective-availability.md",
+      "bytes": 1294,
+      "sha256": "571ace5452cd61b6a68bdfacb96d280944e8b0cff1441107f5401756aca46b1c"
+    },
+    {
+      "path": "product/16-wireframes/06-availability-request.md",
+      "bytes": 693,
+      "sha256": "12bdb0498255530755a5a98dfa151a33cc72780746ae4c9c94c60072867579d3"
+    },
+    {
+      "path": "product/16-wireframes/07-create-proposal.md",
+      "bytes": 763,
+      "sha256": "25c14e01726eff2dbd41223cc8b97e177b9f3e9788367600112d84401e384e46"
+    },
+    {
+      "path": "product/16-wireframes/08-proposal.md",
+      "bytes": 802,
+      "sha256": "0aff8b92567884f6df2f2fe45ad9dfe7547e96758e0cebf6b90d75ddcb3ede21"
+    },
+    {
+      "path": "product/16-wireframes/09-survey.md",
+      "bytes": 804,
+      "sha256": "19733a9ac4ca81ece31fc93c5bb75b7a5bf097fe18e6b10c9689e70fbb0b4b17"
+    },
+    {
+      "path": "product/16-wireframes/10-result-resolution.md",
+      "bytes": 770,
+      "sha256": "b7f9e8c3f5d9d170aeba481e90665e99356c80738d922e82a25d337dbd4821c9"
+    },
+    {
+      "path": "product/16-wireframes/11-managed-settings.md",
+      "bytes": 993,
+      "sha256": "b88aac0941adc8153212891fc3e548df58dccd98037aa5bd42eda9f32fe26141"
+    },
+    {
+      "path": "product/16-wireframes/12-ai-assistant.md",
+      "bytes": 1184,
+      "sha256": "1ca3a35e5fb49c3d7ea62c1c09bd3e9c0e8c06021a31fb50bc06a367fd77dc41"
+    },
+    {
+      "path": "product/16-wireframes/README.md",
+      "bytes": 561,
+      "sha256": "8706d54ac6dde27cf915a422c70cb5de74a74a82a3bc794f7d5e1355762c08c6"
+    },
+    {
+      "path": "product/17-traceability-matrix.md",
+      "bytes": 1949,
+      "sha256": "fbb175a73885767b30b747d699a02fb65370bb038f19b315bff70a8e1c8f8363"
+    },
+    {
+      "path": "product/18-ai-feature-specification.md",
+      "bytes": 3338,
+      "sha256": "2e475f709286dfb21e7515b4849ccfee7cf6c7e320f0c2c7b8938e2110388824"
+    },
+    {
+      "path": "product/19-open-questions.md",
+      "bytes": 1308,
+      "sha256": "90ffed13c847788773e90bf7c7a129474a430f0515bafbbb7848d8265c39642c"
+    },
+    {
+      "path": "product/product-decision-register.md",
+      "bytes": 1902,
+      "sha256": "b7f35a297334a16057c339c7acdb57abbaf476415e286d78d4be0fb5614421d1"
+    },
+    {
+      "path": "sources-and-notes.md",
+      "bytes": 1262,
+      "sha256": "83a23f8188f8310ad6409c0ee7ab5b49dc7ecae9caedce87ae5c56ffe662b5aa"
+    },
+    {
+      "path": "traceability/product-architecture-map.md",
+      "bytes": 1422,
+      "sha256": "7671f9f825a5d1bac172e9e741f9872af1f39f06bf00a90b50d93209e9ab285c"
+    }
+  ]
+}

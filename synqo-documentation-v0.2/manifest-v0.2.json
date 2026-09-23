@@ -1,0 +1,589 @@
+{
+  "package": "synqo-documentation-v0.2",
+  "generated_at": "2026-09-23",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "size": 2398,
+      "sha256": "017609def312a14a3584fda5891092d445de230588060836633aa4298025e792",
+      "kind": "document"
+    },
+    {
+      "path": "DOCUMENTATION-STATUS.md",
+      "size": 789,
+      "sha256": "f61ffac16e17b76b0626426eccd3fa04dc126c20c6c98a3681b2e8364e74a3e6",
+      "kind": "document"
+    },
+    {
+      "path": "PRD.md",
+      "size": 8378,
+      "sha256": "e88f982a58fea6d2f6a8910d1b07a54512aaabf91e2cc63b6c83748f0341f584",
+      "kind": "document"
+    },
+    {
+      "path": "README.md",
+      "size": 2776,
+      "sha256": "0b2aca3c27a69e1b61791ea48106d062c4abb33a7509dcd5780182c060ca3ae4",
+      "kind": "document"
+    },
+    {
+      "path": "WORKPLAN.md",
+      "size": 11048,
+      "sha256": "d638d87f88f5c1f8143380d78cd5a9a5edcfcd7ea94b547e4e3245008d064541",
+      "kind": "document"
+    },
+    {
+      "path": "ai/26-technical-design/26-PROMPT-diseno-tecnico-ia.md",
+      "size": 4044,
+      "sha256": "12ed7363fc8efc81d1589ad8a317c84e8a85aea8c409ecf39251a742331390b2",
+      "kind": "prompt"
+    },
+    {
+      "path": "ai/27-evaluation/27-PROMPT-evaluacion-ia.md",
+      "size": 3873,
+      "sha256": "3111dba57ced8f60bdc24eacfaca822be9ed21cc6db15ab2763731cfb9396e70",
+      "kind": "prompt"
+    },
+    {
+      "path": "architecture/README.md",
+      "size": 1368,
+      "sha256": "7aadbbfcde7004d9930ff04f53e259ebed570e17945ea37cc6749ff1d571c3eb",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-001-platform-strategy.md",
+      "size": 1154,
+      "sha256": "8ba84c2c2fc3184647bc6e0180ba94e7c743be5ad2e30d977a9a06edf40b8e45",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-002A-frontend-react.md",
+      "size": 1125,
+      "sha256": "bb6ab4420f07c67e16974ded6e784065a2d0ef9503a957865c734f6317b2d06c",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-002B-frontend-angular.md",
+      "size": 712,
+      "sha256": "1e4ebceb0a4f268fe882e270521bca96e07a6937e9ec4138b4d2be2a9d837bba",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-003-spa-vs-nextjs.md",
+      "size": 682,
+      "sha256": "b65e8f042b477c92972b08762127ab5ca7e29756b2a5c850653fdfa7f77f8591",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-004-backend-framework.md",
+      "size": 1400,
+      "sha256": "52efd03dc9bf6b08f7d82fb3033740d3f30c56ac69a0ea414c44b7bf6ddb48ff",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-005-persistence.md",
+      "size": 891,
+      "sha256": "7a35577d6a4a3585d34e59c87b8824c9c9f6bc1eed4041fd9bc5141cb5548f2d",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-006-api-style.md",
+      "size": 1048,
+      "sha256": "e0ed383b3f5026382da6e603068a280d2cb8ea268f84b20acaf94dfa84711b60",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-007-monorepo.md",
+      "size": 1023,
+      "sha256": "4d9fdbc6af9471b4f085698f44bc6f96244971942f93a7c41a0e30abc9ca9678",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-008-authentication.md",
+      "size": 1512,
+      "sha256": "4091f7a36f41a282322f9db60577b5fbad161c9123cf012743b5bc88fd435054",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-009-local-development.md",
+      "size": 1026,
+      "sha256": "5a4ebe8ef75df0bc0ae58904d07992d4fec344b0bf916631c9b78a49350662a8",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-010-containerization.md",
+      "size": 835,
+      "sha256": "232d851319df6f961e438521b4b53ab5b138b599d4ca78991d700f464d1146eb",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-011-hosting.md",
+      "size": 985,
+      "sha256": "5cb3e2faaebc4eeddb52aae452cc43a50f0ca120ac1b10114b2542f02ab38469",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-012-ci-cd.md",
+      "size": 939,
+      "sha256": "5db802e091e22f229e92afe696b0325aa8e9a57656784c4bdd9494616b9ac823",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-013-observability.md",
+      "size": 685,
+      "sha256": "de2bde35ee2a616226cf49aeb2d0c945935f6ee6f1ae8917128143446c77cac3",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-014-testing.md",
+      "size": 1016,
+      "sha256": "f9d50acbce8662a52621c47e16af43eb4504b7fa22e7a27bc4e062b9efc4ec86",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-015-security.md",
+      "size": 1294,
+      "sha256": "d94fdc1cbb5bbaab39942bee745e648956648ba61c3bdd999c42564da81ba384",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-016-async-jobs.md",
+      "size": 731,
+      "sha256": "3f41e836edc83a97a9a15f28d5bdd46eda2e94610e86048eb7504ba0311216b8",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-017-email-notifications.md",
+      "size": 903,
+      "sha256": "9174681e0d2e008427982b235f56ceb4f073db4ab676834ec93b34cfe113f3c2",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-018-external-integrations.md",
+      "size": 441,
+      "sha256": "fd12a3113fa921733e4ad2bd133bf419bd0e1c736500e9b2e8d9c3c1910c41f0",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-019-ai-integration.md",
+      "size": 1539,
+      "sha256": "1677f64df4cc0395dcc30c4e5c0adfb344a757b6be08c5d78e32571e92167963",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-020-development-process.md",
+      "size": 560,
+      "sha256": "a6bc935519aab2a116e631b042ffe43e7d14bec2a469f777d7faf352b6284683",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-021-access-links.md",
+      "size": 1270,
+      "sha256": "44fbeaf15d7f2099c41fe554a1bfe7daf140a6a88d5abdf0b5f7b982993d030b",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr/ADR-022-contextual-authorization.md",
+      "size": 1052,
+      "sha256": "045d9f4fce1fff67ea400fd4c846e7ee7993843762e97becf7d3e9c94cac0d06",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/adr-reconciliation.md",
+      "size": 1582,
+      "sha256": "1a7ccbb4949809ee4f247c2bb54b1d37b43b3c25c7837b561d1c245810f9c814",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/decision-register.md",
+      "size": 2214,
+      "sha256": "73a00fb4a81bbf1f4bd468f78d70022cf8591a053b3cd74388209c2b4e5eb835",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/diagrams/container-view.md",
+      "size": 772,
+      "sha256": "c0fbcc890327170698d4b9e151cfce7e1e4ab758ef7d151d0f94bc6458f1b4c2",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/diagrams/deployment-view.md",
+      "size": 679,
+      "sha256": "8934599fc73e30422b24b2bf63bba3778329bb14ecd812b9bbfb7bc470f6a68e",
+      "kind": "document"
+    },
+    {
+      "path": "architecture/diagrams/system-context.md",
+      "size": 585,
+      "sha256": "05eb4c0a3f1f7963d19d491d06cb7ff9882c366c2532f9adc3ce04b26bc155c9",
+      "kind": "document"
+    },
+    {
+      "path": "delivery/28-implementation-roadmap/28-PROMPT-roadmap-de-implementacion.md",
+      "size": 4000,
+      "sha256": "aff9b37957d583d9c4e5ec3804482e461d153d88d0bd95a1cb1a45f6820da91f",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/02-visual-direction/02-PROMPT-direccion-visual.md",
+      "size": 4207,
+      "sha256": "5878cab601bb4e68bcfa29e1d43180becbbf5c3aef5b8fe0d208492a679f8bda",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/03-design-system/03-PROMPT-tokens-y-componentes.md",
+      "size": 4286,
+      "sha256": "6158feb197049a4cf900b3c6ce2f81fe9255b8bf3840b71e1ccba739f9a2f135",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/04-calendar/04-PROMPT-calendario-disponibilidad.md",
+      "size": 4417,
+      "sha256": "b2bb4e029cbda1cb2a7979b57da5773f499705737a5c71a3ed8e756af86d6f34",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/05-responsive/05-PROMPT-comportamiento-responsive.md",
+      "size": 3909,
+      "sha256": "53053cf5ca3d210a0e99ae6e1b57099ede63f702966c0aef0da8f8ab57a526f7",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/06-interactions/06-PROMPT-patrones-de-interaccion.md",
+      "size": 3946,
+      "sha256": "22c68d3ec5f310ed09582e161f5b39ac87ff46484280c49aa803cfa63e3dcc4c",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/07-ui-states/07-PROMPT-catalogo-estados-ui.md",
+      "size": 3723,
+      "sha256": "484ef666d5c70be4026caac587a0f69dca50b1cc8f73da7cdc39284b8e8950d5",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/08-content/08-PROMPT-microcopy-y-contenido.md",
+      "size": 3835,
+      "sha256": "312dd4f49b30a8fc8d56f0ba76deb6503e76c736ab8b20b8ed5d6b035608eaa2",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/09-accessibility/09-PROMPT-especificacion-accesibilidad.md",
+      "size": 3842,
+      "sha256": "c113dc2e7746507264394e9d4add098b210bafbd48ddd1a4d407b1bd24ad0181",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/10-high-fidelity/10-PROMPT-especificacion-high-fidelity.md",
+      "size": 3980,
+      "sha256": "8b74f4a628650455ac9420df3bd87c3f823e24a45ed63ce69244d0d2c0cf6199",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/11-prototype/11-PROMPT-prototipo-interactivo.md",
+      "size": 3689,
+      "sha256": "ddd8dbb63cd48103faf44460c373a171edd1123453237aff208c694bfe32e6a7",
+      "kind": "prompt"
+    },
+    {
+      "path": "design/12-usability/12-PROMPT-validacion-usabilidad.md",
+      "size": 3703,
+      "sha256": "58dc6de1e341ebc68bf7af44a27a4bfcdf5deb4b4cde439704aec42a3f8f08a3",
+      "kind": "prompt"
+    },
+    {
+      "path": "manifest.json",
+      "size": 11226,
+      "sha256": "4388ba7f133b39a6a3281e798baf48ffad362003d8339c9ebb82f54b45ac6755",
+      "kind": "document"
+    },
+    {
+      "path": "planning/01-open-decisions/01-PROMPT-cerrar-decisiones-abiertas.md",
+      "size": 4661,
+      "sha256": "a31829aa160b8dc08d7a459cff2eb0f230f5e45c0d8f3744df42171b93d93214",
+      "kind": "prompt"
+    },
+    {
+      "path": "product/01-product-vision.md",
+      "size": 1773,
+      "sha256": "bdee8afec9704633ad82138ddbb8bd80e7201d3d2aea95580cc2dbdefef8eb52",
+      "kind": "document"
+    },
+    {
+      "path": "product/02-scope-and-mvp.md",
+      "size": 1874,
+      "sha256": "42e7c72e0651c7c53d7f95740aaad67752d2991eabbc13128c392f020c81b331",
+      "kind": "document"
+    },
+    {
+      "path": "product/03-users-and-scenarios.md",
+      "size": 1954,
+      "sha256": "8fcf1b33bdb8ea65a3adf7a3f5aa832a432056ee191efc0ffccac230ede159c2",
+      "kind": "document"
+    },
+    {
+      "path": "product/04-jobs-to-be-done.md",
+      "size": 2230,
+      "sha256": "d2828259c91191577d3d0a9bc76bd6bacbb27f001895a6ebb85ec27dafcd90d7",
+      "kind": "document"
+    },
+    {
+      "path": "product/05-ubiquitous-language.md",
+      "size": 2714,
+      "sha256": "f686b81357ae47f0c14046ebef9027b8c392146dc3190e0b9d007c31139a7807",
+      "kind": "document"
+    },
+    {
+      "path": "product/06-conceptual-domain-model.md",
+      "size": 1685,
+      "sha256": "191270498cfd03569a08861e1497beaf73cb6bb4f68a99b1c76ad272bada7fab",
+      "kind": "document"
+    },
+    {
+      "path": "product/07-business-rules.md",
+      "size": 3940,
+      "sha256": "f65a5455de33a9a29dee3c9dd7a9ac55df54b73a6effb516de12720ae05973ed",
+      "kind": "document"
+    },
+    {
+      "path": "product/08-lifecycles.md",
+      "size": 1548,
+      "sha256": "b49f2b9582479bc091af6fcb25bac29ccac83c2d29063d3d7c98a17331a87620",
+      "kind": "document"
+    },
+    {
+      "path": "product/09-functional-requirements.md",
+      "size": 8360,
+      "sha256": "0356002581ad245cc9c8f12c728c85e8ba542fbf2602d7b5f4df3d4f7095331c",
+      "kind": "document"
+    },
+    {
+      "path": "product/10-non-functional-requirements.md",
+      "size": 2605,
+      "sha256": "1156c5f10fbea1fddcac0446ce456e0efdc521c95e4b0475ff064837abd7eafe",
+      "kind": "document"
+    },
+    {
+      "path": "product/11-constraints.md",
+      "size": 1252,
+      "sha256": "f172210eb8507d271ab57b4f0fbe2ab30be2d145a40845af4a9fd2737bd2a6d8",
+      "kind": "document"
+    },
+    {
+      "path": "product/12-user-stories-and-acceptance-criteria.md",
+      "size": 7864,
+      "sha256": "486ad7e2a856d15a7f6d616084b436a486f7e7729c4cd1aabb8a8162dd63b3b1",
+      "kind": "document"
+    },
+    {
+      "path": "product/13-information-architecture.md",
+      "size": 1481,
+      "sha256": "9f5344c90eb1f0f27ee1cc742ca1ac849f0ffbb4e7c58457a9b0aebe6c182b35",
+      "kind": "document"
+    },
+    {
+      "path": "product/14-user-flows.md",
+      "size": 3219,
+      "sha256": "ac360731e6424ca19a453968d3dcff4d502b1ad79cbebd62ce460ac8a4488265",
+      "kind": "document"
+    },
+    {
+      "path": "product/15-screen-specification.md",
+      "size": 2361,
+      "sha256": "153f53a157d11b34d8cc931a12ac8457d43cf154b0d9b4586bcac818709e3cf9",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/01-landing.md",
+      "size": 629,
+      "sha256": "2fddc1311b5ae5c5de66d1401d54745d58254b0cc3f0f4d016f7fdb659c43791",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/02-create-team.md",
+      "size": 1168,
+      "sha256": "2d2907ebe9aeaa539fab57f2908ac0aadcfa959dcce7a265ceaeece44199533c",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/03-team-home.md",
+      "size": 941,
+      "sha256": "3d43010ccdf6d71322d3d914ca9a99bc7bf6519fdc27020c202339346e9f7fd3",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/04-my-availability.md",
+      "size": 1205,
+      "sha256": "0906b16bf5c56d3ea110ac5ccf6b1298021f4e782000cd7adaeacde3e815097b",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/05-collective-availability.md",
+      "size": 1294,
+      "sha256": "571ace5452cd61b6a68bdfacb96d280944e8b0cff1441107f5401756aca46b1c",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/06-availability-request.md",
+      "size": 693,
+      "sha256": "12bdb0498255530755a5a98dfa151a33cc72780746ae4c9c94c60072867579d3",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/07-create-proposal.md",
+      "size": 763,
+      "sha256": "25c14e01726eff2dbd41223cc8b97e177b9f3e9788367600112d84401e384e46",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/08-proposal.md",
+      "size": 802,
+      "sha256": "0aff8b92567884f6df2f2fe45ad9dfe7547e96758e0cebf6b90d75ddcb3ede21",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/09-survey.md",
+      "size": 804,
+      "sha256": "19733a9ac4ca81ece31fc93c5bb75b7a5bf097fe18e6b10c9689e70fbb0b4b17",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/10-result-resolution.md",
+      "size": 770,
+      "sha256": "b7f9e8c3f5d9d170aeba481e90665e99356c80738d922e82a25d337dbd4821c9",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/11-managed-settings.md",
+      "size": 993,
+      "sha256": "b88aac0941adc8153212891fc3e548df58dccd98037aa5bd42eda9f32fe26141",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/12-ai-assistant.md",
+      "size": 1184,
+      "sha256": "1ca3a35e5fb49c3d7ea62c1c09bd3e9c0e8c06021a31fb50bc06a367fd77dc41",
+      "kind": "document"
+    },
+    {
+      "path": "product/16-wireframes/README.md",
+      "size": 561,
+      "sha256": "8706d54ac6dde27cf915a422c70cb5de74a74a82a3bc794f7d5e1355762c08c6",
+      "kind": "document"
+    },
+    {
+      "path": "product/17-traceability-matrix.md",
+      "size": 1949,
+      "sha256": "fbb175a73885767b30b747d699a02fb65370bb038f19b315bff70a8e1c8f8363",
+      "kind": "document"
+    },
+    {
+      "path": "product/18-ai-feature-specification.md",
+      "size": 3338,
+      "sha256": "2e475f709286dfb21e7515b4849ccfee7cf6c7e320f0c2c7b8938e2110388824",
+      "kind": "document"
+    },
+    {
+      "path": "product/19-open-questions.md",
+      "size": 1308,
+      "sha256": "90ffed13c847788773e90bf7c7a129474a430f0515bafbbb7848d8265c39642c",
+      "kind": "document"
+    },
+    {
+      "path": "product/product-decision-register.md",
+      "size": 1902,
+      "sha256": "b7f35a297334a16057c339c7acdb57abbaf476415e286d78d4be0fb5614421d1",
+      "kind": "document"
+    },
+    {
+      "path": "quality/24-product-analytics/24-PROMPT-analitica-de-producto.md",
+      "size": 3776,
+      "sha256": "aacf3e6b5c74d46259e7e6e4d1b25ca89ef892b343334c560e289a4f1ed44d78",
+      "kind": "prompt"
+    },
+    {
+      "path": "quality/25-test-plan/25-PROMPT-plan-de-testing.md",
+      "size": 3948,
+      "sha256": "e12b47b575b5b7bbd2fce271b30dccdf0a32e64ccd0197a4a27b7b7be4866f40",
+      "kind": "prompt"
+    },
+    {
+      "path": "security/22-threat-model/22-PROMPT-threat-model.md",
+      "size": 3893,
+      "sha256": "e7f14843744b863fc003c1e73482820c8e54eb77a107325dc3e36a650ee962bc",
+      "kind": "prompt"
+    },
+    {
+      "path": "security/23-privacy-retention/23-PROMPT-privacidad-y-retencion.md",
+      "size": 3829,
+      "sha256": "98ac5d112a2bc56eee0e69c925f19d6d9497c1d18bed2a9021fec5de360de944",
+      "kind": "prompt"
+    },
+    {
+      "path": "sources-and-notes.md",
+      "size": 1262,
+      "sha256": "83a23f8188f8310ad6409c0ee7ab5b49dc7ecae9caedce87ae5c56ffe662b5aa",
+      "kind": "document"
+    },
+    {
+      "path": "technical-design/13-domain/13-PROMPT-diseno-de-dominio.md",
+      "size": 4232,
+      "sha256": "9cc8951a63e4c01e0e4495d9c41a0f256f17d38a4cae6f3786c2a56e4b60eae4",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/14-state-machines/14-PROMPT-maquinas-de-estado.md",
+      "size": 3592,
+      "sha256": "41c474a0d30138eca8aa780dfd408698e264b50e97452e209e14249c264f45d5",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/15-authorization/15-PROMPT-matriz-de-autorizacion.md",
+      "size": 3877,
+      "sha256": "6360026d687a7f12dd287b4a56e513b4f47257f07144de1392064e17a17cbde4",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/16-identity-sessions/16-PROMPT-identidad-sesiones-y-links.md",
+      "size": 3886,
+      "sha256": "7d9ab956f19faed52b9980ee35b938017eaac78326d1eedd4d7b609b433f6ccc",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/17-data-model/17-PROMPT-modelo-de-datos-y-erd.md",
+      "size": 3978,
+      "sha256": "b1ac5baa644883f0e44d9524c63555c43ecabd19921fe1ed652deb87050e02e5",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/18-api/18-PROMPT-contrato-api-openapi.md",
+      "size": 3949,
+      "sha256": "2cf51dad75f59d31d854eb52d6174ad15d19e3e6c83b351b6885422202dfcf6a",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/19-sequences/19-PROMPT-diagramas-de-secuencia.md",
+      "size": 3733,
+      "sha256": "7f3ee84bf3024cfaef9c22026d02749e9b30bbdbcde184b94df5dcaf98b6aa05",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/20-jobs-events/20-PROMPT-jobs-y-eventos.md",
+      "size": 3757,
+      "sha256": "314bb1db737157098fd31a6c303111f4e3018744cf63fee4ba0c86ff54d0cf03",
+      "kind": "prompt"
+    },
+    {
+      "path": "technical-design/21-notifications/21-PROMPT-matriz-de-notificaciones.md",
+      "size": 3835,
+      "sha256": "64db26ede46b7f1aa50c692ada7c8a47e324df12c37a636011a0b1b41d64d4fd",
+      "kind": "prompt"
+    },
+    {
+      "path": "traceability/product-architecture-map.md",
+      "size": 1422,
+      "sha256": "7671f9f825a5d1bac172e9e741f9872af1f39f06bf00a90b50d93209e9ab285c",
+      "kind": "document"
+    }
+  ],
+  "work_packages": 28
+}

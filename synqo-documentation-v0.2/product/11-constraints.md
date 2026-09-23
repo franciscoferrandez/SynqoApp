@@ -1,0 +1,23 @@
+# 11 — Restricciones del MVP
+
+- `RES-01`: disponibilidad general sin franjas horarias.
+- `RES-02`: sin recurrencia automática de eventos.
+- `RES-03`: Synqo no gestiona integralmente el evento posterior a la resolución.
+- `RES-04`: propuesta = fecha + hora puntual opcional; no intervalos horarios.
+- `RES-05`: sin sincronización automática con calendarios externos.
+- `RES-06`: sin chat interno.
+- `RES-07`: sin anonimato fuerte de votos.
+- `RES-08`: sin ranking, voto ponderado o métodos electorales avanzados.
+- `RES-09`: coincidencias/recuentos no usan IA.
+- `RES-10`: cuenta no obligatoria para capacidades esenciales.
+- `RES-11`: equipo rápido siempre expira según política.
+- `RES-12`: vincular equipo rápido a cuenta no elimina temporalidad.
+- `RES-13`: solicitudes y consultas se dirigen a todos los participantes activos; no subconjuntos arbitrarios.
+- `RES-AI-01`: LLM no calcula disponibilidad.
+- `RES-AI-02`: LLM no cuenta votos.
+- `RES-AI-03`: LLM no resuelve consultas.
+- `RES-AI-04`: LLM no accede directamente a PostgreSQL.
+- `RES-AI-05`: LLM no dispone de herramientas de mutación del dominio.
+- `RES-AI-06`: MVP no usa RAG.
+- `RES-AI-07`: MVP no requiere fine-tuning.
+- `RES-AI-08`: MVP no implementa un agente autónomo.
