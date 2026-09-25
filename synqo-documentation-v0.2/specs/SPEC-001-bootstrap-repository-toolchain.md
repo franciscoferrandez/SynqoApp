@@ -191,6 +191,7 @@ La lista de `RNF release blockers` aplicable al producto completo se mantiene en
 7. **Given** la app web compilada, **when** se sirve el build, **then** Playwright puede cargar el app shell sin errores bloqueantes de consola ni recursos rotos.
 8. **Given** un cambio que incumple format, lint, typecheck, tests, build o validación OpenAPI, **when** se ejecuta CI, **then** el job falla antes de aceptar el cambio.
 9. **Given** el diff de la unidad, **when** se revisa contra esta SPEC y el roadmap, **then** no contiene funcionalidades de producto, tablas de dominio ni cambios silenciosos de baseline.
+10. **Given** una dependencia del runtime o del toolchain con una versión LTS soportada, **when** se configura el workspace, **then** se utiliza una versión LTS actualizada y se deja registrada; cualquier excepción queda documentada con su motivo.
 
 ## Required tests
 
@@ -234,7 +235,7 @@ La lista de `RNF release blockers` aplicable al producto completo se mantiene en
 - Respetar React + TypeScript + Vite, NestJS + TypeScript, PostgreSQL + MikroORM, REST/OpenAPI y monorepo pnpm.
 - Ejecutar web/API en host y usar Docker Compose para PostgreSQL, conforme a ADR-009.
 - No introducir Nx/Turborepo ni un sistema de paquetes compartidos por anticipación; añadir un package compartido solo si una necesidad concreta de esta unidad lo justifica.
-- Mantener configuración estricta y scripts reproducibles; documentar versiones de runtime/package manager elegidas en los artefactos de implementación, sin convertirlas en una decisión de producto.
+- Mantener configuración estricta y scripts reproducibles; usar versiones actualizadas y, siempre que exista una opción soportada, versiones LTS para runtime, package manager y dependencias principales. Registrar las versiones elegidas en los artefactos de implementación y documentar cualquier excepción LTS por incompatibilidad o ausencia de soporte, sin convertirlo en una decisión de producto.
 - Mantener el healthcheck y la app shell pequeños, verificables y sin dominio falso.
 - Si una decisión mecánica afecta la baseline, contrato público, seguridad diseñada o alcance, detenerse y derivar a Change Control.
 
