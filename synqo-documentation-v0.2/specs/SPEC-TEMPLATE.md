@@ -16,8 +16,41 @@
 
 ## Related requirements
 
-- RF-...
-- RNF-...
+Agrupar por tipo/categoría y añadir el título o una descripción muy breve junto a cada identificador. Incluir solo los requisitos aplicables; la fuente normativa sigue siendo el documento referenciado.
+
+### Functional requirements
+
+- `RF-...` — Título o descripción breve.
+
+### Non-functional requirements
+
+#### Usability
+
+- `RNF-US-...` — Título o descripción breve.
+
+#### Accessibility
+
+- `RNF-A11Y-...` — Título o descripción breve.
+
+#### Security
+
+- `RNF-SEC-...` — Título o descripción breve.
+
+#### Privacy
+
+- `RNF-PRIV-...` — Título o descripción breve.
+
+#### Performance / reliability
+
+- `RNF-PERF-...` / `RNF-REL-...` — Título o descripción breve.
+
+#### Compatibility / responsive
+
+- `RNF-COMP-...` / `RNF-RESP-...` — Título o descripción breve.
+
+#### Observability
+
+- `RNF-AUD-...` / `RNF-AI-OBS-...` — Título o descripción breve.
 
 ## Related user stories
 

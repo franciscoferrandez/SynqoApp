@@ -1,10 +1,10 @@
 # Spec Register
 
-Registro inicial de unidades Spec-First. Todas están `Planned` porque todavía no existe una SPEC equivalente en estado `Ready`. El orden traduce el roadmap sin modificarlo: primero enablement y dependencias técnicas, después el núcleo `Must`, y más tarde capacidades `Should`/`Could` y la entrega IA.
+Registro de unidades Spec-First. El orden traduce el roadmap sin modificarlo: primero enablement y dependencias técnicas, después el núcleo `Must`, y más tarde capacidades `Should`/`Could` y la entrega IA.
 
 | ID | Title | Slice | Priority | Status | Depends on | Requirements |
 |---|---|---:|---|---|---|---|
-| SPEC-001 | Bootstrap del repositorio y toolchain | 0 | Enablement | Planned | — | RNF release blockers, ADR base |
+| SPEC-001 | Bootstrap del repositorio y toolchain | 0 | Enablement | Ready | — | RNF release blockers, ADR base |
 | SPEC-002 | Crear equipo rápido y acceso de participante | 1 | Must | Planned | SPEC-001 | RF-ID-01, RF-ID-03, RF-ACC-01, RF-ACC-04, RF-ACC-05, RF-EQR-01, RF-EQR-02, RF-EQR-09, RF-PA-01, RF-PA-02 |
 | SPEC-003 | Registrar disponibilidad individual diaria | 2 | Must | Planned | SPEC-002 | RF-DIS-01..RF-DIS-09, RF-EQR-09 |
 | SPEC-004 | Disponibilidad colectiva y coincidencias deterministas | 3 | Must/Should | Planned | SPEC-003 | RF-DIS-10..RF-DIS-13, RF-COI-01..RF-COI-05 |
