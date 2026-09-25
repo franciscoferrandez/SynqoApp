@@ -90,9 +90,21 @@ Este prompt prepara y registra la SPEC, pero no crea el monorepo ni implementa l
 Para continuar una SPEC aprobada:
 
 ```text
-Usa $synqo-sdd-implementation para implementar SPEC-001.
-La SPEC está en Ready. Respeta su alcance y detente si requiere cambiar la baseline.
+Lee AGENTS.md y synqo-documentation-v0.2/IMPLEMENTATION-GUIDE.md.
+
+Quiero implementar SPEC-001 — Bootstrap del repositorio y toolchain.
+
+Usa $synqo-sdd-implementation.
+La SPEC está en Ready y el PR de documentación ya está integrado en main.
+Haz el branch preflight antes de tocar código.
+Si estás en main y necesitas crear o cambiar de rama, detente y pídeme autorización explícita.
+Cuando exista una rama autorizada, cambia la SPEC a In Progress, implementa solo su alcance y crea o ajusta los tests requeridos.
+No implementes funcionalidades de SPEC-002 ni posteriores.
+Respeta la Design Baseline y detente si el trabajo requiere cambiarla o abrir una Change Request.
+Al terminar la implementación, deja la SPEC en Implemented y detente para que se ejecute $synqo-verification.
 ```
+
+Este prompt inicia la implementación de una SPEC `Ready`; no autoriza por sí mismo la creación o el cambio de rama. La rama de implementación recomendada es `feat/SPEC-001-bootstrap`.
 
 Para cerrar la unidad:
 
