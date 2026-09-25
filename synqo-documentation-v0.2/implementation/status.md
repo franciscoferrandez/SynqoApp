@@ -8,7 +8,7 @@ Implementation preparation. La Design Baseline v1.0 está preparada; todavía no
 
 ## Active work
 
-- Active SPEC: none
+- Active SPEC: `SPEC-001` — Bootstrap del repositorio y toolchain (`Ready`; implementation not started)
 - No application code in scope.
 
 ## Completed specs
@@ -17,12 +17,12 @@ Implementation preparation. La Design Baseline v1.0 está preparada; todavía no
 
 ## Next specs
 
-- `SPEC-001` — Bootstrap del repositorio y toolchain (`Planned`).
+- `SPEC-001` — Bootstrap del repositorio y toolchain (`Ready`; pending implementation authorization/branch).
 
 ## Known blockers
 
 - No blocker global identificado.
-- Cada SPEC debe revisar sus dependencias y decisiones diferidas antes de pasar a `Ready`.
+- `SPEC-001` no tiene bloqueadores documentales; la implementación debe detenerse y abrir Change Control si una decisión mecánica afecta la baseline o un contrato diseñado.
 
 ## Accepted deviations
 

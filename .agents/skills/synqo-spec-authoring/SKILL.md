@@ -14,4 +14,4 @@ No implementes código de aplicación. Detente al conseguir una SPEC `Ready` o d
 5. Si es implementable, marca `Ready`, actualiza `spec-register.md` y `implementation/status.md`.
 6. Registra evidencia mínima en `tfm/evidence-register.md`; registra uso relevante de IA y un hito metodológico solo cuando corresponda.
 
-La SPEC debe incluir criterios de aceptación, tests requeridos, autorización, impacto documental y trazabilidad. No cambies el roadmap ni la baseline silenciosamente.
+La SPEC debe incluir criterios de aceptación, tests requeridos, autorización, impacto documental y trazabilidad. En `Related requirements`, agrupa los requisitos por tipo o categoría (por ejemplo, funcionales, usabilidad, accesibilidad, seguridad, privacidad, fiabilidad, compatibilidad) y escribe junto a cada identificador su título o una descripción muy breve tomada de la fuente. No enumeres códigos sin contexto ni copies párrafos completos. No cambies el roadmap ni la baseline silenciosamente.

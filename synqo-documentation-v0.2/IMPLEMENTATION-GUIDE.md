@@ -201,7 +201,20 @@ Reglas operativas:
 - Exigir revisión y CI verde antes de fusionar; como mínimo lint, tests y build cuando existan.
 - Preferir `squash merge` para mantener un historial legible y eliminar la rama después de fusionarla.
 - Usar Conventional Commits y tags SemVer para releases (`v0.1.0`, `v0.2.0`).
+- Redactar en español los mensajes de commit, títulos y descripciones de Pull Request, salvo nombres técnicos, identificadores, comandos o términos propios del código.
 - No crear ramas permanentes `develop`, `staging` o por entorno sin una necesidad documentada.
+
+Formato recomendado para commits y Pull Requests:
+
+```text
+docs(SPEC-001): preparar la SPEC de bootstrap
+```
+
+- El asunto del commit debe ser imperativo, breve y preferentemente no superar 72 caracteres.
+- El cuerpo del commit es opcional y solo debe añadirse cuando explique contexto o una decisión relevante.
+- El título del Pull Request debe describir el objetivo en una línea y referenciar `SPEC-XXX` o `CR-XXX`.
+- La descripción del Pull Request debe resumir objetivo, cambios, verificaciones ejecutadas y fuera de alcance.
+- No existe una longitud rígida para la descripción; debe ser tan breve como permita revisar el cambio sin abrir archivos innecesariamente.
 
 Nomenclatura recomendada:
 
