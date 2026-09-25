@@ -2,7 +2,7 @@
 
 ## UF-01 — Crear equipo rápido
 
-`Landing → Crear → Rápido → datos mínimos → Active → compartir / indicar disponibilidad / crear actividad`.
+`Landing → Crear → Rápido → datos mínimos → Active → compartir / indicar disponibilidad / crear actividad como participante activo`.
 
 ## UF-02 — Crear equipo administrable
 
@@ -74,7 +74,7 @@
 
 ## UF-21 — Expiración rápida
 
-`Active → umbral A → Recoverable → actividad válida → Active` o `Recoverable → umbral B → Expired`.
+`Active → 30 días sin actividad relevante → Recoverable → actividad humana válida → Active` o `Recoverable → 14 días sin reactivación válida → Expired definitivo`.
 
 ## UF-AI-01 — Asistente de coordinación
 

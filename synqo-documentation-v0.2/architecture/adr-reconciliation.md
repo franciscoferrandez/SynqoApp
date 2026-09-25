@@ -18,7 +18,7 @@ ADR-005 se actualiza con el dominio real: Cuenta, Participante, Equipo, Disponib
 
 - **ADR-008:** autenticación ya no equivale a «usuario»: distingue cuenta global, identidad de participante y acceso administrativo.
 - **ADR-015:** incorpora amenazas de enlaces personalizados, apropiación de identidad, IDOR y escalada contextual.
-- **ADR-017:** el email administrativo/verificación es parte esencial del producto; las notificaciones de actividad permanecen parcialmente abiertas.
+- **ADR-017:** el email administrativo/verificación es parte esencial del producto; las notificaciones externas automáticas de actividad quedan fuera del MVP.
 - **ADR-019:** se reescribe sobre AI-F01 en vez de una «IA futura» genérica.
 
 ## Nuevos ADR

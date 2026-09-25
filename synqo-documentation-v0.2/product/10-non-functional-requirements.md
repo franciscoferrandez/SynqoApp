@@ -28,7 +28,7 @@
 ## Privacidad
 
 - `RNF-PRIV-01`: minimizar PII, especialmente en equipos rápidos.
-- `RNF-PRIV-02`: política explícita de conservación/eliminación de equipos expirados.
+- `RNF-PRIV-02`: los equipos rápidos expirados definitivamente eliminan o anonimizan irreversiblemente datos de dominio y credenciales, conservando como máximo métricas agregadas y trazas operativas mínimas sin tokens ni PII innecesaria.
 - `RNF-PRIV-03`: aislamiento estricto entre equipos.
 - `RNF-PRIV-04`: IA recibe únicamente contexto mínimo necesario; no requiere disponibilidad nominal.
 

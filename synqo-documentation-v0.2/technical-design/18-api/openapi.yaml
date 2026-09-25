@@ -1,0 +1,1587 @@
+openapi: 3.1.0
+info:
+  title: Synqo API
+  version: 0.1.0
+  description: Initial REST JSON contract for the Synqo MVP.
+servers:
+  - url: /api/v1
+tags:
+  - name: Teams
+  - name: Participants
+  - name: Availability
+  - name: AvailabilityRequests
+  - name: Decisions
+  - name: Access
+  - name: Admin
+  - name: Account
+  - name: AI
+security:
+  - cookieAuth: []
+paths:
+  /teams/quick:
+    post:
+      tags: [Teams]
+      summary: Create a quick team and initial participant
+      operationId: createQuickTeam
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuickTeamRequest'
+      responses:
+        '201':
+          description: Quick team created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTeamResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/managed:
+    post:
+      tags: [Teams]
+      summary: Create a managed team pending administrative verification
+      operationId: createManagedTeam
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateManagedTeamRequest'
+      responses:
+        '202':
+          description: Managed team created pending verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateManagedTeamResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}:
+    get:
+      tags: [Teams]
+      summary: Read public or contextual team summary
+      operationId: getTeam
+      security:
+        - cookieAuth: []
+        - {}
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+      responses:
+        '200':
+          description: Team summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamSummary'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/home:
+    get:
+      tags: [Teams]
+      summary: Read contextual team home
+      operationId: getTeamHome
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+      responses:
+        '200':
+          description: Team home
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamHome'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/settings:
+    patch:
+      tags: [Teams]
+      summary: Update managed team settings
+      operationId: updateTeamSettings
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeamSettingsRequest'
+      responses:
+        '200':
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamSettings'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/reactivate:
+    post:
+      tags: [Teams]
+      summary: Reactivate a recoverable quick team by human action
+      operationId: reactivateQuickTeam
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Team reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamSummary'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/participants:
+    get:
+      tags: [Participants]
+      summary: List visible team participants
+      operationId: listParticipants
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Participants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipantPage'
+        default:
+          $ref: '#/components/responses/Problem'
+    post:
+      tags: [Participants]
+      summary: Create or identify a local participant
+      operationId: createParticipant
+      security:
+        - cookieAuth: []
+        - {}
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateParticipantRequest'
+      responses:
+        '201':
+          description: Participant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/participants/me:
+    get:
+      tags: [Participants]
+      summary: Read current participant
+      operationId: getCurrentParticipant
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+      responses:
+        '200':
+          description: Current participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        default:
+          $ref: '#/components/responses/Problem'
+    patch:
+      tags: [Participants]
+      summary: Update current participant display name
+      operationId: updateCurrentParticipant
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParticipantRequest'
+      responses:
+        '200':
+          description: Updated participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/participants/me/deactivate:
+    post:
+      tags: [Participants]
+      summary: Deactivate current participant
+      operationId: deactivateCurrentParticipant
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Deactivated participant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability/me:
+    get:
+      tags: [Availability]
+      summary: Read current participant availability
+      operationId: getMyAvailability
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Availability entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRange'
+        default:
+          $ref: '#/components/responses/Problem'
+    put:
+      tags: [Availability]
+      summary: Upsert current participant availability by day
+      operationId: putMyAvailability
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAvailabilityRequest'
+      responses:
+        '200':
+          description: Updated availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRange'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability/collective:
+    get:
+      tags: [Availability]
+      summary: Read collective availability
+      operationId: getCollectiveAvailability
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+      responses:
+        '200':
+          description: Collective availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectiveAvailability'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability/matches:
+    get:
+      tags: [Availability]
+      summary: Calculate deterministic candidate dates
+      operationId: getAvailabilityMatches
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/FromDate'
+        - $ref: '#/components/parameters/ToDate'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 10
+      responses:
+        '200':
+          description: Candidate dates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateDateList'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability-requests:
+    post:
+      tags: [AvailabilityRequests]
+      summary: Create availability request for active participants
+      operationId: createAvailabilityRequest
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAvailabilityRequest'
+      responses:
+        '201':
+          description: Availability request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRequest'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability-requests/{requestRef}:
+    get:
+      tags: [AvailabilityRequests]
+      summary: Read availability request
+      operationId: getAvailabilityRequest
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/RequestRef'
+      responses:
+        '200':
+          description: Availability request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRequest'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability-requests/{requestRef}/response:
+    put:
+      tags: [AvailabilityRequests]
+      summary: Respond to availability request by updating general availability
+      operationId: respondAvailabilityRequest
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/RequestRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAvailabilityRequest'
+      responses:
+        '200':
+          description: Updated availability
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRange'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability-requests/{requestRef}/close:
+    post:
+      tags: [AvailabilityRequests]
+      summary: Close availability request
+      operationId: closeAvailabilityRequest
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/RequestRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Closed availability request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRequest'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/proposals:
+    post:
+      tags: [Decisions]
+      summary: Create proposal
+      operationId: createProposal
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProposalRequest'
+      responses:
+        '201':
+          description: Proposal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/surveys:
+    post:
+      tags: [Decisions]
+      summary: Create survey
+      operationId: createSurvey
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSurveyRequest'
+      responses:
+        '201':
+          description: Survey created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/decisions:
+    get:
+      tags: [Decisions]
+      summary: List decisions
+      operationId: listDecisions
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/DecisionType'
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [OPEN, CLOSED, RESOLVED, CANCELLED]
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Decision page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionPage'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/decisions/{decisionRef}:
+    get:
+      tags: [Decisions]
+      summary: Read decision
+      operationId: getDecision
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/DecisionRef'
+      responses:
+        '200':
+          description: Decision
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/decisions/{decisionRef}/response:
+    put:
+      tags: [Decisions]
+      summary: Create or replace current participant response
+      operationId: putDecisionResponse
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/DecisionRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionResponseInput'
+      responses:
+        '200':
+          description: Updated decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/decisions/{decisionRef}/close:
+    post:
+      tags: [Decisions]
+      summary: Close decision participation without resolving
+      operationId: closeDecision
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/DecisionRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Closed decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/decisions/{decisionRef}/resolve:
+    post:
+      tags: [Decisions]
+      summary: Resolve decision explicitly
+      operationId: resolveDecision
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/DecisionRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveDecisionRequest'
+      responses:
+        '200':
+          description: Resolved decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/decisions/{decisionRef}/cancel:
+    post:
+      tags: [Decisions]
+      summary: Cancel decision
+      operationId: cancelDecision
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/DecisionRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelDecisionRequest'
+      responses:
+        '200':
+          description: Cancelled decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        default:
+          $ref: '#/components/responses/Problem'
+  /access/exchange:
+    post:
+      tags: [Access]
+      summary: Exchange an access token or public reference for contextual access
+      operationId: exchangeAccess
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessExchangeRequest'
+      responses:
+        '200':
+          description: Access exchanged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessExchangeResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/access-links:
+    post:
+      tags: [Access]
+      summary: Create a share or identified link
+      operationId: createAccessLink
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccessLinkRequest'
+      responses:
+        '201':
+          description: Access link created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAccessLinkResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/access-links/{linkId}:
+    delete:
+      tags: [Access]
+      summary: Revoke an access link
+      operationId: revokeAccessLink
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Access link revoked
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/verify:
+    post:
+      tags: [Admin]
+      summary: Verify administrative email and create admin session
+      operationId: verifyAdmin
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Admin verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessExchangeResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/recovery-requests:
+    post:
+      tags: [Admin]
+      summary: Request administrative recovery email
+      operationId: requestAdminRecovery
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRecoveryRequest'
+      responses:
+        '202':
+          description: Generic recovery response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericAcceptedResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/recover:
+    post:
+      tags: [Admin]
+      summary: Exchange administrative recovery token
+      operationId: recoverAdmin
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Admin recovered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessExchangeResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+  /account/link-participant:
+    post:
+      tags: [Account]
+      summary: Link current participant to current account
+      operationId: linkParticipantToAccount
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Participant linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+        default:
+          $ref: '#/components/responses/Problem'
+  /account/home:
+    get:
+      tags: [Account]
+      summary: Read account aggregated home
+      operationId: getAccountHome
+      responses:
+        '200':
+          description: Account home
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountHome'
+        default:
+          $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/ai/interpret-coordination:
+    post:
+      tags: [AI]
+      summary: Interpret natural language coordination request without mutating domain
+      operationId: interpretCoordination
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiInterpretationRequest'
+      responses:
+        '200':
+          description: Interpretation and deterministic candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiInterpretationResponse'
+        default:
+          $ref: '#/components/responses/Problem'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: synqo_context_session
+    csrf:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+  parameters:
+    TeamRef:
+      name: teamRef
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 6
+    RequestRef:
+      name: requestRef
+      in: path
+      required: true
+      schema:
+        type: string
+    DecisionRef:
+      name: decisionRef
+      in: path
+      required: true
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      schema:
+        type: string
+    FromDate:
+      name: from
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+    ToDate:
+      name: to
+      in: query
+      required: true
+      schema:
+        type: string
+        format: date
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+  responses:
+    Problem:
+      description: Error response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    TeamMode:
+      type: string
+      enum: [QUICK, MANAGED]
+    QuickTeamState:
+      type: string
+      enum: [ACTIVE, RECOVERABLE, EXPIRED]
+    ManagedTeamState:
+      type: string
+      enum: [PENDING_VERIFICATION, ACTIVE, ARCHIVED]
+    TeamPolicy:
+      type: string
+      enum: [EVERYONE, ADMINISTRATORS]
+    AvailabilityStatus:
+      type: string
+      enum: [AVAILABLE, MAYBE, UNAVAILABLE]
+    DerivedAvailabilityStatus:
+      type: string
+      enum: [AVAILABLE, MAYBE, UNAVAILABLE, UNANSWERED]
+    DecisionType:
+      type: string
+      enum: [PROPOSAL, SURVEY]
+    ParticipationState:
+      type: string
+      enum: [OPEN, CLOSED]
+    ResolutionState:
+      type: string
+      enum: [PENDING, RESOLVED, CANCELLED]
+    SurveyMode:
+      type: string
+      enum: [SINGLE, MULTIPLE]
+    SurveyVisibility:
+      type: string
+      enum: [NOMINAL, AGGREGATED]
+    CreateQuickTeamRequest:
+      type: object
+      required: [teamName, timeZone, participantDisplayName]
+      properties:
+        teamName:
+          type: string
+          minLength: 1
+        timeZone:
+          type: string
+          example: Europe/Madrid
+        participantDisplayName:
+          type: string
+          minLength: 1
+    CreateManagedTeamRequest:
+      type: object
+      required: [teamName, timeZone, adminEmail]
+      properties:
+        teamName:
+          type: string
+        timeZone:
+          type: string
+        adminEmail:
+          type: string
+          format: email
+    CreateTeamResponse:
+      type: object
+      required: [team, participant]
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+        participant:
+          $ref: '#/components/schemas/Participant'
+        redirectTo:
+          type: string
+    CreateManagedTeamResponse:
+      type: object
+      required: [teamRef, state]
+      properties:
+        teamRef:
+          type: string
+        state:
+          const: PENDING_VERIFICATION
+        message:
+          type: string
+    TeamSummary:
+      type: object
+      required: [teamRef, name, mode, timeZone]
+      properties:
+        teamRef:
+          type: string
+        name:
+          type: string
+        mode:
+          $ref: '#/components/schemas/TeamMode'
+        quickState:
+          $ref: '#/components/schemas/QuickTeamState'
+        managedState:
+          $ref: '#/components/schemas/ManagedTeamState'
+        timeZone:
+          type: string
+        settings:
+          $ref: '#/components/schemas/TeamSettings'
+    TeamHome:
+      type: object
+      required: [team, currentActor, pending]
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+        currentActor:
+          $ref: '#/components/schemas/ActorContext'
+        pending:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingItem'
+    ActorContext:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [ANON, PARTICIPANT, ADMIN, ACCOUNT_PARTICIPANT, ACCOUNT_ADMIN]
+        participant:
+          $ref: '#/components/schemas/Participant'
+        isAdmin:
+          type: boolean
+    TeamSettings:
+      type: object
+      required: [createAvailabilityRequestPolicy, createDecisionPolicy, resolveDecisionPolicy, enabledAvailabilityStatuses]
+      properties:
+        createAvailabilityRequestPolicy:
+          $ref: '#/components/schemas/TeamPolicy'
+        createDecisionPolicy:
+          $ref: '#/components/schemas/TeamPolicy'
+        resolveDecisionPolicy:
+          $ref: '#/components/schemas/TeamPolicy'
+        enabledAvailabilityStatuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityStatus'
+    UpdateTeamSettingsRequest:
+      type: object
+      properties:
+        createAvailabilityRequestPolicy:
+          $ref: '#/components/schemas/TeamPolicy'
+        createDecisionPolicy:
+          $ref: '#/components/schemas/TeamPolicy'
+        resolveDecisionPolicy:
+          $ref: '#/components/schemas/TeamPolicy'
+        enabledAvailabilityStatuses:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AvailabilityStatus'
+    CreateParticipantRequest:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+    UpdateParticipantRequest:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+    Participant:
+      type: object
+      required: [participantRef, displayName, isActive]
+      properties:
+        participantRef:
+          type: string
+        displayName:
+          type: string
+        isActive:
+          type: boolean
+        linkedAccount:
+          type: boolean
+    ParticipantPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+        nextCursor:
+          type: string
+    AvailabilityEntry:
+      type: object
+      required: [date, status]
+      properties:
+        date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/AvailabilityStatus'
+    UpdateAvailabilityRequest:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AvailabilityEntry'
+    AvailabilityRange:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailabilityEntry'
+    CollectiveAvailability:
+      type: object
+      required: [days]
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectiveAvailabilityDay'
+    CollectiveAvailabilityDay:
+      type: object
+      required: [date, counts]
+      properties:
+        date:
+          type: string
+          format: date
+        counts:
+          $ref: '#/components/schemas/AvailabilityCounts'
+        nominal:
+          type: array
+          items:
+            $ref: '#/components/schemas/NominalAvailability'
+    AvailabilityCounts:
+      type: object
+      required: [available, maybe, unavailable, unanswered]
+      properties:
+        available:
+          type: integer
+          minimum: 0
+        maybe:
+          type: integer
+          minimum: 0
+        unavailable:
+          type: integer
+          minimum: 0
+        unanswered:
+          type: integer
+          minimum: 0
+    NominalAvailability:
+      type: object
+      required: [participantRef, displayName, status]
+      properties:
+        participantRef:
+          type: string
+        displayName:
+          type: string
+        status:
+          $ref: '#/components/schemas/DerivedAvailabilityStatus'
+    CandidateDateList:
+      type: object
+      required: [candidates]
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateDate'
+    CandidateDate:
+      type: object
+      required: [date, counts, rank]
+      properties:
+        date:
+          type: string
+          format: date
+        counts:
+          $ref: '#/components/schemas/AvailabilityCounts'
+        rank:
+          type: integer
+    CreateAvailabilityRequest:
+      type: object
+      required: [startDate, endDate]
+      properties:
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        deadlineAt:
+          type: string
+          format: date-time
+    AvailabilityRequest:
+      type: object
+      required: [requestRef, startDate, endDate, state, progress]
+      properties:
+        requestRef:
+          type: string
+        title:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        deadlineAt:
+          type: string
+          format: date-time
+        state:
+          type: string
+          enum: [OPEN, CLOSED]
+        progress:
+          $ref: '#/components/schemas/AvailabilityRequestProgress'
+    AvailabilityRequestProgress:
+      type: object
+      required: [responded, pending]
+      properties:
+        responded:
+          type: integer
+          minimum: 0
+        pending:
+          type: integer
+          minimum: 0
+    CreateProposalRequest:
+      type: object
+      required: [title, options]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        deadlineAt:
+          type: string
+          format: date-time
+        options:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/ProposalOptionInput'
+    ProposalOptionInput:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+    CreateSurveyRequest:
+      type: object
+      required: [title, mode, options]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        mode:
+          $ref: '#/components/schemas/SurveyMode'
+        visibility:
+          $ref: '#/components/schemas/SurveyVisibility'
+        deadlineAt:
+          type: string
+          format: date-time
+        options:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/SurveyOptionInput'
+    SurveyOptionInput:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+          minLength: 1
+    DecisionPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Decision'
+        nextCursor:
+          type: string
+    Decision:
+      type: object
+      required: [decisionRef, type, title, participationState, resolutionState, options, result, version]
+      properties:
+        decisionRef:
+          type: string
+        type:
+          $ref: '#/components/schemas/DecisionType'
+        title:
+          type: string
+        description:
+          type: string
+        participationState:
+          $ref: '#/components/schemas/ParticipationState'
+        resolutionState:
+          $ref: '#/components/schemas/ResolutionState'
+        deadlineAt:
+          type: string
+          format: date-time
+        surveyMode:
+          $ref: '#/components/schemas/SurveyMode'
+        surveyVisibility:
+          $ref: '#/components/schemas/SurveyVisibility'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/DecisionOption'
+        result:
+          $ref: '#/components/schemas/DecisionResult'
+        myResponse:
+          $ref: '#/components/schemas/DecisionResponse'
+        resolution:
+          $ref: '#/components/schemas/Resolution'
+        version:
+          type: integer
+          minimum: 0
+    DecisionOption:
+      type: object
+      required: [optionId, position]
+      properties:
+        optionId:
+          type: string
+        position:
+          type: integer
+        label:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+    DecisionResponseInput:
+      oneOf:
+        - $ref: '#/components/schemas/ProposalResponseInput'
+        - $ref: '#/components/schemas/SurveyResponseInput'
+      discriminator:
+        propertyName: type
+    ProposalResponseInput:
+      type: object
+      required: [type, optionStatuses]
+      properties:
+        type:
+          const: PROPOSAL
+        optionStatuses:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [optionId, status]
+            properties:
+              optionId:
+                type: string
+              status:
+                $ref: '#/components/schemas/AvailabilityStatus'
+    SurveyResponseInput:
+      type: object
+      required: [type, selectedOptionIds]
+      properties:
+        type:
+          const: SURVEY
+        selectedOptionIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    DecisionResponse:
+      type: object
+      required: [type, respondedAt]
+      properties:
+        type:
+          $ref: '#/components/schemas/DecisionType'
+        respondedAt:
+          type: string
+          format: date-time
+        optionStatuses:
+          type: array
+          items:
+            type: object
+            properties:
+              optionId:
+                type: string
+              status:
+                $ref: '#/components/schemas/AvailabilityStatus'
+        selectedOptionIds:
+          type: array
+          items:
+            type: string
+    DecisionResult:
+      type: object
+      required: [countsByOption, hasTie]
+      properties:
+        countsByOption:
+          type: array
+          items:
+            type: object
+            required: [optionId]
+            properties:
+              optionId:
+                type: string
+              availability:
+                $ref: '#/components/schemas/AvailabilityCounts'
+              votes:
+                type: integer
+                minimum: 0
+        hasTie:
+          type: boolean
+    ResolveDecisionRequest:
+      type: object
+      required: [selectedOptionIds]
+      properties:
+        selectedOptionIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        reason:
+          type: string
+    CancelDecisionRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+    Resolution:
+      type: object
+      required: [kind, selectedOptionIds, resolvedAt]
+      properties:
+        kind:
+          type: string
+          enum: [RESOLVED, CANCELLED]
+        selectedOptionIds:
+          type: array
+          items:
+            type: string
+        reason:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+    PendingItem:
+      type: object
+      required: [kind, ref]
+      properties:
+        kind:
+          type: string
+          enum: [AVAILABILITY_REQUEST, PROPOSAL, SURVEY]
+        ref:
+          type: string
+        title:
+          type: string
+    AccessExchangeRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        publicRef:
+          type: string
+        targetPath:
+          type: string
+      anyOf:
+        - required: [token]
+        - required: [publicRef]
+    AccessExchangeResponse:
+      type: object
+      required: [redirectTo]
+      properties:
+        redirectTo:
+          type: string
+        team:
+          $ref: '#/components/schemas/TeamSummary'
+        participant:
+          $ref: '#/components/schemas/Participant'
+    CreateAccessLinkRequest:
+      type: object
+      required: [type, targetPath]
+      properties:
+        type:
+          type: string
+          enum: [PUBLIC_LINK, IDENTIFIED_LINK]
+        targetPath:
+          type: string
+        participantRef:
+          type: string
+    CreateAccessLinkResponse:
+      type: object
+      required: [linkId, url]
+      properties:
+        linkId:
+          type: string
+        url:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+    TokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    AdminRecoveryRequest:
+      type: object
+      required: [teamRef, email]
+      properties:
+        teamRef:
+          type: string
+        email:
+          type: string
+          format: email
+    GenericAcceptedResponse:
+      type: object
+      required: [accepted]
+      properties:
+        accepted:
+          type: boolean
+    AccountHome:
+      type: object
+      required: [teams, pending]
+      properties:
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamSummary'
+        pending:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingItem'
+    AiInterpretationRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        locale:
+          type: string
+          example: es-ES
+        dateRange:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+    AiInterpretationResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [OK, NEEDS_CLARIFICATION, UNSUPPORTED]
+        clarificationQuestion:
+          type: string
+        interpretation:
+          $ref: '#/components/schemas/StructuredCoordinationIntent'
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CandidateDate'
+    StructuredCoordinationIntent:
+      type: object
+      properties:
+        dateRange:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date
+            to:
+              type: string
+              format: date
+        candidateCount:
+          type: integer
+          minimum: 1
+        constraints:
+          type: object
+          properties:
+            minAvailable:
+              type: integer
+              minimum: 0
+            maxUnavailable:
+              type: integer
+              minimum: 0
+            excludedDates:
+              type: array
+              items:
+                type: string
+                format: date
+        preferences:
+          type: object
+          properties:
+            preferredWeekdays:
+              type: array
+              items:
+                type: string
+                enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+        proposedTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+    ProblemDetails:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - AUTHENTICATION_REQUIRED
+            - FORBIDDEN_BY_TEAM_POLICY
+            - RESOURCE_NOT_FOUND
+            - INVALID_STATE_TRANSITION
+            - CONCURRENT_MODIFICATION
+            - TOKEN_EXPIRED_OR_USED
+            - DOMAIN_RULE_VIOLATION
+            - RATE_LIMITED
+            - FEATURE_NOT_IN_MVP
+        detail:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

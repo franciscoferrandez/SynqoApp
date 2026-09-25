@@ -1,5 +1,6 @@
 # Windows Mark-of-the-Web sidecars
 *:Zone.Identifier
+**/*:Zone.Identifier
 *.Zone.Identifier
 Zone.Identifier
 

@@ -89,4 +89,6 @@ Registrar `provider`, `model`, `promptVersion`, `schemaVersion`, latencia, consu
 
 ## Fechas relativas
 
-La interpretación de «mañana», «el próximo viernes» o «este fin de semana» requiere fecha actual, locale y zona horaria. La política concreta se mantiene como `OPEN-09`; las fechas concretas interpretadas se muestran siempre antes de aplicar.
+La interpretación de «mañana», «el próximo viernes» o «este fin de semana» usa fecha actual, locale de interfaz y zona horaria IANA canónica del equipo. Las fechas concretas interpretadas se muestran siempre antes de aplicar restricciones o crear una propuesta.
+
+Si el texto del usuario depende de una zona distinta a la del equipo y no puede resolverse sin ambigüedad, la interpretación debe devolver `NEEDS_CLARIFICATION` en lugar de inferir silenciosamente otra zona.

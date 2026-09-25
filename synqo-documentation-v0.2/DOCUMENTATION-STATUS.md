@@ -1,15 +1,16 @@
 # Documentation status
 
-## Consolidado
+| Área | Estado |
+|---|---|
+| Analysis | Complete |
+| Product design | Complete |
+| Technical design | Complete |
+| Implementation preparation | Complete after this task |
+| Implementation | Not started |
+| Verification | Not started |
+| Deployment | Not started |
+| TFM evidence collection | Active |
 
-La documentación existente en `product/`, `architecture/`, `traceability/` y `PRD.md` corresponde a la definición funcional y arquitectónica consolidada de las fases 1–13.
+Las fases 01–28 del `WORKPLAN.md` y sus entregables han sido completadas y revisadas. El prompt de kickoff bajo `delivery/29-implementation-kickoff/` conserva la trazabilidad de la preparación operativa; las reglas activas para implementar están en `IMPLEMENTATION-GUIDE.md`, `project/design-baseline.md`, `specs/` y las skills locales.
 
-## Pendiente guiado
-
-Las carpetas `planning/`, `design/`, `technical-design/`, `security/`, `quality/`, `ai/` y `delivery/` contienen work packages numerados. Cada uno incluye un prompt detallado que debe ejecutarse desde la raíz del repositorio y que genera los documentos indicados en `WORKPLAN.md`.
-
-## Regla de estado
-
-- Un work package con solo `NN-PROMPT-*.md` está **pendiente**.
-- Cuando se generen sus entregables y se revisen, marca su checkbox en `WORKPLAN.md`.
-- No borres el prompt completado: funciona como trazabilidad de cómo se diseñó el artefacto.
+La carpeta `tfm/` está activa desde la preparación y solo debe registrar evidencias reales, sin inventar resultados de implementación, testing o despliegue.

@@ -7,6 +7,7 @@ Crear la primera especificación del design system de Synqo: tokens, primitives 
 ## Lee antes de empezar
 
 - `design/02-visual-direction/visual-direction.md`
+- `design/reference-assets/README.md`
 - `product/15-screen-specification.md`
 - `product/16-wireframes/README.md`
 - `product/10-non-functional-requirements.md`
@@ -15,6 +16,7 @@ Crear la primera especificación del design system de Synqo: tokens, primitives 
 ## Tarea
 
 1. Define tokens semánticos de color, tipografía, espaciado, tamaños, radios, bordes, elevación y motion. Usa nombres semánticos y evita depender de colores literales en la API de componentes.
+   - Si existen assets en `design/reference-assets/`, úsalos como referencia visual para paleta, tema claro/oscuro, superficies y acentos, respetando el alcance descrito en su `README.md`.
 2. Especifica componentes base: Button, IconButton, Input, Textarea, Select, Checkbox, Radio, Switch, Tabs, Badge, Card, Alert, Dialog, Drawer/Sheet, Tooltip, Toast, Skeleton y navegación.
 3. Especifica componentes de dominio: AvailabilityState, AvailabilityLegend, TeamTypeBadge, ConsultationTypeBadge, ParticipationStatus, ResolutionStatus, ParticipantAvatar/Identity, ResultSummary y PendingAction.
 4. Para cada componente documenta propósito, variantes, estados, accesibilidad, contenido permitido, comportamiento responsive y eventos relevantes.

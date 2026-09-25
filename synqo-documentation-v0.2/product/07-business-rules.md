@@ -8,6 +8,11 @@
 - `BR-EQ-04`: vincular un equipo rápido a una cuenta no altera su expiración.
 - `BR-EQ-05`: un equipo rápido no posee administración formal.
 - `BR-EQ-06`: un equipo administrable requiere identidad administrativa verificable.
+- `BR-EQ-07`: un equipo rápido pasa a `Recoverable` tras 30 días sin actividad relevante.
+- `BR-EQ-08`: un equipo rápido `Recoverable` pasa a `Expired` tras 14 días sin reactivación válida.
+- `BR-EQ-09`: la expiración definitiva de un equipo rápido elimina o anonimiza irreversiblemente sus datos de dominio y credenciales de acceso.
+- `BR-EQ-10`: en el MVP, un equipo administrable tiene una única identidad administrativa primaria.
+- `BR-EQ-11`: cada equipo tiene una zona horaria IANA canónica.
 
 ## Participante
 
@@ -26,6 +31,9 @@
 - `BR-DIS-05`: en equipo administrable pueden configurarse, manteniendo al menos uno de `AVAILABLE` o `UNAVAILABLE`.
 - `BR-DIS-06`: cada participante modifica por defecto su propia disponibilidad.
 - `BR-DIS-07`: cambiar disponibilidad general no modifica respuestas existentes de propuestas.
+- `BR-DIS-08`: las fechas de disponibilidad se interpretan en la zona horaria canónica del equipo.
+- `BR-DIS-09`: la ordenación por defecto de coincidencias prioriza menor `UNAVAILABLE`, mayor `AVAILABLE`, mayor `MAYBE`, menor `UNANSWERED` y fecha más próxima.
+- `BR-DIS-10`: `MAYBE` es una señal positiva débil y no equivale a `AVAILABLE`.
 
 ## Solicitudes
 
@@ -51,6 +59,7 @@
 - `BR-PRO-04`: la respuesta usa los estados habilitados del equipo.
 - `BR-PRO-05`: varias opciones pueden ser `Disponible` para el mismo participante.
 - `BR-PRO-06`: la resolución contiene exactamente una opción temporal.
+- `BR-PRO-07`: las opciones temporales se interpretan en la zona horaria canónica del equipo.
 
 ## Encuestas
 
@@ -68,6 +77,22 @@
 - `BR-RES-02`: en equipo rápido cualquier participante puede resolver.
 - `BR-RES-03`: en equipo administrable la política de resolución es `EVERYONE` o `ADMINISTRATORS`.
 - `BR-RES-04`: la API debe aplicar los permisos aunque la UI oculte una acción.
+
+## Creación y administración
+
+- `BR-AUT-01`: en equipo rápido cualquier participante activo puede crear solicitudes, propuestas y encuestas.
+- `BR-AUT-02`: en equipo administrable la política de creación de solicitudes es `EVERYONE` o `ADMINISTRATORS`; por defecto `EVERYONE`.
+- `BR-AUT-03`: en equipo administrable la política de creación de propuestas y encuestas es `EVERYONE` o `ADMINISTRATORS`; por defecto `EVERYONE`.
+- `BR-AUT-04`: en equipo administrable la política de resolución es por defecto `ADMINISTRATORS`.
+- `BR-AUT-05`: un administrador primario verificado puede cambiar las políticas configurables del equipo administrable.
+
+## Actividad y notificaciones
+
+- `BR-ACT-01`: una actividad relevante para renovar un equipo rápido debe ser una interacción humana intencional.
+- `BR-ACT-02`: crear o identificar participante, actualizar disponibilidad, responder, votar, crear solicitud o consulta, resolver, cancelar, vincular a cuenta o confirmar reactivación cuenta como actividad relevante.
+- `BR-ACT-03`: visitas pasivas, previews de enlaces, bots, jobs y automatismos no renuevan actividad.
+- `BR-NOT-01`: en el MVP no se envían notificaciones externas automáticas por nuevas solicitudes, propuestas, encuestas, recordatorios o expiración.
+- `BR-NOT-02`: el email externo del MVP se limita a verificación/recuperación administrativa y autenticación si existe.
 
 ## Invariantes clave
 

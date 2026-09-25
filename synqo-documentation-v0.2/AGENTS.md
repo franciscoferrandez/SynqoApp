@@ -1,6 +1,6 @@
 # AGENTS.md — Synqo documentation workspace
 
-Este repositorio/carpeta contiene la fuente de verdad de producto, diseño y arquitectura de Synqo.
+Esta carpeta contiene la fuente de verdad documental de producto, diseño y arquitectura de Synqo. Las reglas globales del futuro código están en el [`AGENTS.md`](../AGENTS.md) de la raíz Git.
 
 ## Cómo trabajar
 
@@ -13,6 +13,7 @@ Este repositorio/carpeta contiene la fuente de verdad de producto, diseño y arq
 - Conserva `product/19-open-questions.md` como registro de incertidumbre viva hasta que cada `OPEN-*` se cierre.
 - Un ADR documenta una decisión arquitectónica significativa; no lo uses como cajón de reglas de producto.
 - Evita generar código de producción mientras se ejecutan los prompts 01–27. El prompt 28 prepara el salto a implementación.
+- La implementación posterior se gobierna por `IMPLEMENTATION-GUIDE.md`, `project/design-baseline.md`, `specs/` y las skills locales bajo `../.agents/skills/`.
 
 ## Fuente de verdad por tema
 
@@ -24,6 +25,12 @@ Este repositorio/carpeta contiene la fuente de verdad de producto, diseño y arq
 - Arquitectura: `architecture/README.md`, `architecture/decision-register.md`, `architecture/adr/`
 - IA funcional: `product/18-ai-feature-specification.md`
 - Trazabilidad: `product/17-traceability-matrix.md`, `traceability/product-architecture-map.md`
+
+## Referencias visuales aportadas
+
+- Material de referencia visual: `design/reference-assets/`
+- Finalidad: informar paleta, tema claro/oscuro, atmósfera visual, superficies y acentos para los prompts de diseño.
+- Alcance: estos assets no son fuente de verdad funcional ni sustituyen `PRD.md`, `product/`, `architecture/`, wireframes funcionales ni `design/02-visual-direction/visual-direction.md`. Si contradicen documentación consolidada, prevalece la documentación.
 
 ## Política de actualización cruzada
 

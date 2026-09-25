@@ -3,7 +3,7 @@
 **Estado:** Accepted — major revision
 
 ## Contexto
-El email ya no es solo un canal de invitación: es parte del acceso a equipos administrables y recuperación. Las notificaciones de actividad son una necesidad distinta y parcialmente abierta.
+El email ya no es solo un canal de invitación: es parte del acceso a equipos administrables y recuperación. Las notificaciones externas de actividad se excluyen del MVP para mantener baja complejidad y menor exposición de PII.
 
 ## Decisión
 - Producción: **Resend**.
@@ -15,7 +15,7 @@ El email ya no es solo un canal de invitación: es parte del acceso a equipos ad
 Verificación administrativa, recuperación administrativa y autenticación passwordless si se ofrece.
 
 ### Notificaciones de producto
-Nueva solicitud/propuesta/encuesta, recordatorios y avisos de expiración quedan sujetos a `OPEN-08`.
+En el MVP no se envían notificaciones externas automáticas por nueva solicitud, propuesta, encuesta, recordatorios ni avisos de expiración. Esas señales se gestionan mediante UI, pendientes y enlaces compartidos manualmente. Las notificaciones externas de actividad quedan como evolución futura basada en evidencia.
 
 ## Justificación
-Separa identidad/seguridad de preferencias de comunicación y evita implementar canales que aún no tienen requisitos cerrados.
+Separa identidad/seguridad de preferencias de comunicación y evita implementar canales de actividad que el MVP no necesita para completar sus recorridos principales.

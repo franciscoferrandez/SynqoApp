@@ -1,5 +1,7 @@
 # Mapa Producto ↔ Arquitectura
 
+La criticidad de producto se define en `product/09b-requirements-prioritization.md`. Las fases técnicas posteriores deben consultar esa priorización para ordenar vertical slices, tests e invariantes, sin convertir MoSCoW en una decisión arquitectónica.
+
 | Necesidad / requisito | Decisiones arquitectónicas relacionadas |
 |---|---|
 | Web inmediata, deep links, uso móvil | ADR-001, ADR-002A, ADR-003 |
@@ -8,6 +10,7 @@
 | Aislamiento entre equipos | ADR-005, ADR-015, ADR-022 |
 | Disponibilidad, consultas e histórico relacionales | ADR-004, ADR-005, ADR-006 |
 | Deadlines y lifecycle temporal | ADR-005, ADR-016 |
+| Expiración y limpieza de equipos rápidos | ADR-016 |
 | Emails de verificación/recovery | ADR-016, ADR-017, ADR-018 |
 | Respuestas idempotentes / resolución concurrente | ADR-005, ADR-014, ADR-015 |
 | Observabilidad sin filtrar tokens/PII | ADR-013, ADR-015 |

@@ -2,7 +2,7 @@
 
 **Versión:** 0.1  
 **Fecha:** 2026-09-23  
-**Estado:** diseño funcional consolidado; arquitectura reconciliada; quedan decisiones abiertas explícitas.
+**Estado:** diseño funcional consolidado; arquitectura reconciliada; decisiones abiertas iniciales cerradas para continuar diseño UI/técnico.
 
 Synqo es una aplicación web para facilitar la **coordinación y la toma de decisiones colectivas dentro de equipos**, centralizando disponibilidad por días y ofreciendo mecanismos para acordar fechas o elegir entre alternativas.
 
@@ -15,6 +15,11 @@ El producto está diseñado para funcionar tanto con **equipos rápidos**, tempo
 - `architecture/`: arquitectura reconciliada y ADR actualizados.
 - `traceability/`: relación entre producto y decisiones arquitectónicas.
 - `sources-and-notes.md`: procedencia documental y criterios de consolidación.
+- [`WORKPLAN.md`](WORKPLAN.md): historial del plan de análisis y diseño ya completado.
+- [`IMPLEMENTATION-GUIDE.md`](IMPLEMENTATION-GUIDE.md): punto de entrada operativo para implementación.
+- [`project/design-baseline.md`](project/design-baseline.md): baseline documental que gobierna la implementación.
+- [`specs/spec-register.md`](specs/spec-register.md): unidades iniciales de Spec-First.
+- [`tfm/README.md`](tfm/README.md): evidencia estructurada para la futura memoria.
 
 ## Recorridos que definen el MVP
 
@@ -31,8 +36,8 @@ Los recuentos, coincidencias, rankings y reglas de dominio son deterministas. La
 
 ## Decisiones abiertas
 
-Las decisiones todavía no cerradas están recogidas en `product/19-open-questions.md`. No invalidan el diseño actual y se han mantenido explícitas para evitar inventar requisitos.
+El registro `product/19-open-questions.md` conserva el historial de `OPEN-01`…`OPEN-09`, cerradas en `planning/01-open-decisions/open-decisions-resolution.md`. Las cuestiones restantes son riesgos o detalles de diseño posterior, no bloqueos para continuar con el siguiente prompt.
 
-## Workspace de continuación
+## Workspace de implementación
 
-Esta versión incluye además la estructura de documentación pendiente para completar UX/UI y diseño técnico antes de implementar. Empieza por [`WORKPLAN.md`](WORKPLAN.md) y sigue los prompts numerados. [`AGENTS.md`](AGENTS.md) contiene las reglas comunes para trabajar con Codex desde terminal.
+El análisis y diseño están completados. La implementación futura debe comenzar por [`IMPLEMENTATION-GUIDE.md`](IMPLEMENTATION-GUIDE.md), consultar la baseline y preparar `SPEC-001` mediante la skill local `$synqo-spec-authoring`. [`AGENTS.md`](AGENTS.md) contiene las reglas específicas de edición documental.

@@ -2,7 +2,7 @@
 
 **Versión:** 0.1  
 **Estado:** consolidado para diseño e implementación  
-**Fuente de detalle:** documentos bajo `product/`
+**Fuente de detalle:** documentos bajo `product/`; priorización MoSCoW en `product/09b-requirements-prioritization.md`
 
 ## 1. Visión
 
@@ -36,14 +36,18 @@ Los miembros de un equipo suelen coordinarse mediante conversaciones dispersas, 
 - Temporal por diseño.
 - Sin administración formal.
 - `Disponible`, `Quizá` y `No disponible` siempre habilitados.
+- Todos los participantes activos pueden crear solicitudes, propuestas y encuestas.
 - Todos los participantes pueden resolver consultas.
 - Vincularlo a una cuenta no evita su expiración.
+- Permanece activo 30 días desde la última actividad relevante; después entra 14 días en estado recuperable y finalmente expira de forma definitiva.
 
 ### Equipo administrable
 
 - Persistente.
 - Puede crearse sin cuenta mediante un email administrativo verificado.
 - Permite configurar estados de disponibilidad y políticas de creación/resolución.
+- En el MVP tiene una única identidad administrativa primaria.
+- Por defecto permite crear solicitudes, propuestas y encuestas a todos los participantes activos, reserva la resolución a la administración y mantiene habilitados `Disponible`, `Quizá` y `No disponible`.
 - Puede vincularse posteriormente a cuentas sin cambiar su identidad.
 
 ## 5. Identidad
@@ -75,7 +79,7 @@ Una solicitud pide a todos los participantes activos que indiquen o actualicen s
 
 ## 8. Coincidencias
 
-Las coincidencias se calculan de forma determinista. Para cada fecha se mantienen separadas las cantidades de `Disponible`, `Quizá`, `No disponible` y `Sin respuesta`. Synqo puede destacar candidatos, pero no convertirlos automáticamente en una decisión.
+Las coincidencias se calculan de forma determinista. Para cada fecha se mantienen separadas las cantidades de `Disponible`, `Quizá`, `No disponible` y `Sin respuesta`. Synqo puede destacar candidatos, pero no convertirlos automáticamente en una decisión. La ordenación por defecto prioriza menor `No disponible`, mayor `Disponible`, mayor `Quizá`, menor `Sin respuesta` y fecha más próxima; `Quizá` cuenta como señal positiva débil, no como disponibilidad plena.
 
 ## 9. Consulta, propuesta y encuesta
 
@@ -116,7 +120,7 @@ En equipos administrables se configuran al menos:
 - quién puede crear propuestas y encuestas: administradores / todos;
 - quién puede resolver consultas: administradores / todos.
 
-En equipos rápidos todos pueden resolver; la política de creación de actividad se mantiene como decisión abierta.
+En equipos rápidos todos los participantes activos pueden crear solicitudes, propuestas y encuestas, y todos pueden resolver. En equipos administrables los valores por defecto son creación por todos los participantes activos y resolución por administración, con configuración posterior.
 
 ## 13. Participantes nuevos
 
@@ -124,7 +128,7 @@ Las actividades del MVP se dirigen a todos los participantes activos. Un partici
 
 ## 14. Histórico y pendientes
 
-Las consultas resueltas o canceladas y sus respuestas se conservan mientras lo haga el equipo. La desactivación de un participante no recalcula decisiones pasadas. Una cuenta agrega los pendientes de sus participaciones vinculadas.
+Las consultas resueltas o canceladas y sus respuestas se conservan mientras lo haga el equipo. La desactivación de un participante no recalcula decisiones pasadas. Una cuenta agrega los pendientes de sus participaciones vinculadas. Tras la expiración definitiva de un equipo rápido, los datos de dominio y credenciales de acceso se eliminan o anonimizan de forma irreversible, conservando como máximo métricas agregadas y trazas operativas mínimas sin tokens ni PII innecesaria.
 
 ## 15. Arquitectura de información
 
@@ -146,17 +150,29 @@ Dentro de equipo:
 
 ## 16. MVP y fuera de alcance
 
+El alcance incluido representa el **Target MVP**. La priorización MoSCoW diferencia qué parte de ese alcance es imprescindible para una validación mínima y qué parte puede diferirse si aparece presión de tiempo. La justificación completa está en `product/09b-requirements-prioritization.md`.
+
+### Minimum Viable Validation
+
+El mínimo defendible para validar Synqo conserva: equipo rápido, participación sin cuenta, disponibilidad diaria con estados básicos, coincidencias deterministas, propuesta temporal, respuestas, resultado, resolución explícita, encuesta `SINGLE`, voto, resultado/resolución de encuesta, deep links acotados y garantías básicas de seguridad, privacidad, accesibilidad e integridad.
+
+Este mínimo permite probar las dos preguntas centrales —`¿Cuándo podemos?` y `¿Qué decidimos?`— aunque omita capacidades valiosas del Target MVP.
+
 ### Incluido
 
 Equipos rápidos y administrables; participación sin cuenta; participantes locales; disponibilidad por días; `Disponible/Quizá/No disponible`; vistas calendario/lista; solicitudes; coincidencias; propuestas; encuestas single/multiple; resultado/resolución; deadlines; histórico; pendientes; deep links; visibilidad nominal/agregada de encuesta; permisos básicos.
 
 ### Fuera de alcance
 
-Recurrencia automática, franjas horarias de disponibilidad general, gestión integral de eventos, reservas, chat, tareas, sincronización automática con calendarios, anonimato fuerte, voto ponderado/ranking, destinatarios parciales arbitrarios y sistema genérico de roles.
+Recurrencia automática, franjas horarias de disponibilidad general, gestión integral de eventos, reservas, chat, tareas, sincronización automática con calendarios, anonimato fuerte, voto ponderado/ranking, destinatarios parciales arbitrarios, sistema genérico de roles y notificaciones externas automáticas de actividad de producto.
 
 ## 17. IA del TFM
 
 El core no necesita IA. Como funcionalidad opcional, Synqo incorporará un **Asistente de coordinación en lenguaje natural** que transforma una petición en restricciones estructuradas. El LLM no consulta directamente la base de datos, no calcula coincidencias y no publica ni resuelve consultas. El output se valida y el motor determinista calcula las fechas candidatas. El usuario revisa antes de crear la propuesta.
+
+Cada equipo tiene una zona horaria IANA canónica. La disponibilidad por día, las opciones temporales y las expresiones relativas interpretadas por IA se resuelven en esa zona; la interpretación concreta se muestra antes de aplicarla.
+
+La prioridad de producto de la IA no convierte el asistente en requisito `Must` del producto básico: el flujo manual debe seguir disponible. Para la entrega del TFM, en cambio, la ruta IA y su evaluación son necesarias como demostración académica.
 
 ## 18. Métricas iniciales
 

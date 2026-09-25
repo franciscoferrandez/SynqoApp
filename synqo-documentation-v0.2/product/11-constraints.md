@@ -13,6 +13,8 @@
 - `RES-11`: equipo rápido siempre expira según política.
 - `RES-12`: vincular equipo rápido a cuenta no elimina temporalidad.
 - `RES-13`: solicitudes y consultas se dirigen a todos los participantes activos; no subconjuntos arbitrarios.
+- `RES-14`: en el MVP no hay notificaciones externas automáticas de actividad de producto.
+- `RES-15`: en el MVP un equipo administrable tiene una única identidad administrativa primaria.
 - `RES-AI-01`: LLM no calcula disponibilidad.
 - `RES-AI-02`: LLM no cuenta votos.
 - `RES-AI-03`: LLM no resuelve consultas.

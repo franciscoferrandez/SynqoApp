@@ -5,13 +5,15 @@
 ```mermaid
 stateDiagram-v2
     [*] --> Active
-    Active --> Recoverable: periodo de inactividad
+    Active --> Recoverable: 30 días sin actividad relevante
     Recoverable --> Active: actividad humana válida / reactivación
-    Recoverable --> Expired: segundo periodo sin actividad
-    Expired --> [*]: tratamiento definitivo según política de datos
+    Recoverable --> Expired: 14 días sin reactivación válida
+    Expired --> [*]: eliminación o anonimización irreversible
 ```
 
-Los plazos concretos y la definición exacta de actividad válida están abiertos (`OPEN-01`, `OPEN-02`). Vincular el equipo a una cuenta no altera este ciclo.
+Vincular el equipo rápido a una cuenta no altera este ciclo. La actividad relevante debe ser una interacción humana intencional: crear o identificar participante, actualizar disponibilidad, responder, votar, crear solicitud o consulta, resolver, cancelar, vincular a cuenta o confirmar reactivación. Visitas pasivas, previews de enlaces, bots, jobs y automatismos no renuevan actividad.
+
+Durante `Recoverable`, el equipo conserva su información para permitir reactivación. Al entrar en `Expired`, deja de ser recuperable y sus datos de dominio y credenciales de acceso se eliminan o anonimizan de forma irreversible, conservando como máximo métricas agregadas y trazas operativas mínimas sin tokens ni PII innecesaria.
 
 ## Equipo administrable
 

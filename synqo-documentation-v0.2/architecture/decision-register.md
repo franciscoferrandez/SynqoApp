@@ -28,11 +28,12 @@
 
 ## Decisiones todavía diferidas
 
-- agregados y límites transaccionales definitivos;
 - esquema físico de datos;
 - estrategia final de identificadores públicos/internos;
 - proveedor/modelo LLM concreto;
-- lifecycle temporal con plazos exactos;
-- política definitiva de borrado/anonimización;
 - calendario externo y push;
 - staging permanente / IaC avanzada.
+
+## Decisiones técnicas ya detalladas fuera de ADR
+
+- agregados pragmáticos y límites transaccionales iniciales: `technical-design/13-domain/domain-design.md`, `technical-design/13-domain/domain-invariants.md`.

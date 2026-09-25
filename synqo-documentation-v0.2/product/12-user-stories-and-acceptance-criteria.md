@@ -83,6 +83,13 @@ Scenario: Reactivar recuperable
   And conserva su información
 ```
 
+```gherkin
+Scenario: Visita pasiva no reactiva
+  Given un equipo rápido en estado recuperable
+  When se abre un enlace sin interacción humana intencional
+  Then el equipo sigue en estado recuperable
+```
+
 ## HU-EQA-01 — Configurar disponibilidad
 
 ```gherkin
@@ -95,6 +102,14 @@ Scenario: Configuración inválida
 ## HU-EQA-02 — Configurar creación
 
 > Como administrador, quiero elegir si solicitudes y consultas las crean todos o solo administradores.
+
+```gherkin
+Scenario: Defaults colaborativos
+  Given que creo un equipo administrable
+  When verifico la identidad administrativa
+  Then solicitudes, propuestas y encuestas pueden crearlas todos los participantes activos por defecto
+  And la resolución queda reservada a la administración por defecto
+```
 
 ## HU-EQA-03 — Configurar resolución
 
@@ -139,6 +154,13 @@ Scenario: No alterar propuesta
 
 > Como participante con permiso, quiero solicitar disponibilidad entre dos fechas con deadline opcional.
 
+```gherkin
+Scenario: Crear en equipo rápido
+  Given que soy participante activo de un equipo rápido
+  When creo una solicitud de disponibilidad
+  Then Synqo me lo permite sin exigir administración formal
+```
+
 ## HU-SD-02 — Responder solicitud
 
 ```gherkin
@@ -167,6 +189,13 @@ Scenario: Desde coincidencias
   When creo una propuesta
   Then las fechas aparecen ya como opciones
   And puedo añadir una hora opcional a cada una
+```
+
+```gherkin
+Scenario: Crear en equipo rápido
+  Given que soy participante activo de un equipo rápido
+  When creo una propuesta
+  Then Synqo me lo permite sin exigir administración formal
 ```
 
 ## HU-PRO-02 — Responder propuesta
@@ -199,6 +228,13 @@ Scenario: Cambiar selección
   Given una encuesta SINGLE abierta
   When selecciono una segunda opción
   Then sustituye a la anterior
+```
+
+```gherkin
+Scenario: Crear encuesta en equipo rápido
+  Given que soy participante activo de un equipo rápido
+  When creo una encuesta
+  Then Synqo me lo permite sin exigir administración formal
 ```
 
 ## HU-ENC-02 — Encuesta multiple
