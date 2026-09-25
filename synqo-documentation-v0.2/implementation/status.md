@@ -16,7 +16,7 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 
 ## Next specs
 
-- `SPEC-002` — Crear equipo rápido y acceso de participante (`Planned`; depende de `SPEC-001`).
+- `SPEC-002` — Crear equipo rápido y acceso de participante (`Ready`; depende de `SPEC-001`; pendiente de autorización para implementación).
 
 ## Known blockers
 
