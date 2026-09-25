@@ -1,0 +1,49 @@
+{
+  "name": "@synqo/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "nest start --watch",
+    "lint": "eslint src test --max-warnings=0",
+    "migration:up": "pnpm build && mikro-orm migration:up --config dist/mikro-orm.config.js",
+    "start": "node dist/main.js",
+    "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mikro-orm/cli": "^7.2.1",
+    "@mikro-orm/core": "^7.2.1",
+    "@mikro-orm/migrations": "^7.2.1",
+    "@mikro-orm/postgresql": "^7.2.1",
+    "@nestjs/common": "^12.1.0",
+    "@nestjs/core": "^12.1.0",
+    "@nestjs/platform-express": "^12.1.0",
+    "@nestjs/terminus": "^12.1.0",
+    "@nestjs/throttler": "^6.7.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
+    "helmet": "^8.3.0",
+    "nestjs-pino": "^5.2.1",
+    "pg": "^8.23.0",
+    "pino": "^10.3.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@nestjs/cli": "^12.0.7",
+    "@nestjs/testing": "^12.1.0",
+    "@testcontainers/postgresql": "^12.1.0",
+    "@types/node": "^26.6.2",
+    "@types/pg": "^8.23.1",
+    "@typescript-eslint/eslint-plugin": "^8.70.1",
+    "@typescript-eslint/parser": "^8.70.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2"
+  }
+}

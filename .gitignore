@@ -26,6 +26,8 @@ dist/
 build/
 out/
 coverage/
+playwright-report/
+test-results/
 
 # Logs
 *.log

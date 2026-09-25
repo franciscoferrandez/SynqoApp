@@ -4,7 +4,8 @@ Lugar para métricas que tengan una pregunta clara, una fuente objetiva y un uso
 
 | ID | Métrica | Categoría | Fuente | Valor | Fecha | Observaciones |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | — | No metrics recorded yet. |
+| MET-001 | Pruebas automatizadas de Slice 0 | Calidad | `pnpm run ci` y `pnpm test:e2e` | 6 pruebas correctas: 3 unitarias, 2 de integración y 1 E2E | 2026-09-25 | No representa cobertura de producto; solo el bootstrap. |
+| MET-002 | Validación del contrato OpenAPI | Calidad | `pnpm openapi:check` dentro de `pnpm run ci` | 0 errores; 47 advertencias preexistentes | 2026-09-25 | No se modificó el contrato por estar fuera del alcance de Slice 0. |
 
 ## Métricas candidatas
 

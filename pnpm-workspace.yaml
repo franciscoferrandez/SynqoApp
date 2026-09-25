@@ -1,0 +1,12 @@
+packages:
+  - apps/*
+
+# La Slice 0 fija las versiones actuales en el lockfile; pnpm no debe bloquear
+# esas dependencias por una ventana de publicación adicional.
+allowBuilds:
+  cpu-features: true
+  esbuild: true
+  protobufjs: true
+  ssh2: true
+
+minimumReleaseAge: 0
