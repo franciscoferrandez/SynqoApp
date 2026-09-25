@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `Ready`
+- Status: `Verified`
 - MoSCoW: `Must` (enablement)
 - Owner: pendiente de asignación humana
 - Created: 2026-09-25
@@ -254,15 +254,15 @@ La lista de `RNF release blockers` aplicable al producto completo se mantiene en
 - Change Request: N/A
 - ADR: ADR-001, ADR-002A, ADR-004, ADR-005, ADR-006, ADR-007, ADR-009, ADR-010, ADR-012, ADR-013, ADR-014, ADR-015.
 - Roadmap: [`../delivery/28-implementation-roadmap/implementation-roadmap.md`](../delivery/28-implementation-roadmap/implementation-roadmap.md), [`../delivery/28-implementation-roadmap/vertical-slices.md`](../delivery/28-implementation-roadmap/vertical-slices.md) — Slice 0.
-- Implementation commit: pending
-- Verification evidence: pending; ejecutar `$synqo-verification` tras la implementación.
+- Implementation commit: consultar el historial Git de `feat/SPEC-001-bootstrap`; este documento no duplica la historia Git.
+- Verification evidence: [`../tfm/evidence-register.md`](../tfm/evidence-register.md) — E-005.
 
 ## Implementation outcome
 
-- Implemented as specified: `pending`
-- Deviations: `pending`
-- Verification: `pending`
-- Notes for TFM: La SPEC formaliza la primera unidad de implementación y conserva la separación `SPEC -> CODE`; no registra código ni resultados de tests todavía.
+- Implemented as specified: `Yes`
+- Deviations: `DEV-001`: TypeScript `5.9.3`, última versión compatible con el ecosistema de lint seleccionado; TypeScript `7` no es todavía compatible. No afecta a producto, contrato ni baseline.
+- Verification: `Passed el 2026-09-25` — `pnpm run ci`, `pnpm test:e2e`, `pnpm db:migrate`, revisión de alcance/diff y smoke manual de API/web realizado por el propietario.
+- Notes for TFM: La Slice 0 crea el monorepo, los checks reproducibles, el app shell, el healthcheck técnico y la infraestructura de pruebas sin introducir dominio de producto.
 
 ## Definition of Done
 

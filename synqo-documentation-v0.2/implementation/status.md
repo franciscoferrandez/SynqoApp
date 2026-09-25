@@ -4,20 +4,19 @@ Memoria viva de la implementación. Git sigue siendo la fuente de verdad de los 
 
 ## Current phase
 
-Implementation preparation. La Design Baseline v1.0 está preparada; todavía no se ha iniciado la implementación de aplicación.
+Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verificada.
 
 ## Active work
 
-- Active SPEC: `SPEC-001` — Bootstrap del repositorio y toolchain (`Ready`; implementation not started)
-- No application code in scope.
+- No hay una SPEC activa.
 
 ## Completed specs
 
-- None.
+- `SPEC-001` — Bootstrap del repositorio y toolchain (`Verified`; validación técnica y revisión manual completadas el 2026-09-25).
 
 ## Next specs
 
-- `SPEC-001` — Bootstrap del repositorio y toolchain (`Ready`; pending implementation authorization/branch).
+- `SPEC-002` — Crear equipo rápido y acceso de participante (`Planned`; depende de `SPEC-001`).
 
 ## Known blockers
 
@@ -30,11 +29,10 @@ Implementation preparation. La Design Baseline v1.0 está preparada; todavía no
 
 ## Last validation
 
-- Documentation preparation reviewed on 2026-09-24.
-- No implementation test suite exists yet; no test result is claimed.
+- `SPEC-001`: `pnpm run ci`, `pnpm test:e2e` y `pnpm db:migrate` completados correctamente el 2026-09-25; smoke manual de API/web confirmado por el propietario. La validación OpenAPI no tuvo errores y conserva 47 advertencias preexistentes del contrato documental.
 
 ## Environment status
 
 - Repository contains the design/documentation baseline.
-- Application workspace and implementation toolchain are not created yet.
+- Application workspace and implementation toolchain are created by `SPEC-001`; no product functionality has been implemented.
 - Branch state and uncommitted changes are reported by Git; this document does not duplicate that history.
