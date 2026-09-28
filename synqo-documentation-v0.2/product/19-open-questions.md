@@ -1,6 +1,28 @@
 # 19 — Decisiones abiertas
 
-No quedan decisiones `OPEN-*` bloqueantes para continuar con el diseño UI/técnico inicial. Las decisiones `OPEN-01`…`OPEN-09` se cerraron en `planning/01-open-decisions/open-decisions-resolution.md` y se propagaron a los documentos funcionales afectados.
+No quedan decisiones `OPEN-*` bloqueantes para continuar con el diseño UI/técnico inicial. Las decisiones `OPEN-01`…`OPEN-09` se cerraron en `planning/01-open-decisions/open-decisions-resolution.md` y se propagaron a los documentos funcionales afectados. `OPEN-10` queda registrada para una evolución posterior y no altera el modelo actual de participación contextual propia.
+
+## Decisiones abiertas
+
+### `OPEN-10` — Identidad contextual, recuperación y delegación de participantes
+
+**Pregunta.** Cuando una persona abre un equipo sin una `ParticipantSession` válida, ¿cómo declara o recupera de forma segura quién es dentro del equipo? ¿Qué participantes puede actualizar una persona y bajo qué delegación explícita?
+
+**Contexto actual.** Un enlace público permite crear una identidad local nueva, pero no elegir ni reclamar una participación existente por nombre. Una sesión contextual solo permite operar sobre su propio participante; esta regla evita suplantación.
+
+**Dirección de producto a evaluar.** Mostrar al entrar un selector de identidad del equipo; permitir crear una participación si la política del equipo lo autoriza —en rápido, previsiblemente por defecto— y ofrecer un selector persistente de participante o participantes sobre los que se está actuando.
+
+**Decisiones que deben cerrarse.**
+
+- Prueba necesaria para recuperar una participación existente sin cuenta: sesión previa, enlace identificado, cuenta vinculada u otro mecanismo.
+- Visibilidad del selector: no debe permitir enumerar ni reclamar identidades de terceros.
+- Modelo de delegación: quién concede permiso, alcance por participante/acción/fecha, revocación y expiración.
+- Diferencia visible y auditable entre actor real y participante cuyos datos se modifican.
+- Defaults y límites entre equipos rápidos y administrables.
+
+**Impacto potencial.** Requisitos de identidad/acceso y participantes, pantallas de acceso y navegación de equipo, reglas de autorización, modelo de sesiones/enlaces, auditoría, privacidad, API, datos y pruebas de IDOR/delegación.
+
+**Estado.** No bloquea SPEC-003 ni las SPECs ya verificadas. Debe prepararse una SPEC de identidad contextual y delegación antes de implementarse; cualquier decisión que cambie autorización, datos o contrato requerirá Change Control.
 
 ## Decisiones cerradas desde este registro
 

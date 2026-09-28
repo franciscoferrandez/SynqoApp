@@ -9,6 +9,7 @@ import { EntityManager } from '@mikro-orm/postgresql';
 
 import {
   AccessCredentialEntity,
+  AvailabilityEntryEntity,
   ParticipantEntity,
   ParticipantSessionEntity,
   QuickTeamEntity,
@@ -38,6 +39,13 @@ export type Participant = {
   displayName: string;
   isActive: boolean;
   linkedAccount: false;
+};
+type AvailabilityStatus = 'AVAILABLE' | 'MAYBE' | 'UNAVAILABLE';
+const availabilityStatuses: AvailabilityStatus[] = ['AVAILABLE', 'MAYBE', 'UNAVAILABLE'];
+const isLocalDate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 };
 
 @Injectable()
@@ -178,6 +186,7 @@ export class TeamsService {
       {
         tokenHash: hash(token),
         team: { publicRef: teamRef },
+        participant: { isActive: true },
         revokedAt: null,
         expiresAt: { $gt: new Date() },
       },
@@ -199,5 +208,105 @@ export class TeamsService {
         linkedAccount: false as const,
       },
     };
+  }
+
+  private async availabilityContext(teamRef: string, token?: string) {
+    if (!token) throw new ForbiddenException({ code: 'CONTEXT_REQUIRED' });
+    const session = await this.em.findOne(
+      ParticipantSessionEntity,
+      {
+        tokenHash: hash(token),
+        team: { publicRef: teamRef },
+        participant: { isActive: true },
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+      },
+      { populate: ['participant', 'team'] },
+    );
+    if (!session) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
+    return { team: session.team, participant: session.participant };
+  }
+
+  async getMyAvailability(teamRef: string, token: string | undefined, from: string, to: string) {
+    if (!isLocalDate(from) || !isLocalDate(to) || from > to)
+      throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const context = await this.availabilityContext(teamRef, token);
+    const entries = await this.em.find(
+      AvailabilityEntryEntity,
+      {
+        team: context.team,
+        participant: context.participant,
+        localDate: { $gte: from, $lte: to },
+      },
+      { orderBy: { localDate: 'asc' } },
+    );
+    return { entries: entries.map((entry) => ({ date: entry.localDate, status: entry.status })) };
+  }
+
+  async putMyAvailability(
+    teamRef: string,
+    token: string | undefined,
+    entries: Array<{ date: string; status: string }>,
+  ) {
+    if (!Array.isArray(entries) || !entries.length)
+      throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const dates = new Set<string>();
+    for (const entry of entries) {
+      if (
+        !isLocalDate(entry.date) ||
+        !availabilityStatuses.includes(entry.status as AvailabilityStatus) ||
+        dates.has(entry.date)
+      )
+        throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+      dates.add(entry.date);
+    }
+    const context = await this.availabilityContext(teamRef, token);
+    return this.em.transactional(async (em) => {
+      for (const entry of entries) {
+        const existing = await em.findOne(AvailabilityEntryEntity, {
+          team: context.team,
+          participant: context.participant,
+          localDate: entry.date,
+        });
+        if (existing) {
+          existing.status = entry.status as AvailabilityStatus;
+          existing.updatedAt = new Date();
+        } else {
+          const now = new Date();
+          em.persist(
+            em.create(AvailabilityEntryEntity, {
+              id: randomUUID(),
+              team: context.team,
+              participant: context.participant,
+              localDate: entry.date,
+              status: entry.status as AvailabilityStatus,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          );
+        }
+      }
+      if (context.team.mode === 'QUICK' && context.team.quickState === 'ACTIVE') {
+        context.team.lastRelevantActivityAt = new Date();
+      }
+      return { entries: entries.map(({ date, status }) => ({ date, status })) };
+    });
+  }
+
+  async clearMyAvailability(teamRef: string, token: string | undefined, date: string) {
+    if (!isLocalDate(date)) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const context = await this.availabilityContext(teamRef, token);
+    return this.em.transactional(async (em) => {
+      const entry = await em.findOne(AvailabilityEntryEntity, {
+        team: context.team,
+        participant: context.participant,
+        localDate: date,
+      });
+      if (entry) em.remove(entry);
+      if (context.team.mode === 'QUICK' && context.team.quickState === 'ACTIVE') {
+        context.team.lastRelevantActivityAt = new Date();
+      }
+      return { entries: [] };
+    });
   }
 }

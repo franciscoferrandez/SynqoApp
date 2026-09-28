@@ -95,3 +95,30 @@ export class ParticipantSessionEntity {
   @Property({ type: 'Date', fieldName: 'created_at' })
   createdAt!: Date;
 }
+
+@Entity({ tableName: 'availability_entries' })
+export class AvailabilityEntryEntity {
+  @PrimaryKey({ type: 'uuid', fieldName: 'id' })
+  id!: string;
+
+  @ManyToOne(() => QuickTeamEntity, { fieldName: 'team_id', deleteRule: 'cascade' })
+  team!: QuickTeamEntity;
+
+  @ManyToOne(() => ParticipantEntity, { fieldName: 'participant_id', deleteRule: 'cascade' })
+  participant!: ParticipantEntity;
+
+  @Property({ type: 'date', fieldName: 'local_date' })
+  localDate!: string;
+
+  @Property({ type: 'string' })
+  status!: 'AVAILABLE' | 'MAYBE' | 'UNAVAILABLE';
+
+  @Property({ type: 'uuid', fieldName: 'source_request_id', nullable: true })
+  sourceRequestId?: string;
+
+  @Property({ type: 'Date', fieldName: 'created_at' })
+  createdAt!: Date;
+
+  @Property({ type: 'Date', fieldName: 'updated_at' })
+  updatedAt!: Date;
+}

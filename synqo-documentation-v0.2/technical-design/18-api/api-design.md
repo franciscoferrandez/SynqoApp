@@ -74,6 +74,7 @@ Referencias principales: ADR-006, diseño de dominio, matriz de autorización, d
 |---|---|---|---|---|
 | `GET` | `/teams/{teamRef}/availability/me` | Participant | No | Disponibilidad propia por rango. |
 | `PUT` | `/teams/{teamRef}/availability/me` | Participant | Sí | Upsert de días; no toca propuestas. |
+| `DELETE` | `/teams/{teamRef}/availability/me/{date}` | Participant | Sí | Elimina la entrada propia y vuelve a `UNANSWERED`. |
 | `GET` | `/teams/{teamRef}/availability/collective` | Participant/Admin | No | Recuentos por estado y detalle nominal si procede. |
 | `GET` | `/teams/{teamRef}/availability/matches` | Participant/Admin | No | Candidatos ordenados determinísticamente. |
 

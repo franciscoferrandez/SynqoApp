@@ -31,6 +31,12 @@ flowchart LR
 
 Una SPEC no pasa a `Ready` si obliga a inventar una decisión. Tampoco se marca `Verified` solo porque compile: necesita comprobaciones automatizadas proporcionales, revisión humana y documentación sincronizada.
 
+## Baseline Conformance Preflight
+
+Antes de pasar una SPEC `Ready` a `In Progress`, se comprueba que sus cimientos existen de verdad en el workspace: decisiones arquitectónicas, SPECs de las que depende, datos y contratos, controles server-side y toolchain. Un estado documental `Verified` no sustituye esa comprobación.
+
+El resultado es explícitamente `Pass` o `Fail` y queda enlazado en la SPEC o en el estado de implementación. Un `Fail` bloquea la nueva slice: se corrige primero el cimiento; no se convierte en deuda para una SPEC posterior. La Verification final repite la comprobación para impedir un cierre basado en evidencia solo documental.
+
 ## Elegir el flujo adecuado
 
 ```mermaid
@@ -57,10 +63,11 @@ En Synqo, `OPEN-01` a `OPEN-09` son ejemplos históricos ya cerrados: su resoluc
 ## Trabajo diario y Git
 
 1. Comprobar rama y estado del workspace antes de editar.
-2. Trabajar en una rama corta derivada de `main`; el propietario autoriza crear o cambiar de rama.
-3. Mantener commits coherentes y en español con Conventional Commits.
-4. Abrir un PR contra `main`, revisar diff y esperar CI verde.
-5. Preferir squash merge y conservar en documentación solo la evidencia útil, no logs completos.
+2. Completar el Baseline Conformance Preflight antes de iniciar una SPEC.
+3. Trabajar en una rama corta derivada de `main`; el propietario autoriza crear o cambiar de rama.
+4. Mantener commits coherentes y en español con Conventional Commits.
+5. Abrir un PR contra `main`, revisar diff y esperar CI verde.
+6. Preferir squash merge y conservar en documentación solo la evidencia útil, no logs completos.
 
 ## Preguntas de clase
 

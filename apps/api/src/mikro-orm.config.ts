@@ -3,6 +3,7 @@ import { defineConfig } from '@mikro-orm/postgresql';
 import { getEnvironment } from './config.js';
 import {
   AccessCredentialEntity,
+  AvailabilityEntryEntity,
   ParticipantEntity,
   ParticipantSessionEntity,
   QuickTeamEntity,
@@ -16,6 +17,7 @@ export const createMikroOrmConfig = () =>
       ParticipantEntity,
       AccessCredentialEntity,
       ParticipantSessionEntity,
+      AvailabilityEntryEntity,
     ],
     migrations: {
       path: 'dist/migrations',

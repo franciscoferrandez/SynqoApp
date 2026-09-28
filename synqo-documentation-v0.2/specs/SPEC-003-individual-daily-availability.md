@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `Ready`
+- Status: `Verified`
 - MoSCoW: `Must` (con el límite `Should` de configuración administrable fuera de esta slice)
 - Owner: Product owner
 - Created: 2026-09-28
@@ -90,7 +90,7 @@ Permitir que un participante activo de un equipo rápido registre, consulte y mo
 ## Preconditions
 
 - `SPEC-002` está `Verified`; existe una sesión de participante activa y contextual de un equipo rápido.
-- La Design Baseline v1.0 sigue activa y no presenta un blocker para Slice 2.
+- La Design Baseline v1.2 (incluidos CR-001 y CR-002 aceptados) sigue activa. El Baseline Conformance Preflight debe pasar antes de marcar esta SPEC como `Verified`.
 - La implementación posterior se autorizará en una rama `feat/SPEC-003-individual-availability` y seguirá `$synqo-sdd-implementation`.
 
 ## Functional behaviour
@@ -99,7 +99,8 @@ Permitir que un participante activo de un equipo rápido registre, consulte y mo
 - El participante puede seleccionar varios días y asignar o reemplazar su estado por `AVAILABLE`, `MAYBE` o `UNAVAILABLE`. El servidor aplica un upsert por `(teamId, participantId, localDate)` y devuelve el rango actualizado conforme al contrato.
 - La misma `Idempotency-Key` para la misma operación y payload no duplica entradas ni efectos de actividad; un payload divergente con la misma clave se rechaza de forma segura.
 - Una actualización válida renueva `lastRelevantActivityAt` de un equipo rápido como interacción humana intencional. Un `GET` de disponibilidad nunca la renueva.
-- La lista semanal es la interacción primaria. El calendario mínimo muestra y edita los mismos estados, conserva el intervalo cuando se cambia de vista y no incorpora agregados, candidatos ni detalle de otros participantes.
+- La lista semanal es la interacción primaria: cada fila ofrece Disponible, Quizá y No disponible mediante iconos `✓`, `?` y `×`, con verde, amarillo/anaranjado y rojo; la selección se enmarca en azul. Incluye navegación semanal anterior/siguiente, vuelta a hoy y resaltado perceptible del día actual.
+- El calendario muestra un mes natural completo de lunes a domingo, completando la rejilla con días funcionales del mes anterior y siguiente en tono secundario. Cada día presenta únicamente el número y un recuadro de estado; al activarlo abre un diálogo para elegir los mismos tres estados. Volver a activar el estado seleccionado elimina su entrada y deriva `UNANSWERED`. La cabecera admite abreviaturas cortas o largas configurables en código. No incorpora agregados, candidatos ni detalle de otros participantes.
 
 ## Authorization
 
@@ -114,6 +115,7 @@ La fuente normativa es [`../technical-design/18-api/openapi.yaml`](../technical-
 
 - `GET /teams/{teamRef}/availability/me` (`getMyAvailability`): requiere participante contextual y parámetros `from` y `to`; responde `AvailabilityRange` con entradas declaradas del rango.
 - `PUT /teams/{teamRef}/availability/me` (`putMyAvailability`): requiere participante contextual e `Idempotency-Key`; recibe `UpdateAvailabilityRequest` con `entries` no vacío de `{ date, status }` y responde `AvailabilityRange`.
+- `DELETE /teams/{teamRef}/availability/me/{date}` (`clearMyAvailability`): requiere participante contextual e `Idempotency-Key`; elimina de forma idempotente la entrada propia de esa fecha y responde un `AvailabilityRange` vacío. La ausencia posterior de fila se deriva como `UNANSWERED`.
 - `AvailabilityStatus` admite exclusivamente `AVAILABLE`, `MAYBE`, `UNAVAILABLE`. Todos los errores usan `application/problem+json` / `ProblemDetails`.
 
 Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilitado, sesión ausente/expirada/revocada o de otro equipo, `teamRef` inexistente, CSRF/origin inválido e idempotencia en conflicto. No se implementan ni alteran los endpoints colectivos de SPEC-004.
@@ -128,8 +130,8 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 ## UI behaviour
 
 - `SCR-12` muestra estado de carga, vacío de entradas como `Sin respuesta`, error recuperable, sesión/permisos inválidos y controles para los tres estados declarables.
-- Cada estado se expresa con texto y/o icono además del color. Los selectores y cambios son semánticos, navegables por teclado y anuncian errores y guardados de manera accesible.
-- En móvil permite seleccionar/modificar varios días desde la lista semanal sin navegar a una pantalla independiente por día. Calendario y Lista comparten el mismo intervalo visible cuando sea posible.
+- Cada estado se expresa con nombre e icono además del color. Los controles y el diálogo son semánticos, navegables por teclado y anuncian errores y guardados de manera accesible.
+- En móvil permite seleccionar/modificar varios días desde la lista semanal sin navegar a una pantalla independiente por día. La Lista navega por semanas y el Calendario por meses. Al cambiar Lista → Calendario muestra el mes actual si la semana contiene hoy; de otro modo, el mes del lunes visible. Al cambiar Calendario → Lista muestra la semana actual si el mes contiene hoy; de otro modo, la primera semana del mes visible.
 - La pantalla aclara que esta es disponibilidad general por día; no representa una respuesta a propuesta ni muestra información colectiva.
 
 ## Errors and edge cases
@@ -156,7 +158,7 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 6. **Given** una sesión contextual del equipo A, **when** intenta leer o actualizar `/teams/{teamRefB}/availability/me`, **then** el servidor la rechaza sin revelar datos de B.
 7. **Given** un reintento del mismo `PUT` con igual `Idempotency-Key` y payload, **when** se procesa de nuevo, **then** no crea duplicados ni un efecto de actividad adicional; con payload distinto devuelve conflicto seguro.
 8. **Given** un `PUT` autorizado y exitoso en un equipo rápido, **when** termina, **then** renueva actividad relevante; un `GET` equivalente no la renueva.
-9. **Given** Lista y Calendario sobre un intervalo, **when** se cambia de vista, **then** mantienen el contexto temporal cuando sea posible y los controles siguen siendo accesibles por teclado y no dependen solo del color.
+9. **Given** una semana en Lista o un mes en Calendario, **when** se cambia de vista, **then** se transforma el contexto temporal según CR-002; la navegación anterior/siguiente y volver a hoy funciona, el día actual queda resaltado y los controles siguen siendo accesibles por teclado y no dependen solo del color.
 10. **Given** una mutación con cookie contextual, **when** falta CSRF válido o el origin no está permitido, **then** se rechaza sin actualizar disponibilidad ni actividad.
 
 ## Required tests
@@ -177,8 +179,8 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 
 ### UI/component
 
-- Selector de estado accesible, `Sin respuesta` inequívoco, edición de varios días, carga/error/sin sesión y persistencia visual tras recarga.
-- Lista y calendario mínimo conservan intervalo; pruebas de teclado, foco perceptible y axe para `SCR-12`.
+- Selector de iconos accesible, `Sin respuesta` inequívoco, edición de varios días, carga/error/sin sesión y persistencia visual tras recarga.
+- Calendario mensual con días adyacentes funcionales, Lista semanal, transiciones de intervalo, navegación, hoy, resaltado de fecha actual, retirada por segunda pulsación, diálogo, teclado, foco perceptible y axe para `SCR-12`.
 
 ### E2E
 
@@ -187,9 +189,9 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 
 ## Documentation impact
 
-- Actualizar este archivo, [`spec-register.md`](spec-register.md), [`../implementation/status.md`](../implementation/status.md) y los registros TFM vinculados a la preparación.
+- Actualizar este archivo, [`spec-register.md`](spec-register.md), [`../implementation/status.md`](../implementation/status.md) y los registros TFM vinculados a la preparación y verificación.
 - Crear la guía inicial de formación [`../training/spec-003-individual-availability/README.md`](../training/spec-003-individual-availability/README.md).
-- No modificar requisitos, roadmap, baseline, ADRs ni OpenAPI: el contrato ya contempla el slice.
+- La retirada de una entrada sigue [`../changes/CR-001-clear-individual-availability.md`](../changes/CR-001-clear-individual-availability.md) y la transición de contexto/la segunda pulsación siguen [`../changes/CR-002-monthly-calendar-and-toggle-clear.md`](../changes/CR-002-monthly-calendar-and-toggle-clear.md), sin introducir un cuarto estado persistido. El calendario mensual y los días adyacentes se implementan conforme a [`../design/04-calendar/calendar-specification.md`](../design/04-calendar/calendar-specification.md).
 
 ## Implementation constraints
 
@@ -208,17 +210,17 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 - Requirements: `RF-DIS-01`..`RF-DIS-09`, `RF-EQR-09` y RNF enumerados arriba.
 - User stories: `HU-DIS-01`, `HU-DIS-02`.
 - Baseline: [`../project/design-baseline.md`](../project/design-baseline.md)
-- Change Request: N/A.
+- Change Requests: [`CR-001`](../changes/CR-001-clear-individual-availability.md) y [`CR-002`](../changes/CR-002-monthly-calendar-and-toggle-clear.md) (Accepted).
 - ADR: ADR-008, ADR-015 y ADR-022 (controles transversales de acceso y seguridad).
 - Roadmap: [`../delivery/28-implementation-roadmap/vertical-slices.md`](../delivery/28-implementation-roadmap/vertical-slices.md) — Slice 2.
-- Implementation commit: pending.
-- Verification evidence: pending.
+- Implementation commit: `37dbe0a` (actualización sobre SPEC-015; disponibilidad persistida mediante MikroORM).
+- Verification evidence: `E-011`, `E-012`, [`CI #36490258386`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36490258386) (quality y browser smoke), [`CodeQL #36490258524`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36490258524); correctos el 2026-09-29.
 
 ## Implementation outcome
 
-- Implemented as specified: pending.
-- Deviations: pending.
-- Verification: pending.
+- Implementado funcionalmente conforme al calendario mensual ya especificado, incluidos días adyacentes funcionales en tono secundario dentro de la cuadrícula mensual.
+- Deviations: `sourceRequestId` se persiste nullable sin FK hasta que SPEC-007 cree su tabla referenciada; no hay comportamiento expuesto ni cambio de contrato.
+- Verification: `pnpm run ci` correcto el 2026-09-29, incluida integración PostgreSQL/Testcontainers; revisión manual del propietario correcta; `browser-smoke` correcto en CI con migración y Playwright. Baseline Conformance Preflight: `Pass`; los casos de uso de disponibilidad usan MikroORM.
 - Notes for TFM: SPEC preparada antes de código; la evidencia de authoring se registra como `E-010`.
 
 ## Definition of Done

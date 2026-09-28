@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Headers, Param, Post, Res, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+  Req,
+} from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { RequestProtectionService } from './request-protection.service.js';
 import { TeamsService } from './teams.service.js';
@@ -83,5 +95,41 @@ export class TeamsController {
       currentActor: { kind: 'PARTICIPANT', participant: r.participant, isAdmin: false },
       pending: [],
     }));
+  }
+  @Get(':teamRef/availability/me') availability(
+    @Param('teamRef') teamRef: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Req() req: ContextRequest,
+  ) {
+    return this.teams.getMyAvailability(teamRef, cookie(req), from, to);
+  }
+  @Put(':teamRef/availability/me') async updateAvailability(
+    @Param('teamRef') teamRef: string,
+    @Body() body: { entries?: Array<{ date: string; status: string }> },
+    @Headers() headers: Record<string, string | string[] | undefined>,
+    @Req() req: ContextRequest,
+  ) {
+    this.protection.assertSafeMutation(headers);
+    return this.protection.replay(
+      `availability:${teamRef}`,
+      headers['idempotency-key'] as string | undefined,
+      body,
+      () => this.teams.putMyAvailability(teamRef, cookie(req), body.entries ?? []),
+    );
+  }
+  @Delete(':teamRef/availability/me/:date') clearAvailability(
+    @Param('teamRef') teamRef: string,
+    @Param('date') date: string,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+    @Req() req: ContextRequest,
+  ) {
+    this.protection.assertSafeMutation(headers);
+    return this.protection.replay(
+      `availability-clear:${teamRef}`,
+      headers['idempotency-key'] as string | undefined,
+      { date },
+      () => this.teams.clearMyAvailability(teamRef, cookie(req), date),
+    );
   }
 }

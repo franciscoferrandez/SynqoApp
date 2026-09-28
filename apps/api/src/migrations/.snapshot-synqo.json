@@ -172,6 +172,218 @@
       "comment": null
     },
     {
+      "name": "availability_entries",
+      "schema": "public",
+      "columns": {
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "local_date": {
+          "name": "local_date",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "source_request_id": {
+          "name": "source_request_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": ["AVAILABLE", "MAYBE", "UNAVAILABLE"],
+          "mappedType": "enum"
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": "now()",
+          "comment": null,
+          "collation": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "indexes": [
+        {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": true,
+          "keyName": "availability_entries_pkey",
+          "primary": true,
+          "unique": true
+        },
+        {
+          "columnNames": ["team_id", "participant_id", "local_date"],
+          "composite": true,
+          "constraint": true,
+          "keyName": "availability_entries_team_id_participant_id_local_date_key",
+          "primary": false,
+          "unique": true
+        },
+        {
+          "columnNames": ["team_id", "local_date", "status"],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_availability_match_counts",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": ["team_id", "participant_id", "local_date"],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_availability_participant_range",
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": ["team_id", "local_date"],
+          "composite": true,
+          "constraint": false,
+          "keyName": "idx_availability_team_date",
+          "primary": false,
+          "unique": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "availability_entries_status_check",
+          "expression": "\"status\" in ('AVAILABLE', 'MAYBE', 'UNAVAILABLE')",
+          "definition": "check (\"status\" in ('AVAILABLE', 'MAYBE', 'UNAVAILABLE'))",
+          "columnName": "status"
+        }
+      ],
+      "triggers": [],
+      "foreignKeys": {
+        "availability_entries_participant_id_fkey": {
+          "columnNames": ["participant_id"],
+          "constraintName": "availability_entries_participant_id_fkey",
+          "localTableName": "public.availability_entries",
+          "referencedColumnNames": ["id"],
+          "referencedTableName": "public.participants",
+          "deleteRule": "cascade"
+        },
+        "availability_entries_team_id_fkey": {
+          "columnNames": ["team_id"],
+          "constraintName": "availability_entries_team_id_fkey",
+          "localTableName": "public.availability_entries",
+          "referencedColumnNames": ["id"],
+          "referencedTableName": "public.teams",
+          "deleteRule": "cascade"
+        }
+      },
+      "comment": null
+    },
+    {
       "name": "participant_sessions",
       "schema": "public",
       "columns": {
