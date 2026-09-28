@@ -33,12 +33,12 @@ No es necesario: el mapa de artefactos y la transacción única describen el flu
 ## Verificación
 
 - `pnpm run ci` fue correcto el 2026-09-28: formato, lint, tipos, unit, integración, OpenAPI y build.
-- El E2E se valida en CI con su propia API y PostgreSQL. Localmente no se consideró evidencia porque el puerto 3000 estaba ocupado por una API ajena a esta rama.
+- El E2E se validó en CI con su propia API y PostgreSQL mediante `browser-smoke` correcto. Localmente no se consideró evidencia porque el puerto 3000 estaba ocupado por una API ajena a esta rama.
 - La integración comprueba entidades registradas, contratos de Slice 1, aislamiento y rollback cuando falla la escritura de sesión.
 
 ## Límites y siguiente paso
 
-Esta corrección no implementa disponibilidad ni cambia contratos de Slice 1. `pg.Client` permanece únicamente en el healthcheck técnico. Tras la Verification y fusión, SPEC-003 deberá actualizarse sobre el cimiento y superar su propio preflight.
+Esta corrección no implementa disponibilidad ni cambia contratos de Slice 1. `pg.Client` permanece únicamente en el healthcheck técnico. Tras la fusión, SPEC-003 deberá actualizarse sobre el cimiento y superar su propio preflight.
 
 ## Ejercicios
 

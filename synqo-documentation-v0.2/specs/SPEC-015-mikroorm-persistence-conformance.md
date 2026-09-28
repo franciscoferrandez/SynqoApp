@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `Implemented`
+- Status: `Verified`
 - MoSCoW: `Must` (corrección fundacional)
 - Owner: Product owner
 - Created: 2026-09-28
@@ -162,15 +162,15 @@ Restablecer la conformidad efectiva de la implementación de Slice 1 con la Desi
 - Baseline: [`../project/design-baseline.md`](../project/design-baseline.md).
 - Change Request: N/A; restaura ADR-005 sin cambiar la baseline.
 - ADR: [`ADR-005`](../architecture/adr/ADR-005-persistence.md), ADR-014, ADR-015 y ADR-020.
-- Implementation commit: pending commit reference.
-- Verification evidence: pending `$synqo-verification`.
+- Implementation commit: `37bc231` (`fix(SPEC-015): integrar persistencia con MikroORM`).
+- Verification evidence: [`CI #36488303503`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36488303503) (`quality` y `browser-smoke`) y [`CodeQL #36488303459`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36488303459), correctos el 2026-09-28.
 
 ## Implementation outcome
 
 - Implemented as specified: Yes. MikroORM se integra mediante el adaptador oficial de NestJS, entidades explícitas y `EntityManager` transaccional; `TeamsService` ya no usa `pg.Pool`.
 - Deviations: `DatabaseHealthService` conserva `pg.Client` exclusivamente para `SELECT 1` de salud técnica; no accede a entidades ni persistencia de dominio.
 - Versions: paquetes principales MikroORM actualizados a `7.2.2`; `@mikro-orm/nestjs` usa `7.1.0`, su última versión publicada y compatible con MikroORM v7/NestJS 12.
-- Verification: `pnpm run ci` correcto el 2026-09-28 (format, lint, typecheck, unit, integración con PostgreSQL/Testcontainers, OpenAPI y build); revisión manual del propietario aceptada. El E2E local queda pendiente de CI porque el puerto 3000 estaba ocupado por una API externa a esta rama.
+- Verification: `pnpm run ci` correcto el 2026-09-28 (format, lint, typecheck, unit, integración con PostgreSQL/Testcontainers, OpenAPI y build); revisión manual del propietario aceptada; `browser-smoke` aislado correcto en CI. El E2E local no se usó como evidencia porque el puerto 3000 estaba ocupado por una API externa a esta rama.
 - Notes for TFM: SPEC correctiva creada tras un `Fail` verificable del Baseline Conformance Preflight; no se considera deuda diferida.
 
 ## Definition of Done
