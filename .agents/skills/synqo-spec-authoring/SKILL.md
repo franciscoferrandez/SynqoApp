@@ -14,4 +14,8 @@ No implementes código de aplicación. Detente al conseguir una SPEC `Ready` o d
 5. Si es implementable, marca `Ready`, actualiza `spec-register.md` y `implementation/status.md`.
 6. Registra evidencia mínima en `tfm/evidence-register.md`; registra uso relevante de IA y un hito metodológico solo cuando corresponda.
 
+## Material formativo
+
+Para cada SPEC de producto, crea en su mismo cambio un esqueleto `synqo-documentation-v0.2/training/spec-XXX-slug/README.md` desde [`training/TRAINING-GUIDE-TEMPLATE.md`](../../../synqo-documentation-v0.2/training/TRAINING-GUIDE-TEMPLATE.md). Debe enlazar a la SPEC y declarar sus secciones pendientes; no inventes configuraciones, fragmentos de código ni resultados de verificación antes de que existan.
+
 La SPEC debe incluir criterios de aceptación, tests requeridos, autorización, impacto documental y trazabilidad. En `Related requirements`, agrupa los requisitos por tipo o categoría (por ejemplo, funcionales, usabilidad, accesibilidad, seguridad, privacidad, fiabilidad, compatibilidad) y escribe junto a cada identificador su título o una descripción muy breve tomada de la fuente. No enumeres códigos sin contexto ni copies párrafos completos. No cambies el roadmap ni la baseline silenciosamente.
