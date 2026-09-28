@@ -26,7 +26,7 @@ Pendiente: añadir Mermaid solo si aclara materialmente el flujo de lectura o ac
 
 ## Verificación
 
-`pnpm run ci` pasó el 2026-09-29: formato, lint, tipos, unitarias, integración PostgreSQL/Testcontainers (11 pruebas), OpenAPI y build. La revisión manual del propietario fue correcta. El browser smoke del PR, que ejecuta migración y Playwright contra una base aislada, queda pendiente. La evidencia inicial está indexada como `E-011` y la revalidación del preflight como `E-017`; CR-001 en `E-012` y CR-002 en `E-013`.
+`pnpm run ci` pasó el 2026-09-29: formato, lint, tipos, unitarias, integración PostgreSQL/Testcontainers (11 pruebas), OpenAPI y build. También pasaron el browser smoke del PR con migración y Playwright contra una base aislada y CodeQL. La revisión manual del propietario fue correcta. La evidencia está indexada como `E-011` y `E-017`; CR-001 en `E-012` y CR-002 en `E-013`.
 
 ## Límites y siguiente paso
 

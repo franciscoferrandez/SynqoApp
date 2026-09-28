@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `Implemented`
+- Status: `Verified`
 - MoSCoW: `Must` (con el límite `Should` de configuración administrable fuera de esta slice)
 - Owner: Product owner
 - Created: 2026-09-28
@@ -214,13 +214,13 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 - ADR: ADR-008, ADR-015 y ADR-022 (controles transversales de acceso y seguridad).
 - Roadmap: [`../delivery/28-implementation-roadmap/vertical-slices.md`](../delivery/28-implementation-roadmap/vertical-slices.md) — Slice 2.
 - Implementation commit: `37dbe0a` (actualización sobre SPEC-015; disponibilidad persistida mediante MikroORM).
-- Verification evidence: `E-011`, `E-012`; pendiente el browser smoke aislado del PR.
+- Verification evidence: `E-011`, `E-012`, [`CI #36490258386`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36490258386) (quality y browser smoke), [`CodeQL #36490258524`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36490258524); correctos el 2026-09-29.
 
 ## Implementation outcome
 
 - Implementado funcionalmente conforme al calendario mensual ya especificado, incluidos días adyacentes funcionales en tono secundario dentro de la cuadrícula mensual.
 - Deviations: `sourceRequestId` se persiste nullable sin FK hasta que SPEC-007 cree su tabla referenciada; no hay comportamiento expuesto ni cambio de contrato.
-- Verification: `pnpm run ci` correcto el 2026-09-29, incluida integración PostgreSQL/Testcontainers; revisión manual del propietario correcta. Browser smoke aislado pendiente en CI del PR. Baseline Conformance Preflight: `Pass`; los casos de uso de disponibilidad usan MikroORM.
+- Verification: `pnpm run ci` correcto el 2026-09-29, incluida integración PostgreSQL/Testcontainers; revisión manual del propietario correcta; `browser-smoke` correcto en CI con migración y Playwright. Baseline Conformance Preflight: `Pass`; los casos de uso de disponibilidad usan MikroORM.
 - Notes for TFM: SPEC preparada antes de código; la evidencia de authoring se registra como `E-010`.
 
 ## Definition of Done
