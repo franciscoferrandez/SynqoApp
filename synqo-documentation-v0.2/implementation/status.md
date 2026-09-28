@@ -4,11 +4,11 @@ Memoria viva de la implementación. Git sigue siendo la fuente de verdad de los 
 
 ## Current phase
 
-Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verificada.
+Implementation. La Design Baseline v1.0 sigue vigente; el Baseline Conformance Preflight ha detectado una divergencia de persistencia en Slice 1 que se corrige antes de continuar con Slice 2.
 
 ## Active work
 
-- No hay una SPEC `In Progress`; `SPEC-003` está `Ready` y pendiente de autorización para implementación.
+- `SPEC-015` — Conformidad de persistencia con MikroORM (`Ready`; corrección fundacional de Slice 1 antes de cerrar o continuar slices posteriores).
 
 ## Completed specs
 
@@ -17,11 +17,12 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 
 ## Next specs
 
-- `SPEC-003` — Registrar disponibilidad individual diaria (`Ready`; depende de `SPEC-002`, ya `Verified`).
+- `SPEC-015` — Conformidad de persistencia con MikroORM (`Ready`; debe fusionarse antes de retomar SPEC-003).
+- `SPEC-003` — Registrar disponibilidad individual diaria (`Implemented` en su rama; debe actualizarse sobre la corrección y superar el preflight antes de cerrarse).
 
 ## Known blockers
 
-- No blocker global identificado.
+- Baseline Conformance Preflight: `TeamsService` usa consultas SQL directas con `pg.Pool`, `AppModule` no integra MikroORM y la configuración declara `entities: []`. SPEC-015 restaura ADR-005 antes de continuar.
 - `SPEC-001` no tiene bloqueadores documentales; la implementación debe detenerse y abrir Change Control si una decisión mecánica afecta la baseline o un contrato diseñado.
 
 ## Accepted deviations
@@ -35,5 +36,5 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 ## Environment status
 
 - Repository contains the design/documentation baseline.
-- Application workspace, toolchain y la slice de equipo rápido están implementados y verificados.
+- Application workspace y toolchain están implementados. La funcionalidad de equipo rápido está verificada, pero su persistencia requiere la corrección de conformidad registrada en SPEC-015.
 - Branch state and uncommitted changes are reported by Git; this document does not duplicate that history.
