@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `In Progress`
+- Status: `Implemented`
 - MoSCoW: `Must` (con el límite `Should` de configuración administrable fuera de esta slice)
 - Owner: Product owner
 - Created: 2026-09-28
@@ -213,14 +213,14 @@ Como mínimo se cubren rango o fecha inválidos, estado no declarable/no habilit
 - Change Requests: [`CR-001`](../changes/CR-001-clear-individual-availability.md) y [`CR-002`](../changes/CR-002-monthly-calendar-and-toggle-clear.md) (Accepted).
 - ADR: ADR-008, ADR-015 y ADR-022 (controles transversales de acceso y seguridad).
 - Roadmap: [`../delivery/28-implementation-roadmap/vertical-slices.md`](../delivery/28-implementation-roadmap/vertical-slices.md) — Slice 2.
-- Implementation commit: pending merge-update commit reference.
-- Verification evidence: `E-011`, `E-012`; pendiente de rerun tras actualizar la rama sobre SPEC-015.
+- Implementation commit: `37dbe0a` (actualización sobre SPEC-015; disponibilidad persistida mediante MikroORM).
+- Verification evidence: `E-011`, `E-012`; pendiente el browser smoke aislado del PR.
 
 ## Implementation outcome
 
 - Implementado funcionalmente conforme al calendario mensual ya especificado, incluidos días adyacentes funcionales en tono secundario dentro de la cuadrícula mensual.
 - Deviations: `sourceRequestId` se persiste nullable sin FK hasta que SPEC-007 cree su tabla referenciada; no hay comportamiento expuesto ni cambio de contrato.
-- Verification: las evidencias iniciales quedan registradas en `E-011`; se repiten tras actualizar la rama sobre SPEC-015. La persistencia de disponibilidad se alinea con MikroORM para que el preflight pueda volver a evaluarse.
+- Verification: `pnpm run ci` correcto el 2026-09-29, incluida integración PostgreSQL/Testcontainers; revisión manual del propietario correcta. Browser smoke aislado pendiente en CI del PR. Baseline Conformance Preflight: `Pass`; los casos de uso de disponibilidad usan MikroORM.
 - Notes for TFM: SPEC preparada antes de código; la evidencia de authoring se registra como `E-010`.
 
 ## Definition of Done

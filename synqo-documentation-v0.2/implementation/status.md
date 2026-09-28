@@ -4,11 +4,11 @@ Memoria viva de la implementación. Git sigue siendo la fuente de verdad de los 
 
 ## Current phase
 
-Implementation. SPEC-003 está siendo actualizada sobre la corrección verificada de persistencia. El Baseline Conformance Preflight debe volver a pasar antes de su Verification.
+Implementation. SPEC-003 está implementada sobre la persistencia MikroORM verificada; el browser smoke aislado de CI completa la Verification.
 
 ## Active work
 
-- `SPEC-003` — Registrar disponibilidad individual diaria (`In Progress`; actualización no destructiva sobre `main` y conformidad de la persistencia de Slice 2 con MikroORM).
+- `SPEC-003` — Registrar disponibilidad individual diaria (`Implemented`; `pnpm run ci` y revisión manual correctos; browser smoke de PR pendiente).
 
 ## Completed specs
 
@@ -22,7 +22,7 @@ Implementation. SPEC-003 está siendo actualizada sobre la corrección verificad
 
 ## Known blockers
 
-- Ninguno conocido; la Verification debe confirmar de nuevo el preflight tras la integración de la rama.
+- Browser smoke aislado del PR pendiente para marcar SPEC-003 `Verified`.
 - `SPEC-001` no tiene bloqueadores documentales; la implementación debe detenerse y abrir Change Control si una decisión mecánica afecta la baseline o un contrato diseñado.
 
 ## Accepted deviations
@@ -32,11 +32,11 @@ Implementation. SPEC-003 está siendo actualizada sobre la corrección verificad
 ## Last validation
 
 - `SPEC-002`: `pnpm test:integration`, `pnpm test:e2e`, lint, typecheck, tests unitarios, format check, validación OpenAPI, build y `git diff --check` correctos el 2026-09-28. OpenAPI no tuvo errores y conserva 47 advertencias preexistentes.
-- `SPEC-003`: `pnpm format:check`, `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck`, `pnpm openapi:check`, `pnpm build`, `pnpm db:migrate` y `pnpm test:e2e` correctos el 2026-09-28. OpenAPI conserva 47 advertencias preexistentes. Estas validaciones funcionales no sustituyen el preflight de baseline pendiente.
+- `SPEC-003`: `pnpm run ci` correcto el 2026-09-29 (incluye format, lint, typecheck, unit, 11 tests de integración, OpenAPI y build); revisión manual del propietario correcta; browser smoke aislado pendiente en PR. OpenAPI conserva 47 advertencias preexistentes.
 - `SPEC-015`: `pnpm run ci` correcto localmente y [`CI #36488303503`](https://github.com/franciscoferrandez/SynqoApp/actions/runs/36488303503) correcto (incluido `browser-smoke`) el 2026-09-28; CodeQL también correcto.
 
 ## Environment status
 
 - Repository contains the design/documentation baseline.
-- Application workspace y toolchain están implementados. SPEC-015 integra MikroORM en runtime y conserva una excepción limitada de `pg` para el healthcheck técnico; el preflight de persistencia queda `Pass`.
+- Application workspace y toolchain están implementados. El preflight de SPEC-003 queda `Pass`: MikroORM registra `AvailabilityEntryEntity` y `TeamsService` usa `EntityManager`; `pg.Client` permanece limitado al healthcheck técnico.
 - Branch state and uncommitted changes are reported by Git; this document does not duplicate that history.

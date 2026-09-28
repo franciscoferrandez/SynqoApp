@@ -1,6 +1,6 @@
 # SPEC-003 — Guía docente: disponibilidad individual diaria
 
-> Fuente normativa: [SPEC-003](../../specs/SPEC-003-individual-daily-availability.md). Esta guía se completará durante la implementación y no sustituye la SPEC ni el contrato OpenAPI.
+> Fuente normativa: [SPEC-003](../../specs/SPEC-003-individual-daily-availability.md). Esta guía acompaña la implementación y no sustituye la SPEC ni el contrato OpenAPI.
 
 ## Qué aprende la persona
 
@@ -9,11 +9,11 @@
 
 ## Antes de empezar
 
-Node 24 y pnpm 12.6.0. Comandos ejecutados: `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck`, `pnpm openapi:check`, `pnpm build` y `pnpm db:migrate`.
+Node 24 y pnpm 12.6.0. `AvailabilityEntryEntity` está registrada en MikroORM; `TeamsService` recibe `EntityManager`. Comandos ejecutados: `pnpm run ci`. Las pruebas de integración crean PostgreSQL aislado con Testcontainers; la migración real se ejecuta además en browser-smoke de CI.
 
 ## Mapa del slice
 
-- [Migración](../../../apps/api/src/migrations/Migration20260928000000.ts), [servicio](../../../apps/api/src/teams.service.ts), [controlador](../../../apps/api/src/teams.controller.ts) y [SCR-12](../../../apps/web/src/App.tsx).
+- [Entidad y configuración MikroORM](../../../apps/api/src/entities/quick-team.entities.ts), [migración](../../../apps/api/src/migrations/Migration20260928000000.ts), [servicio](../../../apps/api/src/teams.service.ts), [controlador](../../../apps/api/src/teams.controller.ts) y [SCR-12](../../../apps/web/src/App.tsx).
 - [Pruebas API](../../../apps/api/test/teams.integration-spec.ts) y [E2E](../../../apps/web/tests/app-shell.spec.ts).
 
 ## Recorrido guiado
@@ -26,7 +26,7 @@ Pendiente: añadir Mermaid solo si aclara materialmente el flujo de lectura o ac
 
 ## Verificación
 
-`pnpm test:integration` cubre persistencia, retirada idempotente, autorización contextual, CSRF y estados inválidos. `pnpm test:e2e` confirma que el participante guarda un estado, lo conserva tras recargar y navega/abre el diálogo mensual. La evidencia está indexada como `E-011`; CR-001 en `E-012` y CR-002 en `E-013`.
+`pnpm run ci` pasó el 2026-09-29: formato, lint, tipos, unitarias, integración PostgreSQL/Testcontainers (11 pruebas), OpenAPI y build. La revisión manual del propietario fue correcta. El browser smoke del PR, que ejecuta migración y Playwright contra una base aislada, queda pendiente. La evidencia inicial está indexada como `E-011` y la revalidación del preflight como `E-017`; CR-001 en `E-012` y CR-002 en `E-013`.
 
 ## Límites y siguiente paso
 
