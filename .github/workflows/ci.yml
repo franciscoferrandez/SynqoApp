@@ -37,4 +37,17 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @synqo/web exec playwright install --with-deps chromium
+      - run: docker compose up -d --wait postgres
+      - run: pnpm db:migrate
+      - run: pnpm --filter @synqo/api start > /tmp/synqo-api.log 2>&1 &
+      - name: Wait for API
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:3000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/synqo-api.log
+          exit 1
       - run: pnpm test:e2e
