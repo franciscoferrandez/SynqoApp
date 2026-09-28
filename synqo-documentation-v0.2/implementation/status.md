@@ -13,10 +13,11 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 ## Completed specs
 
 - `SPEC-001` — Bootstrap del repositorio y toolchain (`Verified`; validación técnica y revisión manual completadas el 2026-09-25).
+- `SPEC-002` — Crear equipo rápido y acceso de participante (`Verified`; controles, pruebas automatizadas y E2E parcial completados el 2026-09-28).
 
 ## Next specs
 
-- `SPEC-002` — Crear equipo rápido y acceso de participante (`Ready`; depende de `SPEC-001`; pendiente de autorización para implementación).
+- `SPEC-003` — Registrar disponibilidad individual diaria (`Planned`; depende de `SPEC-002`).
 
 ## Known blockers
 
@@ -29,10 +30,10 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 
 ## Last validation
 
-- `SPEC-001`: `pnpm run ci`, `pnpm test:e2e` y `pnpm db:migrate` completados correctamente el 2026-09-25; smoke manual de API/web confirmado por el propietario. La validación OpenAPI no tuvo errores y conserva 47 advertencias preexistentes del contrato documental.
+- `SPEC-002`: `pnpm test:integration`, `pnpm test:e2e`, lint, typecheck, tests unitarios, format check, validación OpenAPI, build y `git diff --check` correctos el 2026-09-28. OpenAPI no tuvo errores y conserva 47 advertencias preexistentes.
 
 ## Environment status
 
 - Repository contains the design/documentation baseline.
-- Application workspace and implementation toolchain are created by `SPEC-001`; no product functionality has been implemented.
+- Application workspace, toolchain y la slice de equipo rápido están implementados y verificados.
 - Branch state and uncommitted changes are reported by Git; this document does not duplicate that history.

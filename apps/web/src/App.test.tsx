@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 
 describe('App', () => {
-  it('muestra un estado de preparación claro', () => {
+  it('permite iniciar la creación de un equipo rápido', () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Synqo se está preparando' })).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Synqo' })).toHaveAttribute('href', '#contenido');
+    expect(screen.getByRole('heading', { name: 'Coordina sin cuentas' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Crear equipo rápido' })).toBeVisible();
+    expect(screen.queryByLabelText('Zona horaria IANA')).not.toBeInTheDocument();
   });
 });

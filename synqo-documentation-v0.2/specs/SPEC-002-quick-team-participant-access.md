@@ -2,7 +2,7 @@
 
 ## Metadata
 
-- Status: `Ready`
+- Status: `Verified`
 - MoSCoW: `Must`
 - Owner: pendiente de asignación humana
 - Created: 2026-09-25
@@ -14,7 +14,7 @@ Permitir que un visitante cree un equipo rápido sin cuenta ni email, obtenga un
 
 ## Scope
 
-- Crear exclusivamente equipos de modalidad `QUICK`, activos desde su creación, con nombre, zona horaria IANA y participante inicial.
+- Crear exclusivamente equipos de modalidad `QUICK`, activos desde su creación, con nombre, zona horaria IANA detectada y participante inicial.
 - Crear en la misma transacción el equipo, el participante inicial, el acceso público inicial y la `ParticipantSession` contextual del creador.
 - Exponer el contexto público mínimo de un equipo accesible y permitir que un visitante cree su propia identidad local desde ese contexto.
 - Emitir sesiones opacas, revocables y acotadas a `teamId + participantId`; las mutaciones que usan cookies aplican la protección CSRF/origin definida en la baseline.
@@ -45,6 +45,10 @@ Permitir que un visitante cree un equipo rápido sin cuenta ni email, obtenga un
 - `RF-EQR-09` — Los tres estados de disponibilidad permanecen habilitados en un equipo rápido.
 - `RF-PA-01` — Identidad inequívoca dentro del equipo.
 - `RF-PA-02` — Participación sin cuenta.
+
+### Deferred functional requirement
+
+- `RF-ACC-06` — Proponer la zona del navegador como valor editable. Esta SPEC detecta y persiste la zona sin exponer un control; la edición queda pendiente de una unidad futura, que deberá definir restricciones para equipos con histórico.
 
 ### Non-functional requirements
 
@@ -116,7 +120,7 @@ Permitir que un visitante cree un equipo rápido sin cuenta ni email, obtenga un
 - `SPEC-001` está `Verified`; el workspace, PostgreSQL, MikroORM, OpenAPI y harnesses básicos están disponibles.
 - La Design Baseline v1.0 permanece `Active for implementation` y no tiene blockers aplicables a Slice 1.
 - La implementación se realiza en una rama `feat/SPEC-002-quick-team` autorizada y derivada de `main`.
-- La zona horaria que envía el cliente se valida como IANA canónica; la sugerencia del navegador es una conveniencia de UI, no una fuente de verdad.
+- La web detecta una zona IANA del navegador y usa `Europe/Madrid` como fallback; la API valida el valor recibido como IANA canónica antes de persistirlo.
 
 ## Functional behaviour
 
@@ -174,9 +178,9 @@ Todos los errores usan `application/problem+json`/`ProblemDetails`. Como mínimo
 ## UI behaviour
 
 - `SCR-02` presenta la elección de modalidad sin hacer funcional el camino administrable; el usuario puede continuar hacia rápido sin registro.
-- `SCR-03` recoge nombre de equipo, nombre visible y zona horaria sugerida por el navegador y editable. Explica la temporalidad del rápido, valida errores de forma accesible y evita doble envío.
+- `SCR-03` recoge nombre de equipo y nombre visible; detecta la zona horaria del navegador sin solicitarla y usa `Europe/Madrid` como fallback. Explica la temporalidad del rápido, valida errores de forma accesible y evita doble envío.
 - `SCR-06` muestra contexto mínimo del enlace y solicita solo el nombre visible necesario para crear una identidad local. No permite elegir ni reclamar un participante existente.
-- Tras creación o identificación se carga el primer `SCR-11`, responsive y mobile-first, con equipo y actor actuales, enlace para compartir y una indicación clara de que disponibilidad/decisiones llegarán en slices posteriores.
+- Tras creación o identificación se carga el primer `SCR-11`, responsive y mobile-first, con equipo y actor actuales, una acción de compartir que usa Web Share API cuando está disponible o copia el enlace como fallback, feedback accesible y una indicación clara de que disponibilidad/decisiones llegarán en slices posteriores.
 - Se implementan estados vacíos, carga, error recuperable, sin permisos/sesión y enlace inválido o revocado. Foco, mensajes y controles son semánticos y navegables por teclado; ningún estado depende solo del color.
 
 ## Errors and edge cases
@@ -200,7 +204,7 @@ Todos los errores usan `application/problem+json`/`ProblemDetails`. Como mínimo
 
 ## Acceptance criteria
 
-1. **Given** un visitante sin cuenta ni email, **when** crea un equipo rápido con nombre, zona IANA válida y nombre visible, **then** recibe `201`, el equipo queda `QUICK/ACTIVE`, los tres estados de disponibilidad quedan habilitados y existe un participante inicial con sesión contextual.
+1. **Given** un visitante sin cuenta ni email, **when** crea un equipo rápido con nombre y nombre visible, **then** la web envía la zona IANA detectada —o `Europe/Madrid` como fallback—, recibe `201`, el equipo queda `QUICK/ACTIVE`, los tres estados de disponibilidad quedan habilitados y existe un participante inicial con sesión contextual.
 2. **Given** la creación de un equipo rápido, **when** falla cualquier paso de persistencia, **then** la transacción no deja equipos, participantes, sesiones ni credenciales parciales.
 3. **Given** un equipo rápido recién creado, **when** el creador copia y otro visitante abre su enlace en un contexto limpio, **then** solo ve contexto mínimo e identifica un participante local sin cuenta antes de entrar al home del equipo.
 4. **Given** dos participantes con el mismo nombre visible, **when** el segundo se identifica, **then** se crea una identidad local distinta y nunca se apropia de la existente.
@@ -236,7 +240,7 @@ Todos los errores usan `application/problem+json`/`ProblemDetails`. Como mínimo
 
 ### UI/component
 
-- Formulario rápido con validación accesible, prevención de doble envío, modalidad y temporalidad perceptibles.
+- Formulario rápido con validación accesible, prevención de doble envío, modalidad y temporalidad perceptibles; zona detectada sin campo técnico visible y fallback `Europe/Madrid`.
 - Identificación de participante, estados de carga/error/enlace inválido/sin sesión y redirección a URL limpia cuando corresponda.
 - Home inicial responsive, navegación por teclado, foco visible y comprobaciones axe de las pantallas tocadas.
 
@@ -275,15 +279,15 @@ Todos los errores usan `application/problem+json`/`ProblemDetails`. Como mínimo
 - Change Request: N/A
 - ADR: ADR-008, ADR-015, ADR-022.
 - Roadmap: [`../delivery/28-implementation-roadmap/implementation-roadmap.md`](../delivery/28-implementation-roadmap/implementation-roadmap.md), [`../delivery/28-implementation-roadmap/vertical-slices.md`](../delivery/28-implementation-roadmap/vertical-slices.md) — Slice 1.
-- Implementation commit: pending; consultar el historial Git de `feat/SPEC-002-quick-team` cuando exista.
-- Verification evidence: pending.
+- Implementation commit: pendiente; el cambio permanece sin commit en `feat/SPEC-002-quick-team`.
+- Verification evidence: [`E-008`](../tfm/evidence-register.md).
 
 ## Implementation outcome
 
-- Implemented as specified: pending.
-- Deviations: pending.
-- Verification: pending.
-- Notes for TFM: SPEC preparada antes de código; la evidencia de implementación se registrará tras las verificaciones objetivas.
+- Implemented as specified: yes.
+- Deviations: la zona se detecta sin campo editable y usa `Europe/Madrid` como fallback, conforme a la decisión registrada en esta SPEC; no se han modificado baseline, ADRs ni OpenAPI.
+- Verification: `pnpm test:integration`, `pnpm test:e2e`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm format:check`, `pnpm openapi:check`, `pnpm build` y `git diff --check` correctos el 2026-09-28. OpenAPI conserva 47 advertencias preexistentes sin errores.
+- Notes for TFM: SPEC preparada antes de código; implementación y verificación objetiva registradas en `E-008`.
 
 ## Definition of Done
 
