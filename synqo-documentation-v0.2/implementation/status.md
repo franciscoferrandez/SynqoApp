@@ -4,11 +4,11 @@ Memoria viva de la implementación. Git sigue siendo la fuente de verdad de los 
 
 ## Current phase
 
-Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verificada.
+Implementation. La Design Baseline v1.2 (CR-001 y CR-002 implementadas) sigue vigente, pero el Baseline Conformance Preflight ha detectado una divergencia de persistencia que impide cerrar la Slice 2.
 
 ## Active work
 
-- No hay una SPEC `In Progress`; `SPEC-003` está `Ready` y pendiente de autorización para implementación.
+- `SPEC-003` — Registrar disponibilidad individual diaria (`Implemented`; cierre bloqueado hasta que la persistencia de negocio cumpla la integración efectiva de MikroORM exigida por la baseline).
 
 ## Completed specs
 
@@ -17,11 +17,11 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 
 ## Next specs
 
-- `SPEC-003` — Registrar disponibilidad individual diaria (`Ready`; depende de `SPEC-002`, ya `Verified`).
+- `SPEC-004` — Disponibilidad colectiva y coincidencias deterministas (`Planned`; no puede iniciarse hasta cerrar `SPEC-003`).
 
 ## Known blockers
 
-- No blocker global identificado.
+- Baseline Conformance Preflight: la persistencia de negocio usa consultas SQL directas y no acredita la integración runtime de MikroORM exigida por la baseline. Debe corregirse en una unidad fundacional antes de cerrar `SPEC-003` o iniciar `SPEC-004`.
 - `SPEC-001` no tiene bloqueadores documentales; la implementación debe detenerse y abrir Change Control si una decisión mecánica afecta la baseline o un contrato diseñado.
 
 ## Accepted deviations
@@ -31,6 +31,7 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 ## Last validation
 
 - `SPEC-002`: `pnpm test:integration`, `pnpm test:e2e`, lint, typecheck, tests unitarios, format check, validación OpenAPI, build y `git diff --check` correctos el 2026-09-28. OpenAPI no tuvo errores y conserva 47 advertencias preexistentes.
+- `SPEC-003`: `pnpm format:check`, `pnpm test`, `pnpm test:integration`, `pnpm lint`, `pnpm typecheck`, `pnpm openapi:check`, `pnpm build`, `pnpm db:migrate` y `pnpm test:e2e` correctos el 2026-09-28. OpenAPI conserva 47 advertencias preexistentes. Estas validaciones funcionales no sustituyen el preflight de baseline pendiente.
 
 ## Environment status
 

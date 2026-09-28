@@ -11,6 +11,7 @@ const schema = [
   'create table participants (id uuid primary key, team_id uuid not null references teams(id) on delete cascade, public_ref text not null, display_name text not null, is_active boolean not null default true, created_at timestamptz not null default now(), unique(team_id, public_ref))',
   'create table participant_sessions (id uuid primary key, team_id uuid not null references teams(id) on delete cascade, participant_id uuid not null references participants(id) on delete cascade, token_hash text not null unique, expires_at timestamptz not null, revoked_at timestamptz, created_at timestamptz not null default now())',
   "create table access_credentials (id uuid primary key, team_id uuid not null references teams(id) on delete cascade, public_ref text not null unique, type text not null check (type = 'PUBLIC_LINK'), scope text not null check (scope = 'TEAM_PUBLIC'), revoked_at timestamptz, created_at timestamptz not null default now())",
+  "create table availability_entries (id uuid primary key, team_id uuid not null references teams(id) on delete cascade, participant_id uuid not null references participants(id) on delete cascade, local_date date not null, status text not null check (status in ('AVAILABLE','MAYBE','UNAVAILABLE')), source_request_id uuid, created_at timestamptz not null default now(), updated_at timestamptz not null default now(), unique(team_id, participant_id, local_date))",
 ];
 
 describe('quick teams API', () => {
@@ -52,6 +53,13 @@ describe('quick teams API', () => {
         participant: { displayName: string };
       },
     };
+  }
+
+  function contextualCookies(response: Response) {
+    const raw = response.headers.get('set-cookie') ?? '';
+    const session = raw.match(/synqo_context_session=([^;]+)/)?.[1] ?? '';
+    const csrf = raw.match(/synqo_csrf=([^;]+)/)?.[1] ?? '';
+    return { cookie: `synqo_context_session=${session}; synqo_csrf=${csrf}`, csrf };
   }
 
   it('crea equipo, participante y sesión contextual', async () => {
@@ -143,6 +151,81 @@ describe('quick teams API', () => {
     });
     expect(csrfFailure.status).toBe(403);
     expect(csrf).not.toBe('');
+  });
+
+  it('guarda disponibilidad propia por día y deriva sin respuesta por ausencia', async () => {
+    const created = await create('Disponibilidad');
+    const { cookie, csrf } = contextualCookies(created.response);
+    const url = `${await app.getUrl()}/api/v1/teams/${created.body.team.teamRef}/availability/me`;
+    const updated = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
+        'x-csrf-token': csrf,
+        'idempotency-key': 'availability-1',
+      },
+      body: JSON.stringify({
+        entries: [
+          { date: '2026-10-12', status: 'AVAILABLE' },
+          { date: '2026-10-14', status: 'MAYBE' },
+        ],
+      }),
+    });
+    expect(updated.status).toBe(200);
+    const listed = await fetch(`${url}?from=2026-10-12&to=2026-10-15`, { headers: { cookie } });
+    await expect(listed.json()).resolves.toEqual({
+      entries: [
+        { date: '2026-10-12', status: 'AVAILABLE' },
+        { date: '2026-10-14', status: 'MAYBE' },
+      ],
+    });
+    const replacement = await fetch(url, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', cookie, 'x-csrf-token': csrf },
+      body: JSON.stringify({ entries: [{ date: '2026-10-12', status: 'UNAVAILABLE' }] }),
+    });
+    expect(replacement.status).toBe(200);
+    const cleared = await fetch(`${url}/2026-10-12`, {
+      method: 'DELETE',
+      headers: {
+        cookie,
+        'x-csrf-token': csrf,
+        'idempotency-key': 'availability-clear-1',
+      },
+    });
+    expect(cleared.status).toBe(200);
+    const clearRetry = await fetch(`${url}/2026-10-12`, {
+      method: 'DELETE',
+      headers: {
+        cookie,
+        'x-csrf-token': csrf,
+        'idempotency-key': 'availability-clear-1',
+      },
+    });
+    expect(clearRetry.status).toBe(200);
+    const afterClear = await fetch(`${url}?from=2026-10-12&to=2026-10-15`, {
+      headers: { cookie },
+    });
+    await expect(afterClear.json()).resolves.toEqual({
+      entries: [{ date: '2026-10-14', status: 'MAYBE' }],
+    });
+  });
+
+  it('rechaza estados inválidos y el acceso de otro equipo', async () => {
+    const first = await create('Equipo disponible A');
+    const second = await create('Equipo disponible B');
+    const { cookie, csrf } = contextualCookies(first.response);
+    const own = `${await app.getUrl()}/api/v1/teams/${first.body.team.teamRef}/availability/me`;
+    const invalid = await fetch(own, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', cookie, 'x-csrf-token': csrf },
+      body: JSON.stringify({ entries: [{ date: '2026-10-12', status: 'UNANSWERED' }] }),
+    });
+    expect(invalid.status).toBe(400);
+    expect(invalid.headers.get('content-type')).toContain('application/problem+json');
+    const other = `${await app.getUrl()}/api/v1/teams/${second.body.team.teamRef}/availability/me?from=2026-10-12&to=2026-10-12`;
+    expect((await fetch(other, { headers: { cookie } })).status).toBe(403);
   });
 
   it('limita el abuso de las creaciones públicas', async () => {

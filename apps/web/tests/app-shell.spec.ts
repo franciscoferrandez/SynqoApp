@@ -19,6 +19,27 @@ test('crea un equipo, mantiene al creador en su home y admite otra participació
   await expect(page.getByRole('heading', { name: 'Equipo E2E' })).toBeVisible();
   await expect(page.getByText('Hola, Creador E2E. Este equipo es temporal.')).toBeVisible();
   await expect(page.getByRole('button', { name: /Compartir enlace|Copiar enlace/ })).toBeVisible();
+  await page.getByRole('link', { name: 'Mi disponibilidad' }).click();
+  await expect(page.getByRole('heading', { name: 'Mi disponibilidad' })).toBeVisible();
+  await page.locator('.availability-options .available').first().click();
+  await page.reload();
+  await expect(page.locator('.availability-options .available').first()).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.getByRole('button', { name: 'Calendario' }).click();
+  await expect(page.getByText('L', { exact: true })).toBeVisible();
+  await expect(page.locator('.calendar-adjacent').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Mes siguiente' }).click();
+  await page.getByRole('button', { name: 'Hoy' }).click();
+  await page
+    .getByRole('button', { name: /sin respuesta/ })
+    .first()
+    .click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancelar' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.getByRole('link', { name: 'Volver al equipo' }).click();
 
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();

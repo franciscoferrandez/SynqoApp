@@ -27,6 +27,7 @@
 - `BR-DIS-01`: la disponibilidad general es por día.
 - `BR-DIS-02`: estados declarables base = `AVAILABLE`, `MAYBE`, `UNAVAILABLE`.
 - `BR-DIS-03`: `UNANSWERED` es derivado.
+- `BR-DIS-03a`: retirar una disponibilidad elimina la entrada diaria propia; la ausencia vuelve a derivar `UNANSWERED`.
 - `BR-DIS-04`: en equipo rápido los tres estados declarables están siempre habilitados.
 - `BR-DIS-05`: en equipo administrable pueden configurarse, manteniendo al menos uno de `AVAILABLE` o `UNAVAILABLE`.
 - `BR-DIS-06`: cada participante modifica por defecto su propia disponibilidad.

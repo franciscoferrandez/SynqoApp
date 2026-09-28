@@ -35,6 +35,13 @@ export type Participant = {
   isActive: boolean;
   linkedAccount: false;
 };
+type AvailabilityStatus = 'AVAILABLE' | 'MAYBE' | 'UNAVAILABLE';
+const availabilityStatuses: AvailabilityStatus[] = ['AVAILABLE', 'MAYBE', 'UNAVAILABLE'];
+const isLocalDate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+};
 
 @Injectable()
 export class TeamsService implements OnModuleDestroy {
@@ -150,7 +157,7 @@ export class TeamsService implements OnModuleDestroy {
   async current(teamRef: string, token?: string) {
     if (!token) throw new ForbiddenException({ code: 'CONTEXT_REQUIRED' });
     const result = await this.pool.query(
-      `select p.public_ref,p.display_name,p.is_active,t.public_ref as team_ref,t.name,t.time_zone from participant_sessions s join participants p on p.id=s.participant_id join teams t on t.id=s.team_id where s.token_hash=$1 and t.public_ref=$2 and s.revoked_at is null and s.expires_at>now()`,
+      `select p.public_ref,p.display_name,p.is_active,t.public_ref as team_ref,t.name,t.time_zone from participant_sessions s join participants p on p.id=s.participant_id join teams t on t.id=s.team_id where s.token_hash=$1 and t.public_ref=$2 and p.is_active=true and s.revoked_at is null and s.expires_at>now()`,
       [hash(token), teamRef],
     );
     if (!result.rowCount) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
@@ -170,5 +177,88 @@ export class TeamsService implements OnModuleDestroy {
         linkedAccount: false as const,
       },
     };
+  }
+
+  private async availabilityContext(teamRef: string, token?: string) {
+    if (!token) throw new ForbiddenException({ code: 'CONTEXT_REQUIRED' });
+    const result = await this.pool.query(
+      `select t.id as team_id,p.id as participant_id,t.mode,t.quick_state from participant_sessions s join participants p on p.id=s.participant_id join teams t on t.id=s.team_id where s.token_hash=$1 and t.public_ref=$2 and p.is_active=true and s.revoked_at is null and s.expires_at>now()`,
+      [hash(token), teamRef],
+    );
+    if (!result.rowCount) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
+    return result.rows[0] as {
+      team_id: string;
+      participant_id: string;
+      mode: 'QUICK';
+      quick_state: 'ACTIVE';
+    };
+  }
+
+  async getMyAvailability(teamRef: string, token: string | undefined, from: string, to: string) {
+    if (!isLocalDate(from) || !isLocalDate(to) || from > to)
+      throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const context = await this.availabilityContext(teamRef, token);
+    const result = await this.pool.query(
+      'select local_date::text as local_date, status from availability_entries where team_id=$1 and participant_id=$2 and local_date between $3 and $4 order by local_date',
+      [context.team_id, context.participant_id, from, to],
+    );
+    return { entries: result.rows.map((row) => ({ date: row.local_date, status: row.status })) };
+  }
+
+  async putMyAvailability(
+    teamRef: string,
+    token: string | undefined,
+    entries: Array<{ date: string; status: string }>,
+  ) {
+    if (!Array.isArray(entries) || !entries.length)
+      throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const dates = new Set<string>();
+    for (const entry of entries) {
+      if (
+        !isLocalDate(entry.date) ||
+        !availabilityStatuses.includes(entry.status as AvailabilityStatus) ||
+        dates.has(entry.date)
+      )
+        throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+      dates.add(entry.date);
+    }
+    const context = await this.availabilityContext(teamRef, token);
+    const client = await this.pool.connect();
+    try {
+      await client.query('begin');
+      for (const entry of entries) {
+        await client.query(
+          `insert into availability_entries (id, team_id, participant_id, local_date, status)
+           values ($1,$2,$3,$4,$5)
+           on conflict (team_id, participant_id, local_date) do update set status=excluded.status, updated_at=now()`,
+          [randomUUID(), context.team_id, context.participant_id, entry.date, entry.status],
+        );
+      }
+      await client.query(
+        "update teams set last_relevant_activity_at=now() where id=$1 and mode='QUICK' and quick_state='ACTIVE'",
+        [context.team_id],
+      );
+      await client.query('commit');
+      return { entries: entries.map(({ date, status }) => ({ date, status })) };
+    } catch (error) {
+      await client.query('rollback');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async clearMyAvailability(teamRef: string, token: string | undefined, date: string) {
+    if (!isLocalDate(date)) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
+    const context = await this.availabilityContext(teamRef, token);
+    await this.pool.query(
+      'delete from availability_entries where team_id=$1 and participant_id=$2 and local_date=$3',
+      [context.team_id, context.participant_id, date],
+    );
+    await this.pool.query(
+      "update teams set last_relevant_activity_at=now() where id=$1 and mode='QUICK' and quick_state='ACTIVE'",
+      [context.team_id],
+    );
+    return { entries: [] };
   }
 }

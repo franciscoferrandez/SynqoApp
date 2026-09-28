@@ -277,6 +277,31 @@ paths:
                 $ref: '#/components/schemas/AvailabilityRange'
         default:
           $ref: '#/components/responses/Problem'
+  /teams/{teamRef}/availability/me/{date}:
+    delete:
+      tags: [Availability]
+      summary: Clear current participant availability for a day
+      operationId: clearMyAvailability
+      parameters:
+        - $ref: '#/components/parameters/TeamRef'
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Availability cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailabilityRange'
+        '400':
+          $ref: '#/components/responses/Problem'
+        default:
+          $ref: '#/components/responses/Problem'
   /teams/{teamRef}/availability/collective:
     get:
       tags: [Availability]

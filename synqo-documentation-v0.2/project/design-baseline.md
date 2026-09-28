@@ -1,4 +1,4 @@
-# Synqo Design Baseline v1.0
+# Synqo Design Baseline v1.2
 
 **Fecha de establecimiento:** 2026-09-24
 **Estado:** Active for implementation
@@ -33,6 +33,8 @@ Cuando haya una referencia más específica para una pregunta, se consulta esa f
 - **UX:** mobile-first, deep links, vistas Calendario y Lista, estados explícitos y color acompañado por texto/símbolos accesibles.
 - **Dominio:** `Cuenta`, `Participante` y `Administrador` son conceptos distintos; el dominio es un monolito modular pragmático y determinista.
 - **Reglas:** disponibilidad general por día; `Disponible`, `Quizá`, `No disponible` y `Sin respuesta` derivado; propuesta con fecha obligatoria y hora opcional; encuesta `SINGLE` o `MULTIPLE`; resultado separado de resolución; Synqo no decide automáticamente.
+- **Disponibilidad:** retirar un valor diario elimina su entrada propia; `Sin respuesta` sigue siendo ausencia derivada, nunca un estado persistido.
+- **SCR-12:** Lista semanal para edición rápida y Calendario mensual para orientación temporal, según la especificación y wireframe existentes. El cambio entre vistas transforma el intervalo según CR-002; volver a activar el estado seleccionado retira la disponibilidad. Los días adyacentes que completan la cuadrícula mensual se muestran en tono secundario y son funcionales dentro del rango cargado.
 - **Estados:** se preservan los lifecycles de equipo, solicitudes y consultas definidos en `product/08-lifecycles.md` y `technical-design/14-state-machines/state-machines.md`.
 - **Autorización:** toda operación sensible se autoriza en servidor y dentro del equipo; los enlaces se canjean por sesiones contextuales y se limpian de la URL.
 - **Identidad:** la cuenta global es opcional para las capacidades esenciales; un participante sin cuenta conserva su identidad e histórico al vincularse posteriormente.
@@ -74,4 +76,4 @@ Una SPEC debe detenerse si una de estas decisiones deja de ser local y pasa a ca
 
 ## Versionado
 
-Esta baseline es `Design Baseline v1.0`. No se crea un tag automáticamente. Cuando la baseline esté aprobada para implementación, se recomienda crear el tag Git `design-baseline-v1.0`. Las revisiones posteriores deben conservar historial y declarar la versión anterior y nueva.
+Esta baseline es `Design Baseline v1.2` (v1.1 + CR-002 aceptada). No se crea un tag automáticamente. Cuando la baseline esté aprobada para implementación, se recomienda crear el tag Git `design-baseline-v1.2`. Las revisiones posteriores deben conservar historial y declarar la versión anterior y nueva.
