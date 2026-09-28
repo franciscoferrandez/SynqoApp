@@ -14,4 +14,8 @@ description: Verifica cualquier cambio de código, tests, build, datos o comport
 7. Registra evidencia objetiva: comando o suite, resultado, fecha y artefacto relacionado. Enlaza CI persistente si existe.
 8. Actualiza `tfm/evidence-register.md` cuando el cambio sea significativo, sin copiar logs completos.
 
+## Material formativo
+
+Cuando la SPEC tenga guía docente, comprobar que sus enlaces internos y comandos existen, que los diagramas Mermaid son legibles y que las explicaciones corresponden al código y a la evidencia real. Corregir referencias obsoletas y confirmar que no expone secretos. No marcar una SPEC futura como `Verified` si falta su guía mínima.
+
 Resume la evidencia y los límites de lo verificado. La verificación es obligatoria antes de cerrar un cambio de comportamiento.

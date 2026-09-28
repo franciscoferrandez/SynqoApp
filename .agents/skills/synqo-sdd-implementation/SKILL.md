@@ -18,4 +18,8 @@ Solo se puede usar si existe una SPEC en estado `Ready`.
 9. Marca `Implemented`, invoca `$synqo-verification` y solo tras resultado satisfactorio marca `Verified`.
 10. Actualiza `spec-register.md`, `implementation/status.md` y la evidencia TFM objetiva. Actualiza métricas e hitos solo con datos reales.
 
+## Material formativo
+
+Completa la guía docente creada para la SPEC: prerrequisitos y comandos reales, mapa enlazado de artefactos, recorrido de decisiones o fragmentos pequeños, verificaciones y límites hacia slices posteriores. Usa Mermaid solo si aclara materialmente un flujo, decisión, secuencia o relación. La guía explica; no sustituye ni duplica la SPEC, ADR, OpenAPI o código, ni contiene secretos.
+
 Si requiere cambiar baseline, detente e invoca `$synqo-change-control`. No inventes SHA: usa `pending commit reference` hasta que exista commit.
