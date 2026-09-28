@@ -1,17 +1,28 @@
 import { defineConfig } from '@mikro-orm/postgresql';
 
 import { getEnvironment } from './config.js';
+import {
+  AccessCredentialEntity,
+  AvailabilityEntryEntity,
+  ParticipantEntity,
+  ParticipantSessionEntity,
+  QuickTeamEntity,
+} from './entities/quick-team.entities.js';
 
-const environment = getEnvironment();
+export const createMikroOrmConfig = () =>
+  defineConfig({
+    clientUrl: getEnvironment().DATABASE_URL,
+    entities: [
+      QuickTeamEntity,
+      ParticipantEntity,
+      AccessCredentialEntity,
+      ParticipantSessionEntity,
+      AvailabilityEntryEntity,
+    ],
+    migrations: {
+      path: 'dist/migrations',
+      pathTs: 'src/migrations',
+    },
+  });
 
-export default defineConfig({
-  clientUrl: environment.DATABASE_URL,
-  discovery: {
-    warnWhenNoEntities: false,
-  },
-  entities: [],
-  migrations: {
-    path: 'dist/migrations',
-    pathTs: 'src/migrations',
-  },
-});
+export default createMikroOrmConfig();

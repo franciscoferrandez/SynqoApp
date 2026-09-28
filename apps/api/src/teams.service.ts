@@ -2,13 +2,18 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  OnModuleDestroy,
   NotFoundException,
 } from '@nestjs/common';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { Pool } from 'pg';
+import { EntityManager } from '@mikro-orm/postgresql';
 
-import { getEnvironment } from './config.js';
+import {
+  AccessCredentialEntity,
+  AvailabilityEntryEntity,
+  ParticipantEntity,
+  ParticipantSessionEntity,
+  QuickTeamEntity,
+} from './entities/quick-team.entities.js';
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const IANA_TIME_ZONE = (value: string) => {
@@ -44,12 +49,8 @@ const isLocalDate = (value: string) => {
 };
 
 @Injectable()
-export class TeamsService implements OnModuleDestroy {
-  private readonly pool = new Pool({ connectionString: getEnvironment().DATABASE_URL });
-
-  async onModuleDestroy(): Promise<void> {
-    await this.pool.end();
-  }
+export class TeamsService {
+  constructor(private readonly em: EntityManager) {}
 
   async createQuick(input: { teamName: string; timeZone: string; participantDisplayName: string }) {
     if (
@@ -58,31 +59,51 @@ export class TeamsService implements OnModuleDestroy {
       !IANA_TIME_ZONE(input.timeZone)
     )
       throw new BadRequestException({ code: 'VALIDATION_ERROR' });
-    const client = await this.pool.connect();
     const teamId = randomUUID();
     const participantId = randomUUID();
     const teamRef = ref();
     const participantRef = ref();
     const token = ref();
-    try {
-      await client.query('begin');
-      await client.query(
-        "insert into teams (id, public_ref, name, mode, time_zone, quick_state, last_relevant_activity_at) values ($1,$2,$3,'QUICK',$4,'ACTIVE',now())",
-        [teamId, teamRef, input.teamName.trim(), input.timeZone],
-      );
-      await client.query(
-        'insert into participants (id, team_id, public_ref, display_name) values ($1,$2,$3,$4)',
-        [participantId, teamId, participantRef, input.participantDisplayName.trim()],
-      );
-      await client.query(
-        "insert into access_credentials (id, team_id, public_ref, type, scope) values ($1,$2,$3,'PUBLIC_LINK','TEAM_PUBLIC')",
-        [randomUUID(), teamId, teamRef],
-      );
-      await client.query(
-        'insert into participant_sessions (id, team_id, participant_id, token_hash, expires_at) values ($1,$2,$3,$4,$5)',
-        [randomUUID(), teamId, participantId, hash(token), new Date(Date.now() + SESSION_TTL_MS)],
-      );
-      await client.query('commit');
+    return this.em.transactional(async (em) => {
+      const createdAt = new Date();
+      const team = em.create(QuickTeamEntity, {
+        id: teamId,
+        publicRef: teamRef,
+        name: input.teamName.trim(),
+        mode: 'QUICK',
+        timeZone: input.timeZone,
+        quickState: 'ACTIVE',
+        lastRelevantActivityAt: createdAt,
+        createdAt,
+      });
+      const participant = em.create(ParticipantEntity, {
+        id: participantId,
+        team,
+        publicRef: participantRef,
+        displayName: input.participantDisplayName.trim(),
+        isActive: true,
+        createdAt,
+      });
+      em.persist([
+        team,
+        participant,
+        em.create(AccessCredentialEntity, {
+          id: randomUUID(),
+          team,
+          publicRef: teamRef,
+          type: 'PUBLIC_LINK',
+          scope: 'TEAM_PUBLIC',
+          createdAt,
+        }),
+        em.create(ParticipantSessionEntity, {
+          id: randomUUID(),
+          team,
+          participant,
+          tokenHash: hash(token),
+          expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+          createdAt,
+        }),
+      ]);
       return {
         team: {
           teamRef,
@@ -99,81 +120,91 @@ export class TeamsService implements OnModuleDestroy {
         },
         token,
       };
-    } catch (error) {
-      await client.query('rollback');
-      throw error;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getPublic(teamRef: string): Promise<Team> {
-    const result = await this.pool.query(
-      'select public_ref, name, time_zone from teams where public_ref=$1',
-      [teamRef],
-    );
-    if (!result.rowCount) throw new NotFoundException({ code: 'TEAM_NOT_FOUND' });
-    const r = result.rows[0];
+    const team = await this.em.findOne(QuickTeamEntity, { publicRef: teamRef });
+    if (!team) throw new NotFoundException({ code: 'TEAM_NOT_FOUND' });
     return {
-      teamRef: r.public_ref,
-      name: r.name,
+      teamRef: team.publicRef,
+      name: team.name,
       mode: 'QUICK',
       quickState: 'ACTIVE',
-      timeZone: r.time_zone,
+      timeZone: team.timeZone,
     };
   }
   async join(teamRef: string, displayName: string) {
-    const team = await this.getPublic(teamRef);
     if (!displayName.trim()) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
-    const teamRow = await this.pool.query('select id from teams where public_ref=$1', [teamRef]);
-    const participantId = randomUUID();
-    const participantRef = ref();
-    const token = ref();
-    await this.pool.query(
-      'insert into participants (id, team_id, public_ref, display_name) values ($1,$2,$3,$4)',
-      [participantId, teamRow.rows[0].id, participantRef, displayName.trim()],
-    );
-    await this.pool.query(
-      'insert into participant_sessions (id, team_id, participant_id, token_hash, expires_at) values ($1,$2,$3,$4,$5)',
-      [
-        randomUUID(),
-        teamRow.rows[0].id,
-        participantId,
-        hash(token),
-        new Date(Date.now() + SESSION_TTL_MS),
-      ],
-    );
-    return {
-      team,
-      participant: {
-        participantRef,
+    return this.em.transactional(async (em) => {
+      const team = await em.findOne(QuickTeamEntity, { publicRef: teamRef });
+      if (!team) throw new NotFoundException({ code: 'TEAM_NOT_FOUND' });
+      const participantRef = ref();
+      const token = ref();
+      const createdAt = new Date();
+      const participant = em.create(ParticipantEntity, {
+        id: randomUUID(),
+        team,
+        publicRef: participantRef,
         displayName: displayName.trim(),
         isActive: true,
-        linkedAccount: false as const,
-      },
-      token,
-    };
+        createdAt,
+      });
+      em.persist([
+        participant,
+        em.create(ParticipantSessionEntity, {
+          id: randomUUID(),
+          team,
+          participant,
+          tokenHash: hash(token),
+          expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+          createdAt,
+        }),
+      ]);
+      return {
+        team: {
+          teamRef: team.publicRef,
+          name: team.name,
+          mode: 'QUICK' as const,
+          quickState: 'ACTIVE' as const,
+          timeZone: team.timeZone,
+        },
+        participant: {
+          participantRef,
+          displayName: participant.displayName,
+          isActive: true,
+          linkedAccount: false as const,
+        },
+        token,
+      };
+    });
   }
   async current(teamRef: string, token?: string) {
     if (!token) throw new ForbiddenException({ code: 'CONTEXT_REQUIRED' });
-    const result = await this.pool.query(
-      `select p.public_ref,p.display_name,p.is_active,t.public_ref as team_ref,t.name,t.time_zone from participant_sessions s join participants p on p.id=s.participant_id join teams t on t.id=s.team_id where s.token_hash=$1 and t.public_ref=$2 and p.is_active=true and s.revoked_at is null and s.expires_at>now()`,
-      [hash(token), teamRef],
+    const session = await this.em.findOne(
+      ParticipantSessionEntity,
+      {
+        tokenHash: hash(token),
+        team: { publicRef: teamRef },
+        participant: { isActive: true },
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+      },
+      { populate: ['participant', 'team'] },
     );
-    if (!result.rowCount) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
-    const r = result.rows[0];
+    if (!session) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
     return {
       team: {
-        teamRef: r.team_ref,
-        name: r.name,
+        teamRef: session.team.publicRef,
+        name: session.team.name,
         mode: 'QUICK' as const,
         quickState: 'ACTIVE' as const,
-        timeZone: r.time_zone,
+        timeZone: session.team.timeZone,
       },
       participant: {
-        participantRef: r.public_ref,
-        displayName: r.display_name,
-        isActive: r.is_active,
+        participantRef: session.participant.publicRef,
+        displayName: session.participant.displayName,
+        isActive: session.participant.isActive,
         linkedAccount: false as const,
       },
     };
@@ -181,28 +212,35 @@ export class TeamsService implements OnModuleDestroy {
 
   private async availabilityContext(teamRef: string, token?: string) {
     if (!token) throw new ForbiddenException({ code: 'CONTEXT_REQUIRED' });
-    const result = await this.pool.query(
-      `select t.id as team_id,p.id as participant_id,t.mode,t.quick_state from participant_sessions s join participants p on p.id=s.participant_id join teams t on t.id=s.team_id where s.token_hash=$1 and t.public_ref=$2 and p.is_active=true and s.revoked_at is null and s.expires_at>now()`,
-      [hash(token), teamRef],
+    const session = await this.em.findOne(
+      ParticipantSessionEntity,
+      {
+        tokenHash: hash(token),
+        team: { publicRef: teamRef },
+        participant: { isActive: true },
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+      },
+      { populate: ['participant', 'team'] },
     );
-    if (!result.rowCount) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
-    return result.rows[0] as {
-      team_id: string;
-      participant_id: string;
-      mode: 'QUICK';
-      quick_state: 'ACTIVE';
-    };
+    if (!session) throw new ForbiddenException({ code: 'CONTEXT_INVALID' });
+    return { team: session.team, participant: session.participant };
   }
 
   async getMyAvailability(teamRef: string, token: string | undefined, from: string, to: string) {
     if (!isLocalDate(from) || !isLocalDate(to) || from > to)
       throw new BadRequestException({ code: 'VALIDATION_ERROR' });
     const context = await this.availabilityContext(teamRef, token);
-    const result = await this.pool.query(
-      'select local_date::text as local_date, status from availability_entries where team_id=$1 and participant_id=$2 and local_date between $3 and $4 order by local_date',
-      [context.team_id, context.participant_id, from, to],
+    const entries = await this.em.find(
+      AvailabilityEntryEntity,
+      {
+        team: context.team,
+        participant: context.participant,
+        localDate: { $gte: from, $lte: to },
+      },
+      { orderBy: { localDate: 'asc' } },
     );
-    return { entries: result.rows.map((row) => ({ date: row.local_date, status: row.status })) };
+    return { entries: entries.map((entry) => ({ date: entry.localDate, status: entry.status })) };
   }
 
   async putMyAvailability(
@@ -223,42 +261,52 @@ export class TeamsService implements OnModuleDestroy {
       dates.add(entry.date);
     }
     const context = await this.availabilityContext(teamRef, token);
-    const client = await this.pool.connect();
-    try {
-      await client.query('begin');
+    return this.em.transactional(async (em) => {
       for (const entry of entries) {
-        await client.query(
-          `insert into availability_entries (id, team_id, participant_id, local_date, status)
-           values ($1,$2,$3,$4,$5)
-           on conflict (team_id, participant_id, local_date) do update set status=excluded.status, updated_at=now()`,
-          [randomUUID(), context.team_id, context.participant_id, entry.date, entry.status],
-        );
+        const existing = await em.findOne(AvailabilityEntryEntity, {
+          team: context.team,
+          participant: context.participant,
+          localDate: entry.date,
+        });
+        if (existing) {
+          existing.status = entry.status as AvailabilityStatus;
+          existing.updatedAt = new Date();
+        } else {
+          const now = new Date();
+          em.persist(
+            em.create(AvailabilityEntryEntity, {
+              id: randomUUID(),
+              team: context.team,
+              participant: context.participant,
+              localDate: entry.date,
+              status: entry.status as AvailabilityStatus,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          );
+        }
       }
-      await client.query(
-        "update teams set last_relevant_activity_at=now() where id=$1 and mode='QUICK' and quick_state='ACTIVE'",
-        [context.team_id],
-      );
-      await client.query('commit');
+      if (context.team.mode === 'QUICK' && context.team.quickState === 'ACTIVE') {
+        context.team.lastRelevantActivityAt = new Date();
+      }
       return { entries: entries.map(({ date, status }) => ({ date, status })) };
-    } catch (error) {
-      await client.query('rollback');
-      throw error;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async clearMyAvailability(teamRef: string, token: string | undefined, date: string) {
     if (!isLocalDate(date)) throw new BadRequestException({ code: 'VALIDATION_ERROR' });
     const context = await this.availabilityContext(teamRef, token);
-    await this.pool.query(
-      'delete from availability_entries where team_id=$1 and participant_id=$2 and local_date=$3',
-      [context.team_id, context.participant_id, date],
-    );
-    await this.pool.query(
-      "update teams set last_relevant_activity_at=now() where id=$1 and mode='QUICK' and quick_state='ACTIVE'",
-      [context.team_id],
-    );
-    return { entries: [] };
+    return this.em.transactional(async (em) => {
+      const entry = await em.findOne(AvailabilityEntryEntity, {
+        team: context.team,
+        participant: context.participant,
+        localDate: date,
+      });
+      if (entry) em.remove(entry);
+      if (context.team.mode === 'QUICK' && context.team.quickState === 'ACTIVE') {
+        context.team.lastRelevantActivityAt = new Date();
+      }
+      return { entries: [] };
+    });
   }
 }

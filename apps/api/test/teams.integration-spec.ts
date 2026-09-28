@@ -1,10 +1,18 @@
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { MikroORM } from '@mikro-orm/postgresql';
 import { Client } from 'pg';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
+import {
+  AccessCredentialEntity,
+  AvailabilityEntryEntity,
+  ParticipantEntity,
+  ParticipantSessionEntity,
+  QuickTeamEntity,
+} from '../src/entities/quick-team.entities.js';
 
 const schema = [
   "create table teams (id uuid primary key, public_ref text not null unique, name text not null, mode text not null check (mode = 'QUICK'), time_zone text not null, quick_state text not null check (quick_state = 'ACTIVE'), last_relevant_activity_at timestamptz not null, created_at timestamptz not null default now())",
@@ -61,6 +69,15 @@ describe('quick teams API', () => {
     const csrf = raw.match(/synqo_csrf=([^;]+)/)?.[1] ?? '';
     return { cookie: `synqo_context_session=${session}; synqo_csrf=${csrf}`, csrf };
   }
+
+  it('integra MikroORM con las entidades de persistencia de Slice 1', () => {
+    const orm = app.get(MikroORM);
+    expect(orm.getMetadata().get(QuickTeamEntity).tableName).toBe('teams');
+    expect(orm.getMetadata().get(ParticipantEntity).tableName).toBe('participants');
+    expect(orm.getMetadata().get(AccessCredentialEntity).tableName).toBe('access_credentials');
+    expect(orm.getMetadata().get(ParticipantSessionEntity).tableName).toBe('participant_sessions');
+    expect(orm.getMetadata().get(AvailabilityEntryEntity).tableName).toBe('availability_entries');
+  });
 
   it('crea equipo, participante y sesión contextual', async () => {
     const { response, body } = await create('Equipo de prueba');
@@ -226,6 +243,21 @@ describe('quick teams API', () => {
     expect(invalid.headers.get('content-type')).toContain('application/problem+json');
     const other = `${await app.getUrl()}/api/v1/teams/${second.body.team.teamRef}/availability/me?from=2026-10-12&to=2026-10-12`;
     expect((await fetch(other, { headers: { cookie } })).status).toBe(403);
+  });
+
+  it('revierte la creación rápida si falla una escritura de la transacción', async () => {
+    const client = new Client({ connectionString: database.getConnectionUri() });
+    await client.connect();
+    await client.query('drop table participant_sessions');
+
+    const { response } = await create('No parcial');
+    expect(response.status).toBe(500);
+
+    const result = await client.query('select count(*)::int as count from teams where name = $1', [
+      'No parcial',
+    ]);
+    expect(result.rows[0].count).toBe(0);
+    await client.end();
   });
 
   it('limita el abuso de las creaciones públicas', async () => {
