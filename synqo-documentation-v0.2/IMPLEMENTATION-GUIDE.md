@@ -97,6 +97,7 @@ Quiero implementar SPEC-XXX
 Usa $synqo-sdd-implementation.
 La SPEC está en Ready y el PR de documentación ya está integrado en main.
 Haz el branch preflight antes de tocar código.
+Completa el Baseline Conformance Preflight: verifica con evidencia de código, configuración, migraciones y pruebas que los prerrequisitos y decisiones previas relevantes se cumplen realmente. Si falla, detente antes de cambiar la SPEC a In Progress.
 Si estás en main y necesitas crear o cambiar de rama, detente y pídeme autorización explícita.
 Cuando exista una rama autorizada, cambia la SPEC a In Progress, implementa solo su alcance y crea o ajusta los tests requeridos.
 No implementes funcionalidades de SPECS posteriores.
@@ -152,13 +153,33 @@ Una SPEC puede volver a `Draft` si aparece una ambigüedad. No se salta de `Plan
 3. Trazar requisitos, historias, flows, diseño, autorización, datos, API y tests relevantes.
 4. Redactar la SPEC y resolver ambigüedades con el propietario.
 5. Marcar `Ready` solo cuando sea implementable.
-6. Invocar `$synqo-sdd-implementation`.
-7. Marcar `In Progress`, crear/ajustar tests e implementar el mínimo suficiente.
-8. Revisar contratos, autorización, seguridad, datos y documentación.
-9. Marcar `Implemented` y ejecutar `$synqo-verification`.
-10. Registrar evidencia objetiva, actualizar el registro y marcar `Verified` solo cuando todo sea satisfactorio.
+6. Completar el **Baseline Conformance Preflight** antes de iniciar código.
+7. Invocar `$synqo-sdd-implementation` solo si el preflight es satisfactorio.
+8. Marcar `In Progress`, crear/ajustar tests e implementar el mínimo suficiente.
+9. Revisar contratos, autorización, seguridad, datos y documentación.
+10. Marcar `Implemented` y ejecutar `$synqo-verification`.
+11. Registrar evidencia objetiva, actualizar el registro y marcar `Verified` solo cuando todo sea satisfactorio.
 
 No implementar una feature sustancial sin SPEC `Ready`. Si la SPEC contradice la baseline, necesita una decisión de producto, cambia un `Must`, dominio, API, autorización o seguridad diseñada, se detiene el trabajo y se abre una CR.
+
+### Baseline Conformance Preflight
+
+El estado documental `Verified` de una dependencia no es evidencia suficiente. Antes de cambiar la SPEC a `In Progress`, quien implementa debe comprobar los prerrequisitos en el workspace real y dejar evidencia breve y enlazada en la SPEC o en `implementation/status.md`.
+
+| Comprobación | Evidencia mínima exigida |
+|---|---|
+| Stack y decisiones arquitectónicas relevantes | Configuración y código de ejecución, no solo dependencias instaladas. Ejemplo: si la baseline exige un ORM, debe haber entidades, integración en el runtime y uso en la persistencia de negocio. |
+| Dependencias de SPEC | Criterios de aceptación y comportamiento implementado de la SPEC previa relevantes para esta unidad; revisar código y pruebas, no solo el registro. |
+| Datos y contratos | Migraciones aplicables, constraints, OpenAPI y compatibilidad de los endpoints consumidos. |
+| Autorización y seguridad | Controles server-side y casos negativos ya implementados para el flujo que se va a ampliar. |
+| Toolchain y calidad | Comandos reales de formato, tipo, tests y build disponibles y ejecutables en el entorno. |
+
+El preflight debe concluir explícitamente `Pass` o `Fail`:
+
+- `Pass`: enumera las pruebas o artefactos inspeccionados y permite iniciar la SPEC.
+- `Fail`: prohíbe cambiarla a `In Progress` o añadir comportamiento posterior. Se corrige primero la divergencia dentro de la unidad fundacional afectada, o se prepara una unidad de corrección de baseline; no se enmascara como deuda futura.
+
+La Verification final vuelve a comprobar que el preflight era correcto. Si descubre una divergencia previa, invalida el cierre de la SPEC aunque sus pruebas locales pasen.
 
 ## Flujo de small change
 

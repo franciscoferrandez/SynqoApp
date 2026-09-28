@@ -29,6 +29,7 @@ Carga contexto específico bajo demanda; no leas toda la documentación para cad
 - Conserva evidencia TFM para trabajo significativo y no registres actividad trivial.
 - No dejes decisiones significativas solo en chats o terminales ni dupliques la historia Git.
 - Antes de cambios relevantes, comprueba rama y workspace; usa ramas cortas y PR según `synqo-documentation-v0.2/IMPLEMENTATION-GUIDE.md`.
+- Antes de iniciar una SPEC, completa el Baseline Conformance Preflight: verifica en código, configuración, migraciones y pruebas que sus prerrequisitos y decisiones previas relevantes se cumplen realmente; no confíes solo en estados `Verified` o documentación. Si falta evidencia o hay divergencia, detente y corrige el cimiento antes de implementar la siguiente slice.
 - No crees o cambies de rama automáticamente sin autorización explícita; si el trabajo relevante está en `main`, detente y pregunta.
 
 # Git safety
