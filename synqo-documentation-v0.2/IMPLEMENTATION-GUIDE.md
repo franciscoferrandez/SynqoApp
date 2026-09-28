@@ -77,7 +77,7 @@ Para iniciar una sesión limpia con la primera SPEC:
 ```text
 Lee AGENTS.md y synqo-documentation-v0.2/IMPLEMENTATION-GUIDE.md.
 
-Quiero preparar SPEC-001 — Bootstrap del repositorio y toolchain.
+Quiero preparar SPEC-XXX.
 
 Usa $synqo-spec-authoring.
 No implementes código todavía.
@@ -92,14 +92,14 @@ Para continuar una SPEC aprobada:
 ```text
 Lee AGENTS.md y synqo-documentation-v0.2/IMPLEMENTATION-GUIDE.md.
 
-Quiero implementar SPEC-001 — Bootstrap del repositorio y toolchain.
+Quiero implementar SPEC-XXX
 
 Usa $synqo-sdd-implementation.
 La SPEC está en Ready y el PR de documentación ya está integrado en main.
 Haz el branch preflight antes de tocar código.
 Si estás en main y necesitas crear o cambiar de rama, detente y pídeme autorización explícita.
 Cuando exista una rama autorizada, cambia la SPEC a In Progress, implementa solo su alcance y crea o ajusta los tests requeridos.
-No implementes funcionalidades de SPEC-002 ni posteriores.
+No implementes funcionalidades de SPECS posteriores.
 Usa versiones actualizadas y, siempre que exista una opción soportada, versiones LTS para runtime, package manager y dependencias principales; documenta cualquier excepción.
 Respeta la Design Baseline y detente si el trabajo requiere cambiarla o abrir una Change Request.
 Al terminar la implementación, deja la SPEC en Implemented y detente para que se ejecute $synqo-verification.

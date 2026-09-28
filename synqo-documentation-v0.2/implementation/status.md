@@ -8,7 +8,7 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 
 ## Active work
 
-- No hay una SPEC activa.
+- No hay una SPEC `In Progress`; `SPEC-003` está `Ready` y pendiente de autorización para implementación.
 
 ## Completed specs
 
@@ -17,7 +17,7 @@ Implementation. La Design Baseline v1.0 está preparada; la Slice 0 está verifi
 
 ## Next specs
 
-- `SPEC-003` — Registrar disponibilidad individual diaria (`Planned`; depende de `SPEC-002`).
+- `SPEC-003` — Registrar disponibilidad individual diaria (`Ready`; depende de `SPEC-002`, ya `Verified`).
 
 ## Known blockers
 
