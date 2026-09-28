@@ -1,10 +1,17 @@
 import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { MikroORM } from '@mikro-orm/postgresql';
 import { Client } from 'pg';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
+import {
+  AccessCredentialEntity,
+  ParticipantEntity,
+  ParticipantSessionEntity,
+  QuickTeamEntity,
+} from '../src/entities/quick-team.entities.js';
 
 const schema = [
   "create table teams (id uuid primary key, public_ref text not null unique, name text not null, mode text not null check (mode = 'QUICK'), time_zone text not null, quick_state text not null check (quick_state = 'ACTIVE'), last_relevant_activity_at timestamptz not null, created_at timestamptz not null default now())",
@@ -53,6 +60,14 @@ describe('quick teams API', () => {
       },
     };
   }
+
+  it('integra MikroORM con las entidades de persistencia de Slice 1', () => {
+    const orm = app.get(MikroORM);
+    expect(orm.getMetadata().get(QuickTeamEntity).tableName).toBe('teams');
+    expect(orm.getMetadata().get(ParticipantEntity).tableName).toBe('participants');
+    expect(orm.getMetadata().get(AccessCredentialEntity).tableName).toBe('access_credentials');
+    expect(orm.getMetadata().get(ParticipantSessionEntity).tableName).toBe('participant_sessions');
+  });
 
   it('crea equipo, participante y sesión contextual', async () => {
     const { response, body } = await create('Equipo de prueba');
@@ -143,6 +158,21 @@ describe('quick teams API', () => {
     });
     expect(csrfFailure.status).toBe(403);
     expect(csrf).not.toBe('');
+  });
+
+  it('revierte la creación rápida si falla una escritura de la transacción', async () => {
+    const client = new Client({ connectionString: database.getConnectionUri() });
+    await client.connect();
+    await client.query('drop table participant_sessions');
+
+    const { response } = await create('No parcial');
+    expect(response.status).toBe(500);
+
+    const result = await client.query('select count(*)::int as count from teams where name = $1', [
+      'No parcial',
+    ]);
+    expect(result.rows[0].count).toBe(0);
+    await client.end();
   });
 
   it('limita el abuso de las creaciones públicas', async () => {

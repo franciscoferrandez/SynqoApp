@@ -18,6 +18,6 @@ Registro de unidades Spec-First. El orden traduce el roadmap sin modificarlo: pr
 | SPEC-012 | Asistencia IA para restricciones de coordinación | 11 | Should / TFM Required | SPEC-004, SPEC-005 | RF-AI-01..RF-AI-12 |
 | SPEC-013 | Encuesta MULTIPLE y visibilidad avanzada | 5 | Should | SPEC-006 | RF-ENC-*, RF-RES-06 |
 | SPEC-014 | Histórico, pendientes y continuidad global enriquecida | 8/9 | Could | SPEC-005, SPEC-006, SPEC-009 | RF-PEN-*, RF-HIS-* |
-| SPEC-015 | Conformidad de persistencia con MikroORM | Correctiva | Must | Ready | SPEC-002 | ADR-005, Design Baseline: PostgreSQL + MikroORM |
+| SPEC-015 | Conformidad de persistencia con MikroORM | Correctiva | Must | Verified | SPEC-002 | ADR-005, Design Baseline: PostgreSQL + MikroORM |
 
 Los rangos de requisitos siguen la nomenclatura de `product/09-functional-requirements.md`; la SPEC concreta debe verificar la lista exacta antes de pasar a `Ready`. `SPEC-001` es la primera unidad que debe prepararse: habilita la ejecución local, las pruebas y las siguientes slices sin introducir comportamiento de producto.
