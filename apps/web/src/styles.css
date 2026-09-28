@@ -28,6 +28,38 @@ main:focus-visible {
   min-height: 100vh;
 }
 
+.card {
+  margin: 4rem auto;
+  max-width: 36rem;
+  padding: 2rem;
+}
+form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+input,
+button {
+  border-radius: 0.4rem;
+  font: inherit;
+  padding: 0.75rem;
+}
+input {
+  border: 1px solid #8090ad;
+}
+button {
+  background: #96d5ff;
+  border: 0;
+  color: #101726;
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .app-header {
   border-bottom: 1px solid #2e3b55;
   padding: 1rem clamp(1rem, 5vw, 4rem);

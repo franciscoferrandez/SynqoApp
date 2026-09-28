@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
 import { DatabaseHealthService } from './database-health.service.js';
 import { HealthController } from './health.controller.js';
+import { TeamsController } from './teams.controller.js';
+import { TeamsService } from './teams.service.js';
+import { RequestProtectionService } from './request-protection.service.js';
+import { ProblemDetailsFilter } from './problem-details.filter.js';
 
 @Module({
   imports: [
@@ -22,9 +26,15 @@ import { HealthController } from './health.controller.js';
       },
     }),
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, TeamsController],
   providers: [
     DatabaseHealthService,
+    TeamsService,
+    RequestProtectionService,
+    {
+      provide: APP_FILTER,
+      useClass: ProblemDetailsFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

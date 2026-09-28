@@ -42,9 +42,12 @@ describe('healthcheck', () => {
       const response = await fetch(`${await app.getUrl()}/health`);
 
       expect(response.status).toBe(503);
+      expect(response.headers.get('content-type')).toContain('application/problem+json');
       await expect(response.json()).resolves.toEqual({
-        status: 'error',
-        message: 'Database unavailable',
+        type: 'https://synqo.app/problems/internal-error',
+        title: 'ServiceUnavailableException',
+        status: 503,
+        detail: 'Database unavailable',
       });
     } finally {
       process.env.DATABASE_URL = databaseUrl;
