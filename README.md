@@ -70,7 +70,7 @@ Este es el repositorio [SynqoApp](https://github.com/franciscoferrandez/SynqoApp
 
 ## Desarrollo local
 
-La [vista previa WEB](web/README.md) ya tiene instrucciones para instalar, arrancar, comprobar y limpiar desde un clon. [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/spec-coo-001-base-visual-y-navegacion.md) cubre solo el layout y la navegación simulada. [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/spec-equ-001-arranque-equipo-local.md) añadirá la API, PostgreSQL, migraciones y comandos de prueba funcionales.
+La [vista previa WEB](web/README.md) ya tiene instrucciones para instalar, arrancar, comprobar y limpiar desde un clon. [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md) cubre solo el layout y la navegación simulada. [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/spec-equ-001-arranque-equipo-local.md) añadirá la API, PostgreSQL, migraciones y comandos de prueba funcionales.
 
 ## Calidad y reglas de implementación
 

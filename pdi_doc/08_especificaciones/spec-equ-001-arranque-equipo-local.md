@@ -9,20 +9,20 @@ release: REL-001
 
 ## Objetivo
 
-Continuar la realización de [REL-001 — Demo local operativa de Synqo](../01_producto/10_entregas/rel-001-demo-local-operativa.md) después de [SPEC-COO-001 — Base visual y navegación de Synqo](spec-coo-001-base-visual-y-navegacion.md): crear de verdad un equipo y su primer participante, conservarlos en PostgreSQL y abrir el equipo mediante su enlace desde otro navegador, conectando los recorridos visuales ya construidos.
+Continuar la realización de [REL-001 — Demo local operativa de Synqo](../01_producto/10_entregas/rel-001-demo-local-operativa.md) después de [SPEC-COO-001 — Base visual y navegación de Synqo](99_archivadas/spec-coo-001-base-visual-y-navegacion.md): crear de verdad un equipo y su primer participante, conservarlos en PostgreSQL y abrir el equipo mediante su enlace desde otro navegador, conectando los recorridos visuales ya construidos.
 
 ## Scope
 
 - API Symfony con persistencia PostgreSQL y comandos locales reproducibles, conectada a la web Angular existente.
 - Configuración local de API y PostgreSQL con ejemplo versionado sin credenciales reales, dependencias bloqueadas, migraciones versionadas y comandos para iniciar, migrar, probar y reiniciar la base de prueba.
-- Sustitución de la simulación del formulario y la confirmación por creación real, confirmación configurable y selección automática de la primera identidad; incluye la animación ilustrativa de placeholders aplazada desde [SPEC-COO-001 — Base visual y navegación de Synqo](spec-coo-001-base-visual-y-navegacion.md).
+- Sustitución de la simulación del formulario y la confirmación por creación real, confirmación configurable y selección automática de la primera identidad; incluye la animación ilustrativa de placeholders aplazada desde [SPEC-COO-001 — Base visual y navegación de Synqo](99_archivadas/spec-coo-001-base-visual-y-navegacion.md).
 - Acceso por enlace, selección o creación de identidad en un navegador nuevo y cambio de identidad.
 - Estados de enlace inexistente y equipo caducado, así como copia y compartición del enlace cuando el dispositivo lo permita.
 - Pruebas significativas de API y de los recorridos del navegador de este alcance.
 
 ## Fuera de scope
 
-La construcción inicial de layouts, temas y pantallas simuladas pertenece a [SPEC-COO-001 — Base visual y navegación de Synqo](spec-coo-001-base-visual-y-navegacion.md). Disponibilidad, calendario operativo y consultas se entregarán en Changes siguientes de la misma release. El envío real de correo, publicación pública y sustitución de enlace quedan fuera de [REL-001 — Demo local operativa de Synqo](../01_producto/10_entregas/rel-001-demo-local-operativa.md). La limpieza definitiva de datos caducados podrá materializarse en un Change posterior de la misma release, antes de cerrarla.
+La construcción inicial de layouts, temas y pantallas simuladas pertenece a [SPEC-COO-001 — Base visual y navegación de Synqo](99_archivadas/spec-coo-001-base-visual-y-navegacion.md). Disponibilidad, calendario operativo y consultas se entregarán en Changes siguientes de la misma release. El envío real de correo, publicación pública y sustitución de enlace quedan fuera de [REL-001 — Demo local operativa de Synqo](../01_producto/10_entregas/rel-001-demo-local-operativa.md). La limpieza definitiva de datos caducados podrá materializarse en un Change posterior de la misma release, antes de cerrarla.
 
 ## Baseline relacionado
 
@@ -36,7 +36,7 @@ La construcción inicial de layouts, temas y pantallas simuladas pertenece a [SP
 - [WF-EQU-001 — Elección de identidad al entrar](../04_experiencia-usuario/03_wireframes/wf-equ-001-entrada-identidad.md)
 - [WF-EQU-002 — Creación de equipo rápido](../04_experiencia-usuario/03_wireframes/wf-equ-002-crear-equipo.md)
 - [MOCKUP-EQU-001 — Arranque directo de un equipo](../04_experiencia-usuario/06_mockups/mockup-equ-001-arranque-equipo.md)
-- [SPEC-COO-001 — Base visual y navegación de Synqo](spec-coo-001-base-visual-y-navegacion.md)
+- [SPEC-COO-001 — Base visual y navegación de Synqo](99_archivadas/spec-coo-001-base-visual-y-navegacion.md)
 - [Estructura inicial del equipo](../04_experiencia-usuario/01_arquitectura-informacion/estructura-equipo.md)
 - [Sistema de diseño inicial de Synqo](../04_experiencia-usuario/05_sistema-diseno/sistema-diseno-inicial.md)
 - [ADR-COO-001 — Separar interfaz web y API para la demo local](../05_investigacion-y-decisiones/05_adr/adr-coo-001-estructura-demo-local.md)
@@ -57,7 +57,7 @@ La construcción inicial de layouts, temas y pantallas simuladas pertenece a [SP
 - El enlace real tiene el formato y la comprobación de [ADR-EQU-003 — Verificar el valor del enlace en cada operación de la API](../05_investigacion-y-decisiones/05_adr/adr-equ-003-verificar-enlace-en-api.md). La API no concede acceso con solo el UUID o una identidad recordada. Se puede recargar y abrir el mismo enlace desde otro navegador. Copiar conserva el enlace completo y compartir usa el diálogo del dispositivo cuando exista.
 - En un navegador nuevo, antes de mostrar el contenido del equipo vigente se elige una identidad existente o se crea otra. La selección se recuerda por equipo y navegador, puede cambiarse desde el diálogo de la cabecera y no reinicia por sí sola la caducidad. Un nombre nuevo que ya exista en ese equipo, comparado sin mayúsculas, acentos ni espacios exteriores, se rechaza sin crear un duplicado. Si excepcionalmente no hay participantes, crear uno sigue siendo obligatorio antes de entrar.
 - El equipo vigente muestra la fecha prevista de caducidad. Crear el equipo e incorporar un participante reinician el plazo según [RN-EQU-002 — Caducidad de equipos rápidos por inactividad](../03_requisitos/02_reglas-negocio/EQU/rn-equ-002-caducidad-equipo.md); leerlo, recargarlo o cambiar solo la identidad local no lo hacen. La API aplica la vigencia con la zona del equipo y su reloj controlable.
-- Un enlace de equipo caducado aún conservado muestra el mensaje de caducidad sin datos del equipo. Un enlace incorrecto, inexistente o de un equipo ya borrado muestra «No encontramos este equipo». Ninguno permite entrar al contenido. La creación y el acceso reales sustituyen la simulación de [SPEC-COO-001 — Base visual y navegación de Synqo](spec-coo-001-base-visual-y-navegacion.md) reutilizando sus layouts, temas y componentes comunes.
+- Un enlace de equipo caducado aún conservado muestra el mensaje de caducidad sin datos del equipo. Un enlace incorrecto, inexistente o de un equipo ya borrado muestra «No encontramos este equipo». Ninguno permite entrar al contenido. La creación y el acceso reales sustituyen la simulación de [SPEC-COO-001 — Base visual y navegación de Synqo](99_archivadas/spec-coo-001-base-visual-y-navegacion.md) reutilizando sus layouts, temas y componentes comunes.
 - El recorrido de creación y entrada es usable en móvil y escritorio, con teclado, foco y nombres accesibles; se contrasta con [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md). Dos contextos de navegador prueban la persistencia y el uso compartido sin registro. Los comandos locales permiten arrancar, migrar y probar los módulos de forma reproducible.
 - La API dispone de PHP CS Fixer, PHPStan y Rector configurados para el stack elegido. Sus comprobaciones se añaden al hook local sin modificar archivos y bloquean un commit que no las supere, según los [controles estáticos de la demo local](../07_desarrollo/03_calidad/controles-estaticos-demo-local.md).
 - Una instalación local nueva puede reconstruir la API y la base desde archivos versionados, aplicar las migraciones y reiniciar la base de prueba sin conservar datos anteriores. Las credenciales y valores sensibles locales no se versionan ni aparecen en logs de prueba.

@@ -2,7 +2,7 @@
 
 ## Alcance
 
-Estos controles forman parte de la calidad de la [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). La configuración se incorporará al crear cada módulo: WEB en [SPEC-COO-001 — Base visual y navegación de Synqo](../../08_especificaciones/spec-coo-001-base-visual-y-navegacion.md) y API en [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../../08_especificaciones/spec-equ-001-arranque-equipo-local.md). Este repositorio ya tiene Git y la rama `main`, pero aún no contiene proyectos Angular/Symfony ni dependencias instaladas; los hooks se activarán al crear los módulos.
+Estos controles forman parte de la calidad de la [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). Aplican a los módulos WEB y API cuando están presentes; cada módulo configura las herramientas de su stack y las incorpora al hook local sin corregir archivos.
 
 ## API: PHP 8.5 y Symfony 7.4
 
@@ -26,9 +26,9 @@ Se fijarán versiones compatibles en los archivos de dependencias al crear WEB y
 
 ## Pre-commit local
 
-Un hook versionado en la raíz, gestionado con Lefthook, ejecutará las comprobaciones aplicables **antes de cada commit** cuando haya cambios preparados en WEB o API. Empezará con las comprobaciones de WEB en la primera SPEC y añadirá las de API en la segunda. Un hook `commit-msg` distinto comprobará el formato de todos los commits conforme a la [convención de commits de Synqo](../04_git/convencion-commits.md). Si cambia la configuración de una herramienta, se ejecuta el control completo de su módulo. El hook bloquea el commit si falla una comprobación o falta una dependencia necesaria. No ejecuta comandos `--fix` o `--write`, no modifica archivos ni añade cambios al índice de Git.
+Un hook versionado en la raíz, gestionado con Lefthook, ejecutará las comprobaciones aplicables **antes de cada commit** cuando haya cambios preparados en WEB o API. Incluye las comprobaciones de WEB y añadirá las de API cuando ese módulo se implemente. Un hook `commit-msg` distinto comprobará el formato de todos los commits conforme a la [convención de commits de Synqo](../04_git/convencion-commits.md). Si cambia la configuración de una herramienta, se ejecuta el control completo de su módulo. El hook bloquea el commit si falla una comprobación o falta una dependencia necesaria. No ejecuta comandos `--fix` o `--write`, no modifica archivos ni añade cambios al índice de Git.
 
-Para que un archivo preparado no pase gracias a cambios posteriores sin preparar, el hook rechazará archivos de código/configuración parcialmente preparados en los módulos afectados; se deberán preparar completos o separar el cambio antes de volver a intentar el commit. Los comandos de comprobación completos estarán disponibles también fuera del hook. Al disponer de las dependencias se documentará cómo activar el hook en cada clon y se comprobará que una infracción impide realmente el commit. La configuración de CI de GitHub usará los mismos comandos al incorporarse y respetará las reglas actuales de `main`.
+Para que un archivo preparado no pase gracias a cambios posteriores sin preparar, el hook rechazará archivos de código/configuración parcialmente preparados en los módulos afectados; se deberán preparar completos o separar el cambio antes de volver a intentar el commit. Los comandos de comprobación completos estarán disponibles también fuera del hook. La instalación documentada de cada módulo debe activar el hook y comprobar que una infracción impide realmente el commit. La configuración de CI de GitHub usa los mismos comandos y debe respetar las reglas vigentes de `main`.
 
 ## Fuentes de configuración
 

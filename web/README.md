@@ -1,6 +1,6 @@
 # Synqo WEB
 
-Vista previa visual de [SPEC-COO-001 — Base visual y navegación de Synqo](../pdi_doc/08_especificaciones/spec-coo-001-base-visual-y-navegacion.md). No crea equipos ni ofrece enlaces de acceso reales.
+Vista previa visual de [SPEC-COO-001 — Base visual y navegación de Synqo](../pdi_doc/08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md). No crea equipos ni ofrece enlaces de acceso reales.
 
 ## Preparación desde un clon limpio
 

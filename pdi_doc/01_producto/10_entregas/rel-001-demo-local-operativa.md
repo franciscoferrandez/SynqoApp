@@ -13,6 +13,7 @@ Disponer, en este mismo repositorio junto a `pdi_doc/` y `pdi/`, de una aplicaci
 
 | Elemento | Estado delivery | SPEC | Dependencias | Notas |
 |---|---|---|---|---|
+| Base visual y navegación simulada de WEB | VALIDADO | [SPEC-COO-001 — Base visual y navegación de Synqo](../../08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md) | — | Implementación y verificación local completadas. Commits `8c90968`, `518421b`, `77747a3` y `edfa4d9`; CI remoto pendiente. |
 | [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | PLANIFICADO | — | — | Nombre y primer participante obligatorios. |
 | [RF-EQU-002 — Incorporarse y elegir identidad de participante](../../03_requisitos/01_funcionales/EQU/rf-equ-002-incorporarse-y-elegir-identidad.md) | PLANIFICADO | — | [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | Incluye cambio de identidad. |
 | [RF-EQU-003 — Acceder al equipo por enlace](../../03_requisitos/01_funcionales/EQU/rf-equ-003-acceder-por-enlace.md) | PLANIFICADO | — | [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | Enlace utilizable entre navegadores del entorno local. |
@@ -37,7 +38,7 @@ La demo necesita decisiones suficientes de almacenamiento local persistente, acc
 
 ## Secuencia inicial de Changes
 
-1. [SPEC-COO-001 — Base visual y navegación de Synqo](../../08_especificaciones/spec-coo-001-base-visual-y-navegacion.md): base Angular, layouts reutilizables y recorrido visual simulado, incluidas las pantallas de equipo caducado y enlace no encontrado. No entrega creación ni acceso reales.
+1. [SPEC-COO-001 — Base visual y navegación de Synqo](../../08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md): base Angular, layouts reutilizables y recorrido visual simulado, incluidas las pantallas de equipo caducado y enlace no encontrado. No entrega creación ni acceso reales.
 2. [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../../08_especificaciones/spec-equ-001-arranque-equipo-local.md): conexión de esos recorridos con la API, persistencia y acceso real al equipo. Las demás capacidades de la release se planificarán en Changes posteriores.
 
 ## Criterio de entregable
