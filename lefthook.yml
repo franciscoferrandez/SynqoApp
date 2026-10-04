@@ -1,0 +1,9 @@
+pre-commit:
+  commands:
+    web-check:
+      glob: 'web/**'
+      run: 'export CI=1; node scripts/check-staged-web.mjs && npm --prefix web run lint && npm --prefix web run format:check && npm --prefix web run build'
+commit-msg:
+  commands:
+    convention:
+      run: 'node scripts/check-commit-message.mjs {1}'

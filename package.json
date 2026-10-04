@@ -1,0 +1,10 @@
+{
+  "name": "synqo-repo",
+  "private": true,
+  "scripts": {
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "lefthook": "2.0.14"
+  }
+}

@@ -6,7 +6,7 @@ El uso básico está pensado para empezar en minutos: crear un equipo, compartir
 
 Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con IA. La inteligencia artificial se utiliza como apoyo para analizar, diseñar, documentar y, en fases posteriores, implementar y verificar. Las decisiones de producto y tecnología las valida la persona impulsora.
 
-> **Estado actual:** definición y preparación de la demo local. Todavía no hay aplicación implementada, demo pública ni comandos de arranque.
+> **Estado actual:** vista previa visual local en desarrollo. Todavía no hay creación real de equipos, API, persistencia ni demo pública.
 
 ---
 
@@ -62,19 +62,20 @@ La web consumirá recursos JSON de la API; los errores seguirán Problem Details
 pdi_doc/                    documentación de producto y solución de Synqo
 pdi/                    plugin reutilizable de diseño e implementación
 doc/tfm/                materiales del trabajo de fin de máster
+web/                    vista previa Angular de la primera SPEC
 README.md
 ```
 
-Este es el repositorio [SynqoApp](https://github.com/franciscoferrandez/SynqoApp). Las carpetas `web/` y `api/` se crearán aquí al implementar las primeras especificaciones.
+Este es el repositorio [SynqoApp](https://github.com/franciscoferrandez/SynqoApp). La carpeta `api/` se creará al implementar el acceso funcional de equipos.
 
 ## Desarrollo local
 
-Todavía no hay dependencias de aplicación ni comandos ejecutables. [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/spec-coo-001-base-visual-y-navegacion.md) preparará la web, sus instrucciones de instalación y los hooks locales. [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/spec-equ-001-arranque-equipo-local.md) añadirá la API, PostgreSQL, migraciones y comandos de prueba. Al implementarlas, esta sección recogerá los pasos reales para arrancar la demo desde un clon limpio.
+La [vista previa WEB](web/README.md) ya tiene instrucciones para instalar, arrancar, comprobar y limpiar desde un clon. [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/spec-coo-001-base-visual-y-navegacion.md) cubre solo el layout y la navegación simulada. [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/spec-equ-001-arranque-equipo-local.md) añadirá la API, PostgreSQL, migraciones y comandos de prueba funcionales.
 
 ## Calidad y reglas de implementación
 
 - **Código y arquitectura:** mantener reglas y casos de uso separados de los adaptadores; introducir interfaces cuando protejan una frontera real. Reutilizar en Angular los layouts, temas y componentes que comparten comportamiento. Véanse las [reglas de API](pdi_doc/07_desarrollo/08_modulos/API/README.md) y [WEB](pdi_doc/07_desarrollo/08_modulos/WEB/README.md).
-- **Comprobaciones:** PHP CS Fixer, PHPStan y Rector para la API; ESLint con `angular-eslint`, Prettier y compilación estricta para la web. El hook previo al commit comprobará y bloqueará, sin aplicar correcciones automáticas. Los comandos de corrección serán explícitos, según los [controles estáticos](pdi_doc/07_desarrollo/03_calidad/controles-estaticos-demo-local.md).
+- **Comprobaciones:** PHP CS Fixer, PHPStan y Rector para la futura API; ESLint con `angular-eslint`, Prettier y compilación estricta para la web. El hook previo al commit comprueba y bloquea los cambios WEB sin aplicar correcciones automáticas. Los comandos de corrección son explícitos, según los [controles estáticos](pdi_doc/07_desarrollo/03_calidad/controles-estaticos-demo-local.md).
 - **Pruebas:** reglas puras, integración con PostgreSQL, recorridos entre navegadores y revisión de accesibilidad WCAG 2.2 AA en las superficies implementadas, según la [estrategia de pruebas](pdi_doc/07_desarrollo/02_testing/estrategia-demo-local.md).
 - **Cambios:** avanzar por especificaciones preparadas, comprobar cada incremento antes de cerrarlo y usar la [convención de commits](pdi_doc/07_desarrollo/04_git/convencion-commits.md) en todo el repositorio.
 
