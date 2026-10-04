@@ -27,7 +27,7 @@ Creación y acceso reales a equipos, UUID o enlace operativo, selección persist
 
 La validación funcional del formulario y la animación ilustrativa de sus placeholders se incorporarán al preparar la creación real del equipo. Esta SPEC se centra en el layout.
 
-La configuración del pipeline de GitHub se concretará al preparar el primer incremento en este repositorio, usando los mismos comandos de comprobación versionados. Las reglas actuales de `main` se inspeccionarán entonces; el hook local no se presentará como sustituto de CI.
+El primer incremento en este repositorio configura un workflow de GitHub con los mismos comandos de comprobación versionados. Se inspeccionó la protección de `main`: actualmente no hay reglas de protección. El hook local se mantiene como ayuda y no como sustituto de CI.
 
 ## Baseline relacionado
 
@@ -121,7 +121,14 @@ La web se ubicará en `web/` en la raíz de este repositorio. Un componente de l
 
 ## Convergence
 
-Pendiente.
+| Aspecto | Clasificación | Resolución |
+|---|---|---|
+| Color de las acciones primarias fijado en CSS | A — código | Corregido en `77747a3`: los controles emplean el token semántico `--action` mediante `bg-action`, coherente con el [sistema de diseño inicial de Synqo](../04_experiencia-usuario/05_sistema-diseno/sistema-diseno-inicial.md). Lint, formato, build, tests y pre-commit volvieron a pasar. |
+| Diferencia entre el alcance visual entregado y las capacidades completas de producto | F — fuera de scope | Las rutas de vista previa y los bloques vacíos son las simulaciones delimitadas por esta SPEC. Las capacidades funcionales permanecen planificadas en [REL-001 — Demo local operativa de Synqo](../01_producto/10_entregas/rel-001-demo-local-operativa.md) y se abordan en Changes posteriores; no se actualizan sus estados de delivery aquí. |
+| Evidencia de accesibilidad de páginas y procesos completos | F — fuera de scope | La comprobación de este incremento cubre sus pantallas e interacciones presentes. No declara conformidad global con [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md); la auditoría completa sigue pendiente para la entrega. |
+| Pipeline y protección de rama | Sin drift | El workflow de CI está versionado y ejecuta instalación, lint, formato, build, tests y control de mensajes. La rama `main` no tiene reglas de protección; la SPEC requería inspeccionarlas, no crear reglas. El hook local no se presenta como sustituto de CI. El workflow remoto aún no se ha ejecutado sobre estos commits locales. |
+
+No queda drift significativo dentro del alcance de esta SPEC. No se descubrió nueva verdad de producto o arquitectura, por lo que no requiere `pdi:baseline-update`. La verificación y convergencia se limitan a esta SPEC; no implican que la release completa esté entregada.
 
 ## Resultado de cierre
 
