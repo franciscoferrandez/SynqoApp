@@ -22,7 +22,7 @@ import { previewTeam } from './preview-data';
             guardado los datos del formulario.
           </p>
         </div>
-        <a class="primary mt-6 inline-flex" routerLink="/_preview/equipo/calendario"
+        <a class="primary mt-6 inline-flex bg-action" routerLink="/_preview/equipo/calendario"
           >Ver calendario de ejemplo <span aria-hidden="true">→</span></a
         >
       </section>

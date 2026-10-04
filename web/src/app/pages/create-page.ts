@@ -67,7 +67,9 @@ import { Router } from '@angular/router';
               descartará.
             </p>
           </div>
-          <button class="primary w-full" type="submit">Ver confirmación de ejemplo</button>
+          <button class="primary w-full bg-action" type="submit">
+            Ver confirmación de ejemplo
+          </button>
         </form>
       </section>
     </div>

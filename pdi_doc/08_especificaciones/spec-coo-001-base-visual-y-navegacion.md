@@ -105,7 +105,19 @@ La web se ubicará en `web/` en la raíz de este repositorio. Un componente de l
 
 ## Evidencia / Validation
 
-La verificación incluirá apertura directa y navegación entre las cinco superficies, contraste de layouts compartidos, persistencia de preferencia de tema, comprobación de que el formulario no produce peticiones de creación ni datos persistidos, revisión visual en móvil y escritorio para Claro y Oscuro, y revisión manual de teclado, foco, ampliación y contraste de las partes implementadas. Se revisará que el contenido preexistente del repositorio se conserve; un clon limpio seguirá las instrucciones de instalación, arranque, comprobación y limpieza. Se revisarán los archivos preparados para asegurar que no incluyen dependencias, salidas ni secretos locales. Se ejecutarán lint, formato y compilación estricta y se comprobará que el hook bloquea una infracción sin corregirla. Se probará también que `commit-msg` acepta y rechaza los mensajes esperados sin modificarlos. El cierre documentará los resultados de estas comprobaciones y los ajustes visuales o de accesibilidad pendientes, conforme al criterio de Done de esta SPEC. La verificación funcional de equipos corresponde a Changes posteriores.
+| Criterio | Estado | Evidencia |
+|---|---|---|
+| Arranque, rutas directas y navegación de equipo | PASS | `npm ci`, `npm --prefix web ci`, `npm --prefix web run build`; Playwright abrió las seis rutas documentadas directamente y comprobó Calendario/Consultas. |
+| Calidad estática y hook pre-commit | PASS | `npm --prefix web run lint`, `format:check`, `build` y `test` pasan; las pruebas del hook bloquean infracciones sin editar archivos. |
+| Convención de commits | PASS | El hook `commit-msg` acepta mensajes válidos y rechaza inválidos sin modificarlos; `scripts/check-commit-range.mjs` valida el rango del incremento. |
+| Clon limpio, dependencias e ignorados | PASS | En un clon temporal se instalaron ambos lockfiles y se reprodujeron las comprobaciones; los hooks bloquearon casos inválidos. Revisión de `.gitignore` y archivos versionados sin dependencias, salidas ni secretos locales. |
+| Layouts compartidos | PASS | Inspección de las rutas y navegación en navegador; las dos secciones de equipo conservan la cabecera compartida. Comparación visual de las superficies implementadas con los mockups en Claro/Oscuro y móvil/escritorio. |
+| Utilidades enlazadas a tokens | PASS | Revisión de Tailwind y CSS; durante la verificación se sustituyó el color fijo de acción por `bg-action` y el token semántico `--action`. El estilo computado del control muestra `rgb(49, 93, 255)`. |
+| Formulario solo ilustrativo | PASS | Playwright comprobó que la acción navega a la confirmación con texto fijo, incluso con correo inválido; no se emiten peticiones de escritura ni se conservan los valores ingresados. |
+| Temas y contraste aplicable | PASS | El modo Automático siguió `prefers-color-scheme: dark`, el modo Claro manual persistió tras recargar y Claro fue el respaldo. Los pares de texto y acción se comprobaron frente a sus superficies; el texto blanco sobre `#315dff` alcanza 5,07:1. |
+| Teclado, foco, adaptación y accesibilidad | PASS | Tab alcanza controles con indicador de foco visible de 3 px. Sin desbordamiento horizontal en 320, 375 y 1440 px para las seis rutas y ambos temas. axe WCAG 2.0/2.1/2.2 encontró cero infracciones en las 36 combinaciones revisadas, con la regla de contraste excluida por bloqueo del analizador en Chromium; contraste revisado aparte. |
+
+`npm audit --audit-level=critical` no informa vulnerabilidades críticas. La inspección visual de capturas cubrió las partes implementadas en ambos temas y tamaños; el símbolo de caducidad se corrigió a SVG durante esa revisión. Estos resultados se limitan a las superficies e interacciones de esta SPEC y no acreditan conformidad WCAG de páginas o procesos aún no implementados. La cuadrícula del calendario, listas, controles funcionales y acceso real corresponden a Changes posteriores.
 
 ## Convergence
 
