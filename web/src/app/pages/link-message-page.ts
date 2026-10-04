@@ -9,7 +9,24 @@ import { ActivatedRoute } from '@angular/router';
           class="grid h-12 w-12 place-items-center rounded-xl bg-soft text-2xl text-blue-strong"
           aria-hidden="true"
         >
-          {{ expired ? '⌛' : '?' }}
+          @if (expired) {
+            <svg
+              viewBox="0 0 24 24"
+              width="26"
+              height="26"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M5 3h14M5 21h14M7 3c0 5 5 6 5 9s-5 4-5 9m10-18c0 5-5 6-5 9s5 4 5 9M8 6h8M8 18h8"
+              />
+            </svg>
+          } @else {
+            ?
+          }
         </div>
         <p class="eyebrow mt-6!">Enlace de equipo · vista previa</p>
         @if (expired) {
