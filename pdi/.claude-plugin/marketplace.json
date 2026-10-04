@@ -1,0 +1,14 @@
+{
+  "name": "pdi-local",
+  "description": "PDI: diseño de producto e implementación guiada por baseline.",
+  "owner": {
+    "name": "PDI"
+  },
+  "plugins": [
+    {
+      "name": "pdi",
+      "source": "./",
+      "description": "Product Design and Implementation"
+    }
+  ]
+}

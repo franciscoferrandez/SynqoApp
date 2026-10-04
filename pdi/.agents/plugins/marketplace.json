@@ -1,0 +1,20 @@
+{
+  "name": "pdi-local",
+  "interface": {
+    "displayName": "PDI"
+  },
+  "plugins": [
+    {
+      "name": "pdi",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+---
+id: REL-001
+estado: planificada
+---
+
+# REL-001 — Demo local operativa de Synqo
+
+## Objetivo de entrega
+
+Disponer, en este mismo repositorio junto a `pdi_doc/` y `pdi/`, de una aplicación web ejecutable en un entorno local de desarrollo que permita a varias personas coordinarse mediante un equipo compartido, su disponibilidad diaria y consultas de fechas o texto, sin registro. Las acciones deberán persistir y ser visibles al abrir el enlace del mismo equipo desde otro navegador. Esta entrega no requiere publicación en Internet ni envío real de correo.
+
+## Alcance
+
+| Elemento | Estado delivery | SPEC | Dependencias | Notas |
+|---|---|---|---|---|
+| [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | PLANIFICADO | — | — | Nombre y primer participante obligatorios. |
+| [RF-EQU-002 — Incorporarse y elegir identidad de participante](../../03_requisitos/01_funcionales/EQU/rf-equ-002-incorporarse-y-elegir-identidad.md) | PLANIFICADO | — | [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | Incluye cambio de identidad. |
+| [RF-EQU-003 — Acceder al equipo por enlace](../../03_requisitos/01_funcionales/EQU/rf-equ-003-acceder-por-enlace.md) | PLANIFICADO | — | [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | Enlace utilizable entre navegadores del entorno local. |
+| [RF-EQU-004 — Mostrar la fecha prevista de caducidad](../../03_requisitos/01_funcionales/EQU/rf-equ-004-mostrar-caducidad.md) | PLANIFICADO | — | [RF-EQU-003 — Acceder al equipo por enlace](../../03_requisitos/01_funcionales/EQU/rf-equ-003-acceder-por-enlace.md) | — |
+| [RF-EQU-005 — Eliminar los datos del equipo caducado](../../03_requisitos/01_funcionales/EQU/rf-equ-005-eliminar-equipo-caducado.md) | PLANIFICADO | — | [RF-EQU-004 — Mostrar la fecha prevista de caducidad](../../03_requisitos/01_funcionales/EQU/rf-equ-004-mostrar-caducidad.md) | Comprobable en local con tiempo controlado. |
+| [RF-DIS-001 — Marcar y modificar disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-001-marcar-disponibilidad.md) | PLANIFICADO | — | [RF-EQU-002 — Incorporarse y elegir identidad de participante](../../03_requisitos/01_funcionales/EQU/rf-equ-002-incorporarse-y-elegir-identidad.md) | — |
+| [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md) | PLANIFICADO | — | [RF-DIS-001 — Marcar y modificar disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-001-marcar-disponibilidad.md) | — |
+| [RF-CON-001 — Crear una consulta de fechas](../../03_requisitos/01_funcionales/CON/rf-con-001-crear-consulta.md) | PLANIFICADO | — | [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md) | — |
+| [RF-CON-005 — Crear una consulta con opciones de texto](../../03_requisitos/01_funcionales/CON/rf-con-005-crear-consulta-texto.md) | PLANIFICADO | — | [RF-EQU-002 — Incorporarse y elegir identidad de participante](../../03_requisitos/01_funcionales/EQU/rf-equ-002-incorporarse-y-elegir-identidad.md) | — |
+| [RF-CON-002 — Registrar y cambiar un voto](../../03_requisitos/01_funcionales/CON/rf-con-002-votar.md) | PLANIFICADO | — | [RF-CON-001 — Crear una consulta de fechas](../../03_requisitos/01_funcionales/CON/rf-con-001-crear-consulta.md); [RF-CON-005 — Crear una consulta con opciones de texto](../../03_requisitos/01_funcionales/CON/rf-con-005-crear-consulta-texto.md) | Ambos tipos. |
+| [RF-CON-003 — Ver los votos por participante](../../03_requisitos/01_funcionales/CON/rf-con-003-ver-votos.md) | PLANIFICADO | — | [RF-CON-002 — Registrar y cambiar un voto](../../03_requisitos/01_funcionales/CON/rf-con-002-votar.md) | — |
+| [RF-CON-004 — Resolver una consulta](../../03_requisitos/01_funcionales/CON/rf-con-004-resolver-consulta.md) | PLANIFICADO | — | [RF-CON-002 — Registrar y cambiar un voto](../../03_requisitos/01_funcionales/CON/rf-con-002-votar.md) | — |
+| [RNF-COO-001 — Arranque básico en menos de cinco minutos](../../03_requisitos/04_no-funcionales/COO/rnf-coo-001-arranque-basico.md) | PLANIFICADO | — | [RF-EQU-001 — Crear un equipo sin registro](../../03_requisitos/01_funcionales/EQU/rf-equ-001-crear-equipo.md) | Medir en la demo. |
+| [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) | PLANIFICADO | — | — | Verificar recorridos completos de la demo. |
+| [RNF-COO-003 — Uso adaptable en navegador móvil](../../03_requisitos/04_no-funcionales/COO/rnf-coo-003-uso-en-navegador-movil.md) | PLANIFICADO | — | — | En navegador móvil; sin aplicación instalable. |
+| [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md) | POSPUESTO | — | — | El campo puede rellenarse, pero se avisa expresamente de que la demo no enviará el correo; la dirección se descarta al crear el equipo. |
+| [RF-EQU-007 — Invalidar y sustituir el enlace de acceso al equipo](../../03_requisitos/01_funcionales/EQU/rf-equ-007-invalidar-y-sustituir-enlace.md) | POSPUESTO | — | — | Necesidad futura. |
+
+## Dependencias de preparación
+
+La demo necesita decisiones suficientes de almacenamiento local persistente, acceso por enlace, estructura web y reglas de implementación. Las decisiones sobre proveedor de alojamiento público, región, costes de producción, copias externas y correo real no bloquean su inicio.
+
+## Secuencia inicial de Changes
+
+1. [SPEC-COO-001 — Base visual y navegación de Synqo](../../08_especificaciones/spec-coo-001-base-visual-y-navegacion.md): base Angular, layouts reutilizables y recorrido visual simulado, incluidas las pantallas de equipo caducado y enlace no encontrado. No entrega creación ni acceso reales.
+2. [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../../08_especificaciones/spec-equ-001-arranque-equipo-local.md): conexión de esos recorridos con la API, persistencia y acceso real al equipo. Las demás capacidades de la release se planificarán en Changes posteriores.
+
+## Criterio de entregable
+
+La aplicación arranca con instrucciones reproducibles en un equipo de desarrollo, persiste sus datos entre reinicios y permite completar los recorridos de creación de equipo, selección de identidad, marcado y consulta de disponibilidad, creación de ambos tipos de consulta, voto público y resolución desde al menos dos navegadores que acceden al mismo enlace. Se comprueban los estados de caducidad y borrado con tiempo controlado, el uso adaptable en navegador móvil y los criterios WCAG 2.2 AA aplicables a esos recorridos. No se declara entregada sin evidencia de funcionamiento.

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synqo · arranque de un equipo</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light;--app:#f4f7ff;--surface:#fff;--soft:#edf3ff;--line:#d9e2f2;--ink:#0b174a;--muted:#526184;--blue:#315dff;--blue-strong:#2349d7;--rose:#a42346;--rose-soft:#ffe8ee;--mint:#0b765c;--mint-soft:#dff9ed;--shadow:0 14px 42px #18327313;--focus:#0050cf}
+html[data-theme="dark"]{color-scheme:dark;--app:#07101f;--surface:#101b2f;--soft:#172846;--line:#304161;--ink:#f6f8ff;--muted:#bbc8e8;--blue:#7192ff;--blue-strong:#a4b8ff;--rose:#ff9bb2;--rose-soft:#491b2b;--mint:#8ef1cd;--mint-soft:#114536;--shadow:0 18px 46px #0006;--focus:#72d9ff}
+*{box-sizing:border-box}body{margin:0;background:var(--app);color:var(--ink);min-width:320px}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}a{color:var(--blue-strong)}.hidden{display:none!important}.preview{background:#091946;color:#fff;padding:.6rem max(1rem,calc((100vw - 1100px)/2));font-size:.82rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}.preview button{background:#243e86;color:#fff;border:1px solid #7592ea;border-radius:999px;padding:.35rem .8rem}.app{max-width:1100px;margin:auto;padding:1rem 1.2rem 3rem}.brand{display:flex;align-items:center;gap:.6rem;font-size:1.35rem;font-weight:800;letter-spacing:-.04em}.brandmark{width:28px;height:36px;border-radius:55% 40% 60% 45%;background:linear-gradient(155deg,#5b64ff 0 42%,#20bbf3 43% 73%,#23d4a5 74%);transform:rotate(20deg)}.top{display:flex;justify-content:space-between;align-items:center;gap:1rem}.top small{color:var(--muted)}.shell{display:grid;grid-template-columns:minmax(0,.9fr) minmax(330px,1fr);gap:3rem;align-items:center;min-height:calc(100vh - 130px)}.intro .eyebrow,.eyebrow{color:var(--blue-strong);font-size:.76rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.intro h1{font-size:clamp(2.4rem,5vw,4.5rem);letter-spacing:-.065em;line-height:1.05;margin:.6rem 0 1rem}.intro p{color:var(--muted);font-size:1.06rem;line-height:1.55;max-width:28rem}.benefits{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.6rem}.benefits span{background:var(--soft);border-radius:99px;padding:.45rem .75rem;font-size:.83rem;font-weight:650}.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:1.5rem}.panel h2{font-size:1.5rem;letter-spacing:-.03em;margin:.25rem 0 .35rem}.panel>p{color:var(--muted);margin:.35rem 0 1.2rem;line-height:1.5;font-size:.9rem}.field{margin:1rem 0}.field label{display:block;font-size:.9rem;font-weight:750;margin-bottom:.38rem}.field input{width:100%;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);padding:.76rem .82rem}.field input::placeholder{color:var(--muted);opacity:.8}.field input[aria-invalid="true"]{border-color:var(--rose)}.field .help{display:block;color:var(--muted);font-size:.8rem;line-height:1.45;margin-top:.4rem}.field .error{display:block;color:var(--rose);font-size:.8rem;margin-top:.35rem}.optional{font-weight:500;color:var(--muted)}.primary{width:100%;background:linear-gradient(110deg,#315dff,#245dcf);color:#fff;border:0;border-radius:12px;padding:.88rem 1rem;font-weight:750;box-shadow:0 6px 15px #315dff30}.primary:hover{filter:brightness(1.06)}.outline{background:var(--surface);color:var(--blue-strong);border:1px solid var(--line);border-radius:10px;padding:.65rem .85rem;font-weight:700}.feedback{border-radius:12px;padding:.85rem;margin-bottom:1rem;font-size:.87rem}.feedback.error{background:var(--rose-soft);color:var(--ink)}.feedback.success{background:var(--mint-soft);color:var(--ink)}.actions{display:flex;gap:.55rem;flex-wrap:wrap;margin-top:1rem}.actions button{flex:1}.linkbox{word-break:break-all;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:.8rem;font-size:.85rem}.muted{color:var(--muted)}.back{border:0;background:transparent;color:var(--blue-strong);font-weight:750;padding:0;margin-bottom:1rem}dialog{width:min(440px,calc(100vw - 2rem));border:1px solid var(--line);border-radius:20px;background:var(--surface);color:var(--ink);box-shadow:0 25px 80px #0005;padding:1.25rem}dialog::backdrop{background:#051029a8}dialog h2{margin:.2rem 0 .45rem}dialog p{color:var(--muted);line-height:1.5}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}@media(max-width:700px){.app{padding:.85rem .8rem 2rem}.top small{display:none}.shell{grid-template-columns:1fr;min-height:0;gap:1.1rem;padding-top:2rem}.intro h1{font-size:2.45rem}.intro p{font-size:.96rem}.panel{padding:1rem}.benefits{margin-top:1rem}}
+</style>
+</head>
+<body>
+<div class="preview"><span>Propuesta visual · estados ilustrativos</span><button id="theme" type="button" aria-label="Cambiar entre tema claro y oscuro">Tema oscuro</button></div>
+<div class="app"><header class="top"><div class="brand"><span class="brandmark" aria-hidden="true"></span><span>Synqo</span></div><small>Un lugar para encontrar tiempo juntos</small></header>
+<main class="shell"><section class="intro" aria-labelledby="intro-title"><div class="eyebrow">Un espacio para vuestro equipo</div><h1 id="intro-title">Poneos de acuerdo más fácilmente.</h1><p>Reunid disponibilidad y consultas en un mismo lugar. Crea un equipo, comparte el enlace y empezad a coordinaros.</p><div class="benefits" aria-label="Características"><span>Sin registro</span><span>Disponibilidad por día</span><span>Decisiones claras</span></div></section>
+<section id="create-panel" class="panel" aria-labelledby="create-title"><div class="eyebrow">Empezar</div><h2 id="create-title">Crea tu equipo</h2><p>Solo necesitas el nombre del equipo y el de su primer participante.</p><form id="create-form" novalidate><div class="field"><label for="team-name">Nombre del equipo o grupo</label><input id="team-name" name="team" autocomplete="off" required placeholder="" aria-describedby="team-error"><span id="team-error" class="error" role="alert"></span></div><div class="field"><label for="participant-name">Nombre del primer participante</label><input id="participant-name" name="participant" autocomplete="off" required placeholder="" aria-describedby="participant-error"><span id="participant-error" class="error" role="alert"></span></div><div class="field"><label for="email">Correo para recibir el enlace <span class="optional">(opcional)</span></label><input id="email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="" aria-describedby="email-help email-error"><span id="email-help" class="help">Te enviaremos un enlace para guardar el acceso en tu buzón. No almacenaremos este correo ni lo utilizaremos para ningún otro fin.</span><span id="email-error" class="error" role="alert"></span></div><button class="primary" type="submit">Crear equipo</button></form></section>
+<section id="result-panel" class="panel hidden" aria-labelledby="result-title"><button class="back" id="back" type="button">← Volver al formulario</button><div class="eyebrow">Equipo creado</div><h2 id="result-title" tabindex="-1"></h2><p id="result-person"></p><div id="mail-feedback" class="feedback hidden" role="status"></div><div class="field"><label for="team-link">Enlace de acceso</label><div class="linkbox" id="team-link" tabindex="0">https://synqo.example/e/amigos-del-viernes</div></div><div class="actions"><button class="outline" id="copy-link" type="button" aria-label="Copiar enlace">Copiar enlace</button><button class="outline" id="share-link" type="button" aria-label="Compartir enlace">Compartir</button></div><p id="link-status" class="muted" role="status"></p><a href="prototipo-ux-inicial.html">Ver el calendario del equipo →</a></section></main></div>
+<script>
+const root=document.documentElement;
+const themeButton=document.getElementById('theme');
+themeButton.onclick=()=>{const dark=root.dataset.theme!=='dark';root.dataset.theme=dark?'dark':'light';themeButton.textContent=dark?'Tema claro':'Tema oscuro'};
+const form=document.getElementById('create-form');
+const teamInput=document.getElementById('team-name');
+const participantInput=document.getElementById('participant-name');
+const emailInput=document.getElementById('email');
+const exampleTeams=[
+  'Solteros contra casados','Saturday night party','Synqo IT Crowd Teambuilding',
+  'Los del último tren','La cena que nunca llega','Martes de pizza y caos',
+  'Los que siempre dicen quizá','Plan B: más tapas','Ensayo con final feliz',
+  'La banda del bis','Comité de croquetas','Los domingos sin despertador',
+  'Operación escapada','Reunión de gente maja','Los del karaoke secreto',
+  'Café, ideas y milagros','La liga del vermú','Viernes sin excusas',
+  'Los que llegan a tiempo','Excursión de sofá'
+];
+const exampleParticipants=[
+  'Marta','Dani','Lucía','Álvaro','Irene','Sofía','Pablo','Noa','Alex','Vero',
+  'Javi','Clara','Raúl','Nerea','Hugo','Aina','Marcos','Lola','Leo','Cris'
+];
+const exampleEmailDomains=[
+  'planazos.example','croquetas.example','viernes.example','ensayos.example',
+  'escapadas.example','teambuilding.example','tapas.example','conciertos.example',
+  'ideas.example','karaoke.example'
+];
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+let exampleTimeout,blinkInterval,lastTeam=-1,examplesDisabled=reducedMotion.matches,examplesPaused=false;
+let scheduledCallback=null,scheduledAt=0,remainingDelay=0;
+let teamExample='',participantExample='',emailExample='',cursorVisible=true;
+let teamCursor=false,participantCursor=false,emailCursor=false;
+function renderExamples(){
+  teamInput.placeholder=teamExample+(teamCursor&&cursorVisible?'_':'');
+  participantInput.placeholder=participantExample+(participantCursor&&cursorVisible?'_':'');
+  emailInput.placeholder=emailExample+(emailCursor&&cursorVisible?'_':'');
+}
+function showStaticExamples(){
+  examplesDisabled=true;
+  clearTimeout(exampleTimeout);
+  clearInterval(blinkInterval);
+  scheduledCallback=null;
+  teamCursor=participantCursor=emailCursor=false;
+  teamInput.placeholder='Por ejemplo, Amigos del viernes';
+  participantInput.placeholder='Por ejemplo, Marta';
+  emailInput.placeholder='Por ejemplo, marta@viernes.example';
+}
+function scheduleExample(next,delay){
+  scheduledCallback=next;
+  remainingDelay=delay;
+  if(examplesPaused||examplesDisabled)return;
+  scheduledAt=Date.now()+delay;
+  exampleTimeout=setTimeout(()=>{scheduledCallback=null;remainingDelay=0;next()},delay);
+}
+function startBlink(){
+  clearInterval(blinkInterval);
+  if(!examplesPaused&&!examplesDisabled&&(teamCursor||participantCursor||emailCursor)){
+    blinkInterval=setInterval(()=>{cursorVisible=!cursorVisible;renderExamples()},460);
+  }
+}
+function pauseExamples(){
+  if(examplesPaused||examplesDisabled)return;
+  examplesPaused=true;
+  if(scheduledCallback)remainingDelay=Math.max(0,scheduledAt-Date.now());
+  clearTimeout(exampleTimeout);
+  clearInterval(blinkInterval);
+}
+function resumeExamples(){
+  if(examplesDisabled||!examplesPaused||[teamInput,participantInput,emailInput].includes(document.activeElement))return;
+  examplesPaused=false;
+  startBlink();
+  if(scheduledCallback)scheduleExample(scheduledCallback,remainingDelay);
+}
+function chooseExample(){
+  let index=Math.floor(Math.random()*exampleTeams.length);
+  if(index===lastTeam)index=(index+1)%exampleTeams.length;
+  lastTeam=index;
+  const participant=exampleParticipants[Math.floor(Math.random()*exampleParticipants.length)];
+  const mailbox=participant.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const domain=exampleEmailDomains[Math.floor(Math.random()*exampleEmailDomains.length)];
+  return {team:exampleTeams[index],participant,email:`${mailbox}@${domain}`};
+}
+function beginExample(){
+  if(examplesDisabled)return;
+  const example=chooseExample();
+  teamExample='';participantExample='';emailExample='';
+  teamCursor=true;participantCursor=false;emailCursor=false;cursorVisible=true;
+  renderExamples();
+  startBlink();
+  function typeTeam(position){
+    if(examplesDisabled)return;
+    teamExample=example.team.slice(0,position);
+    renderExamples();
+    if(position<example.team.length)scheduleExample(()=>typeTeam(position+1),85);
+    else{
+      participantCursor=true;
+      renderExamples();
+      scheduleExample(()=>typeParticipant(0),430);
+    }
+  }
+  function typeParticipant(position){
+    if(examplesDisabled)return;
+    participantExample=example.participant.slice(0,position);
+    renderExamples();
+    if(position<example.participant.length)scheduleExample(()=>typeParticipant(position+1),110);
+    else{
+      emailCursor=true;
+      renderExamples();
+      scheduleExample(()=>typeEmail(0),430);
+    }
+  }
+  function typeEmail(position){
+    if(examplesDisabled)return;
+    emailExample=example.email.slice(0,position);
+    renderExamples();
+    if(position<example.email.length)scheduleExample(()=>typeEmail(position+1),78);
+    else scheduleExample(eraseExamples,3000);
+  }
+  function eraseExamples(){
+    if(examplesDisabled)return;
+    clearInterval(blinkInterval);
+    teamCursor=participantCursor=emailCursor=false;
+    function erase(){
+      if(examplesDisabled)return;
+      teamExample=teamExample.slice(0,-1);
+      participantExample=participantExample.slice(0,-1);
+      emailExample=emailExample.slice(0,-1);
+      renderExamples();
+      if(teamExample||participantExample||emailExample)scheduleExample(erase,55);
+      else scheduleExample(beginExample,350);
+    }
+    erase();
+  }
+  scheduleExample(()=>typeTeam(1),450);
+}
+for(const input of [teamInput,participantInput,emailInput]){
+  input.addEventListener('focus',pauseExamples);
+  input.addEventListener('blur',()=>setTimeout(resumeExamples,0));
+}
+if(reducedMotion.matches)showStaticExamples();
+else{
+  examplesPaused=[teamInput,participantInput,emailInput].includes(document.activeElement);
+  beginExample();
+}
+reducedMotion.addEventListener?.('change',event=>{
+  if(event.matches)showStaticExamples();
+  else if(examplesDisabled){
+    examplesDisabled=false;
+    examplesPaused=[teamInput,participantInput,emailInput].includes(document.activeElement);
+    beginExample();
+  }
+});
+function setError(input,id,message){input.setAttribute('aria-invalid',String(!!message));document.getElementById(id).textContent=message}
+function validate(){const team=teamInput.value.trim(),participant=participantInput.value.trim(),email=emailInput.value.trim();setError(teamInput,'team-error',team?'':'Escribe el nombre del equipo.');setError(participantInput,'participant-error',participant?'':'Escribe tu nombre de participante.');setError(emailInput,'email-error',!email||emailInput.validity.valid?'':'Revisa la dirección de correo o déjala vacía.');return !!team&&!!participant&&(!email||emailInput.validity.valid)}
+form.onsubmit=event=>{event.preventDefault();if(!validate()){form.querySelector('[aria-invalid="true"]')?.focus();return}document.getElementById('result-title').textContent=teamInput.value.trim();document.getElementById('result-person').textContent=`Primer participante: ${participantInput.value.trim()}. Ya podéis empezar a coordinaros.`;const feedback=document.getElementById('mail-feedback');feedback.classList.toggle('hidden',!emailInput.value.trim());feedback.className=`feedback success${emailInput.value.trim()?'':' hidden'}`;feedback.textContent=emailInput.value.trim()?'En esta propuesta, el enlace se enviaría al correo indicado. Synqo no conserva la dirección.':'';document.getElementById('create-panel').classList.add('hidden');document.getElementById('result-panel').classList.remove('hidden');document.getElementById('result-title').focus()};
+document.getElementById('back').onclick=()=>{document.getElementById('result-panel').classList.add('hidden');document.getElementById('create-panel').classList.remove('hidden');teamInput.focus()};
+const demoLink='https://synqo.example/e/amigos-del-viernes';
+document.getElementById('copy-link').onclick=async()=>{try{await navigator.clipboard.writeText(demoLink);document.getElementById('link-status').textContent='Enlace de ejemplo copiado.'}catch{document.getElementById('link-status').textContent='Selecciona y copia el enlace mostrado.'}};
+const shareButton=document.getElementById('share-link');shareButton.disabled=typeof navigator.share!=='function';shareButton.onclick=async()=>{try{await navigator.share({title:'Equipo en Synqo',url:demoLink})}catch{}};
+</script>
+</body></html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synqo · crear primer participante</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light;--app:#f4f7ff;--surface:#fff;--soft:#edf3ff;--line:#d9e2f2;--ink:#0b174a;--muted:#526184;--blue:#315dff;--blue-strong:#2349d7;--rose:#a42346;--raised:#fff;--focus:#0050cf}
+html[data-theme="dark"]{color-scheme:dark;--app:#07101f;--surface:#101b2f;--soft:#172846;--line:#304161;--ink:#f6f8ff;--muted:#bbc8e8;--blue:#7192ff;--blue-strong:#a4b8ff;--rose:#ff9bb2;--raised:#172540;--focus:#72d9ff}
+*{box-sizing:border-box}body{margin:0;min-width:320px;background:var(--app);color:var(--ink)}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:3px}.preview{background:#091946;color:#fff;padding:.6rem max(1rem,calc((100vw - 1100px)/2));font-size:.82rem}.app{max-width:1100px;margin:auto;padding:1rem 1.2rem}.brand{display:flex;align-items:center;gap:.6rem;font-size:1.35rem;font-weight:800;letter-spacing:-.04em}.brandmark{width:28px;height:36px;border-radius:55% 40% 60% 45%;background:linear-gradient(155deg,#5b64ff 0 42%,#20bbf3 43% 73%,#23d4a5 74%);transform:rotate(20deg)}.team{margin:2rem 0;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.25rem}.eyebrow{color:var(--blue-strong);font-size:.76rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}h1{font-size:1.7rem;letter-spacing:-.04em;margin:.2rem 0}dialog{width:min(440px,calc(100vw - 2rem));border:1px solid var(--line);border-radius:20px;background:var(--raised);color:var(--ink);box-shadow:0 25px 80px #0005;padding:1.4rem}dialog::backdrop{background:#051029a8}dialog h2{font-size:1.45rem;letter-spacing:-.03em;margin:.3rem 0 .45rem}dialog p{color:var(--muted);font-size:.9rem;line-height:1.5}label{display:block;font-weight:750;font-size:.9rem;margin:1.2rem 0 .4rem}input{width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:.75rem}.error{color:var(--rose);min-height:1.2rem;font-size:.85rem;margin:.4rem 0}.primary{width:100%;background:linear-gradient(110deg,#315dff,#245dcf);color:#fff;border:0;border-radius:12px;padding:.82rem 1rem;font-weight:750}@media(max-width:600px){.app{padding:.85rem}.preview{padding:.6rem .85rem}.team{margin:1rem 0}}
+</style>
+</head>
+<body>
+<div class="preview">Propuesta visual · estado excepcional del equipo</div>
+<div class="app"><header class="brand"><span class="brandmark" aria-hidden="true"></span><span>Synqo</span></header><main><section class="team" aria-label="Equipo"><div class="eyebrow">Equipo rápido</div><h1>Amigos del viernes</h1></section></main></div>
+<dialog id="identity-dialog" aria-labelledby="identity-title" aria-describedby="identity-help"><div class="eyebrow">Antes de entrar</div><h2 id="identity-title">Crea un participante</h2><p id="identity-help">Este equipo todavía no tiene participantes. Escribe un nombre para poder empezar a coordinaros.</p><form id="identity-form" novalidate><label for="participant">Nombre de participante</label><input id="participant" name="participant" maxlength="50" autocomplete="off" required aria-describedby="identity-error"><p class="error" id="identity-error" role="alert"></p><button class="primary" type="submit">Crear y entrar al equipo</button></form></dialog>
+<script>
+const root=document.documentElement;
+let deviceTheme;
+try{deviceTheme=window.matchMedia?.('(prefers-color-scheme: dark)')}catch{}
+let preference='auto';
+try{const saved=window.localStorage?.getItem('synqo:theme');if(['auto','light','dark'].includes(saved))preference=saved}catch{}
+function renderTheme(){root.dataset.theme=preference==='auto'?(deviceTheme?.matches?'dark':'light'):preference}
+renderTheme();
+deviceTheme?.addEventListener?.('change',()=>{if(preference==='auto')renderTheme()});
+const dialog=document.getElementById('identity-dialog');
+dialog.showModal();
+dialog.addEventListener('cancel',event=>event.preventDefault());
+const input=document.getElementById('participant');
+input.focus();
+document.getElementById('identity-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  const name=input.value.trim();
+  if(!name){input.setAttribute('aria-invalid','true');document.getElementById('identity-error').textContent='Escribe un nombre para continuar.';input.focus();return}
+  try{window.localStorage?.setItem('synqo:identity:550e8400-e29b-41d4-a716-446655440000',name)}catch{}
+  window.location.href='prototipo-ux-inicial.html';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synqo · índice de mockups</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:light dark;--bg:#f4f7ff;--card:#fff;--ink:#0b174a;--muted:#526184;--line:#d9e2f2;--link:#2349d7;--focus:#0050cf}
+@media(prefers-color-scheme:dark){:root{--bg:#07101f;--card:#101b2f;--ink:#f6f8ff;--muted:#bbc8e8;--line:#304161;--link:#a4b8ff;--focus:#72d9ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}main{max-width:900px;margin:0 auto;padding:clamp(1rem,4vw,2.5rem)}h1{font-size:clamp(1.8rem,4vw,2.7rem);letter-spacing:-.04em;margin:.2rem 0 .5rem}h2{font-size:1.25rem;margin:2rem 0 .8rem}.intro{color:var(--muted);line-height:1.5;max-width:45rem}ul{list-style:none;display:grid;gap:.7rem;padding:0;margin:0}li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.9rem 1rem}a{color:var(--link);font-weight:750;text-underline-offset:3px}a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}li p{color:var(--muted);font-size:.9rem;line-height:1.45;margin:.35rem 0 0}.tag{display:inline-block;margin-left:.5rem;color:var(--muted);font-size:.73rem;font-weight:650}
+</style>
+</head>
+<body>
+<main>
+<h1>Mockups de Synqo</h1>
+<p class="intro">Accesos directos a las pantallas y a los estados de demostración. Los enlaces con parámetros muestran casos concretos dentro del mismo prototipo.</p>
+
+<h2>Estados con parámetros</h2>
+<ul>
+<li><a href="prototipo-arranque-equipo.html?correo=fallido">Fallo del correo al crear un equipo</a><span class="tag">correo=fallido</span><p>Introduce un correo de ejemplo y crea el equipo para ver el aviso en la confirmación.</p></li>
+<li><a href="prototipo-ux-inicial.html?correo=fallido">Fallo del correo en el equipo</a><span class="tag">correo=fallido</span><p>El aviso aparece sobre Calendario y Consultas, con el enlace todavía disponible.</p></li>
+<li><a href="prototipo-ux-inicial.html?consultas=vacias">Equipo sin consultas</a><span class="tag">consultas=vacias</span><p>Muestra el mensaje inicial y el acceso a crear la primera consulta.</p></li>
+<li><a href="prototipo-ux-inicial.html?guardado=disponibilidad">Fallo al guardar disponibilidad</a><span class="tag">guardado=disponibilidad</span><p>Abre el detalle de hoy y cambia una marca. El primer intento falla; se restaura el valor anterior y aparece «Reintentar».</p></li>
+<li><a href="prototipo-ux-inicial.html?guardado=voto">Fallo al guardar un voto</a><span class="tag">guardado=voto</span><p>La consulta se abre directamente. Cambia una opción: el primer intento falla, se restaura el voto y aparece «Reintentar».</p></li>
+</ul>
+
+<h2>Vistas principales</h2>
+<ul>
+<li><a href="prototipo-arranque-equipo.html">Crear equipo</a><p>Formulario y confirmación de creación.</p></li>
+<li><a href="prototipo-ux-inicial.html">Calendario y Consultas</a><p>Recorrido central con datos ilustrativos.</p></li>
+<li><a href="prototipo-equipo-sin-participantes.html">Equipo sin participantes</a><p>Creación obligatoria de la primera identidad.</p></li>
+<li><a href="prototipo-equipo-caducado.html">Equipo caducado</a><p>Enlace todavía asociado a un equipo caducado.</p></li>
+<li><a href="prototipo-equipo-no-encontrado.html">Equipo no encontrado</a><p>Enlace incorrecto, inexistente o de equipo ya borrado.</p></li>
+</ul>
+</main>
+</body>
+</html>
