@@ -11,21 +11,25 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { Consultation, ConsultationGroups, TeamApi } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
+import { ConsultationDetailPage } from './consultation-detail';
 
 type ConfirmationKind = 'create' | 'cancel';
 
 @Component({
+  imports: [ConsultationDetailPage],
   template: `
-    <section aria-labelledby="section-title">
-      <div class="section-heading">
-        <div>
-          <h2 id="section-title">Consultas</h2>
-          <p>Vota o revisa las decisiones de este equipo.</p>
+    <section [attr.aria-labelledby]="selectedConsultationId ? null : 'section-title'">
+      @if (!selectedConsultationId) {
+        <div class="section-heading">
+          <div>
+            <h2 id="section-title">Consultas</h2>
+            <p>Vota o revisa las decisiones de este equipo.</p>
+          </div>
+          <button #headerCreateButton class="primary" type="button" (click)="openEditor()">
+            + Crear consulta
+          </button>
         </div>
-        <button #headerCreateButton class="primary" type="button" (click)="openEditor()">
-          + Crear consulta
-        </button>
-      </div>
+      }
       @if (loading) {
         <p role="status">Cargando consultas…</p>
       }
@@ -35,7 +39,13 @@ type ConfirmationKind = 'create' | 'cancel';
           <button class="outline" type="button" (click)="load()">Reintentar</button>
         </div>
       }
-      @if (!loading && !loadFailed && consultations) {
+      @if (selectedConsultationId) {
+        <app-consultation-detail
+          [consultationId]="selectedConsultationId"
+          (back)="closeDetail()"
+          (updated)="load()"
+        />
+      } @else if (!loading && !loadFailed && consultations) {
         @if (isEmpty) {
           <div class="panel consultations-empty">
             <span class="empty-symbol" aria-hidden="true">?</span>
@@ -49,10 +59,18 @@ type ConfirmationKind = 'create' | 'cancel';
               <section class="list-section" [attr.aria-labelledby]="state.key + '-heading'">
                 <h3 [id]="state.key + '-heading'">{{ state.label }}</h3>
                 @for (consultation of group(state.key); track consultation.id) {
-                  <article class="consultation-card">
+                  <button
+                    class="consultation-card"
+                    type="button"
+                    [attr.data-consultation-id]="consultation.id"
+                    (click)="openDetail(consultation.id)"
+                  >
                     <span class="consultation-card-content">
                       <strong>{{ consultation.title }}</strong>
                       <small>{{ optionSummary(consultation) }}</small>
+                      @if (consultation.resolution) {
+                        <small>{{ resolutionSummary(consultation) }}</small>
+                      }
                     </span>
                     <span
                       class="badge"
@@ -62,7 +80,7 @@ type ConfirmationKind = 'create' | 'cancel';
                     >
                       {{ state.labelSingular }}
                     </span>
-                  </article>
+                  </button>
                 }
               </section>
             }
@@ -265,6 +283,8 @@ export class ConsultationsPage implements OnInit, OnDestroy {
     { key: 'rejected', label: 'Rechazadas', labelSingular: 'Rechazada' },
   ] as const;
   consultations?: ConsultationGroups;
+  selectedConsultationId?: string;
+  private focusReturnId?: string;
   loading = true;
   loadFailed = false;
   showEditor = false;
@@ -368,6 +388,18 @@ export class ConsultationsPage implements OnInit, OnDestroy {
         this.consultations = consultations;
         this.loading = false;
         this.changeDetector.markForCheck();
+        if (this.focusReturnId) {
+          const id = this.focusReturnId;
+          this.focusReturnId = undefined;
+          setTimeout(() => {
+            for (const card of document.querySelectorAll<HTMLButtonElement>('.consultation-card')) {
+              if (card.dataset['consultationId'] === id) {
+                card.focus();
+                break;
+              }
+            }
+          });
+        }
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
@@ -384,6 +416,35 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   optionSummary(consultation: Consultation): string {
     const count = consultation.options.length;
     return `${consultation.type === 'text' ? 'Consulta de opciones' : 'Consulta de fechas'} · ${count} ${count === 1 ? 'opción propuesta' : 'opciones propuestas'}`;
+  }
+
+  resolutionSummary(consultation: Consultation): string {
+    if (!consultation.resolution) return '';
+    if (consultation.state === 'rejected') {
+      return `Rechazada por ${consultation.resolution.participant.name} · ninguna opción aceptada`;
+    }
+    const accepted = consultation.options
+      .filter((option) => consultation.resolution?.acceptedOptionIds.includes(option.id))
+      .map(
+        (option) =>
+          option.text ??
+          new Intl.DateTimeFormat('es-ES', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          }).format(new Date(`${option.date}T12:00:00`)),
+      );
+    return `Aceptadas: ${accepted.join(', ')} · por ${consultation.resolution.participant.name}`;
+  }
+
+  openDetail(id: string): void {
+    this.selectedConsultationId = id;
+  }
+
+  closeDetail(): void {
+    this.focusReturnId = this.selectedConsultationId;
+    this.selectedConsultationId = undefined;
+    this.load();
   }
 
   openEditor(): void {

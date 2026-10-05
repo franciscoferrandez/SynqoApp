@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Application\Consultation\ConsultationService;
 use App\Application\Exception\InvalidConsultationInput;
+use App\Application\Exception\ConsultationClosed;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
@@ -61,6 +62,65 @@ final readonly class ConsultationController
         }
     }
 
+    public function detail(Request $request, string $consultationId): JsonResponse
+    {
+        try {
+            return $this->success($this->consultations->detail($this->bearerToken($request), $consultationId));
+        } catch (MissingAccessCredential) {
+            return $this->missingCredential();
+        } catch (TeamNotFound) {
+            return $this->problem(404, 'No encontramos esta consulta.');
+        } catch (TeamExpired) {
+            return $this->problem(410, 'Este equipo ha caducado.');
+        }
+    }
+
+    public function vote(Request $request, string $consultationId, string $participantId, string $optionId): JsonResponse
+    {
+        $token = $this->bearerToken($request);
+        try {
+            $this->teams->current($token);
+            $body = $this->json($request);
+            if ($body === null) {
+                return $this->problem(400, 'JSON mal formado.');
+            }
+            return $this->success($this->consultations->vote($token, $consultationId, $participantId, $optionId, $body['selected'] ?? null));
+        } catch (InvalidConsultationInput $error) {
+            return $this->problem(422, 'Revisa el estado de la opción.', $error->fields);
+        } catch (ConsultationClosed) {
+            return $this->problem(409, 'Esta consulta ya está cerrada.', type: 'urn:synqo:problem:consultation-closed');
+        } catch (MissingAccessCredential) {
+            return $this->missingCredential();
+        } catch (TeamNotFound) {
+            return $this->problem(404, 'No encontramos esta consulta, participante u opción.');
+        } catch (TeamExpired) {
+            return $this->problem(410, 'Este equipo ha caducado.');
+        }
+    }
+
+    public function resolve(Request $request, string $consultationId): JsonResponse
+    {
+        $token = $this->bearerToken($request);
+        try {
+            $this->teams->current($token);
+            $body = $this->json($request);
+            if ($body === null) {
+                return $this->problem(400, 'JSON mal formado.');
+            }
+            return $this->success($this->consultations->resolve($token, $consultationId, $body['participantId'] ?? null, $body['status'] ?? null, $body['acceptedOptionIds'] ?? null));
+        } catch (InvalidConsultationInput $error) {
+            return $this->problem(422, 'Revisa la resolución.', $error->fields);
+        } catch (ConsultationClosed) {
+            return $this->problem(409, 'Esta consulta ya tiene otra resolución.', type: 'urn:synqo:problem:consultation-closed');
+        } catch (MissingAccessCredential) {
+            return $this->missingCredential();
+        } catch (TeamNotFound) {
+            return $this->problem(404, 'No encontramos esta consulta, participante u opción.');
+        } catch (TeamExpired) {
+            return $this->problem(410, 'Este equipo ha caducado.');
+        }
+    }
+
     /** @return array<string, mixed>|null */
     private function json(Request $request): ?array
     {
@@ -96,10 +156,10 @@ final readonly class ConsultationController
     }
 
     /** @param list<string> $fields */
-    private function problem(int $status, string $detail, array $fields = []): JsonResponse
+    private function problem(int $status, string $detail, array $fields = [], string $type = 'about:blank'): JsonResponse
     {
-        $titles = [400 => 'Solicitud incorrecta', 401 => 'Autenticación requerida', 404 => 'No encontrado', 410 => 'Equipo caducado', 422 => 'Datos inválidos'];
-        $data = ['type' => 'about:blank', 'title' => $titles[$status] ?? 'Error', 'status' => $status, 'detail' => $detail];
+        $titles = [400 => 'Solicitud incorrecta', 401 => 'Autenticación requerida', 404 => 'No encontrado', 409 => 'Conflicto', 410 => 'Equipo caducado', 422 => 'Datos inválidos'];
+        $data = ['type' => $type, 'title' => $titles[$status] ?? 'Error', 'status' => $status, 'detail' => $detail];
         if ($fields !== []) {
             $data['violations'] = array_map(static fn(string $field): array => ['propertyPath' => $field, 'message' => 'Este valor no es válido.'], $fields);
         }

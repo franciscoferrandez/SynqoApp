@@ -956,6 +956,10 @@ html[data-theme='dark'] {
   color: var(--ink);
   padding: 0.95rem 1rem;
   text-align: left;
+  cursor: pointer;
+}
+.consultation-card:hover {
+  border-color: var(--blue);
 }
 .consultation-card-content {
   min-width: 0;
@@ -1131,6 +1135,154 @@ html[data-theme='dark'] {
   color: var(--rose);
   box-shadow: none;
 }
+.consultation-back {
+  border: 0;
+  background: transparent;
+  color: var(--blue-strong);
+  font-weight: 750;
+  padding: 0.2rem 0;
+  margin: 0 0 0.75rem;
+}
+.consultation-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.consultation-detail-head h2 {
+  margin: 0.15rem 0 0.3rem;
+  font-size: 1.4rem;
+}
+.consultation-detail-head p:not(.eyebrow) {
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+.consultation-vote-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+.consultation-vote-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+.consultation-vote-option.interactive {
+  cursor: pointer;
+}
+.consultation-vote-option.selected {
+  border-color: var(--blue);
+  background: var(--blue-soft);
+}
+.consultation-vote-option.accepted {
+  border-color: var(--mint);
+  background: var(--mint-soft);
+}
+.consultation-vote-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.consultation-vote-label input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--blue);
+}
+.consultation-vote-tally {
+  min-width: 0;
+  text-align: right;
+  font-size: 0.83rem;
+  line-height: 1.4;
+}
+.consultation-vote-tally > strong {
+  display: block;
+}
+.consultation-voter-list {
+  color: var(--muted);
+}
+.consultation-voter-list .self {
+  color: var(--blue-strong);
+  font-weight: 750;
+}
+.consultation-more-voters {
+  border: 0;
+  background: transparent;
+  color: var(--blue-strong);
+  padding: 0.1rem 0.2rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.consultation-accepted-label {
+  display: block;
+  color: var(--mint);
+  font-weight: 800;
+}
+.consultation-vote-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+.consultation-resolution-summary {
+  background: var(--soft);
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin: 1rem 0;
+}
+.consultation-resolution-summary p {
+  margin: 0.25rem 0;
+}
+.consultation-resolution-summary small {
+  color: var(--muted);
+}
+.consultation-save-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--rose);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  margin-top: 0.8rem;
+  color: var(--ink);
+}
+.consultation-save-error p {
+  margin: 0;
+}
+.consultation-save-error button {
+  border: 0;
+  background: transparent;
+  color: var(--blue-strong);
+  font-weight: 750;
+  text-decoration: underline;
+}
+.consultation-resolution-dialog {
+  width: min(680px, calc(100vw - 2rem));
+}
+.consultation-resolution-dialog > p {
+  color: var(--muted);
+}
+.consultation-resolve-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.consultation-resolve-actions .danger {
+  color: var(--rose);
+}
 @media (max-width: 700px) {
   .consultation-card {
     align-items: flex-start;
@@ -1140,5 +1292,16 @@ html[data-theme='dark'] {
   }
   .text-query-actions button {
     flex: 1;
+  }
+  .consultation-vote-option {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .consultation-vote-tally {
+    text-align: left;
+    padding-left: 1.85rem;
+  }
+  .consultation-resolution-dialog .consultation-vote-tally {
+    padding-left: 1.85rem;
   }
 }

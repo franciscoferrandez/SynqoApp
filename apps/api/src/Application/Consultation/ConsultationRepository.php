@@ -14,4 +14,15 @@ interface ConsultationRepository
      * @return array<string, mixed>
      */
     public function create(string $teamId, string $participantId, string $title, string $type, array $options, string $createdAt, string $activityAt): array;
+
+    /** @return array<string, mixed>|null */
+    public function detail(string $teamId, string $consultationId): ?array;
+
+    /** @return bool Whether the persisted vote changed. */
+    public function setVote(string $teamId, string $consultationId, string $participantId, string $optionId, bool $selected, string $activityAt): bool;
+
+    /** @param list<string> $acceptedOptionIds
+     * @return bool Whether the resolution was first recorded.
+     */
+    public function resolve(string $teamId, string $consultationId, string $participantId, string $state, array $acceptedOptionIds, string $resolvedAt, string $activityAt): bool;
 }

@@ -87,6 +87,9 @@ final class TeamApiTest extends WebTestCase
         self::assertArrayHasKey('/api/teams/current/availability', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current/availability/{date}/participants/{participantId}', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current/consultations', $spec['paths']);
+        self::assertArrayHasKey('/api/teams/current/consultations/{consultationId}', $spec['paths']);
+        self::assertArrayHasKey('/api/teams/current/consultations/{consultationId}/votes/{participantId}/options/{optionId}', $spec['paths']);
+        self::assertArrayHasKey('/api/teams/current/consultations/{consultationId}/resolution', $spec['paths']);
         self::assertArrayHasKey('get', $spec['paths']['/api/teams/current/consultations']);
         self::assertArrayHasKey('post', $spec['paths']['/api/teams/current/consultations']);
         $consultationCreate = $spec['paths']['/api/teams/current/consultations']['post'];
@@ -98,7 +101,7 @@ final class TeamApiTest extends WebTestCase
         $consultationResponse = $consultationCreate['responses']['201']['content']['application/json']['schema']['properties']['consultation'];
         self::assertSame(['text', 'date'], $consultationResponse['properties']['type']['enum']);
         self::assertCount(2, $consultationResponse['properties']['options']['items']['oneOf']);
-        self::assertCount(6, $spec['paths']);
+        self::assertCount(9, $spec['paths']);
         $operations = $spec['paths']['/api/teams/current/participants']['post'];
         self::assertSame(['urn:synqo:problem:duplicate-participant'], $operations['responses']['409']['content']['application/problem+json']['schema']['properties']['type']['enum']);
         self::assertArrayHasKey('WWW-Authenticate', $operations['responses']['401']['headers']);

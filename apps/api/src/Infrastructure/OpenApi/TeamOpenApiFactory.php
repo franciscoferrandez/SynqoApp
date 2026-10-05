@@ -111,6 +111,37 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 responses: ['201' => $this->response('Created text or date consultation', ['consultation' => $consultation, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid type, title, time zone or options', withViolations: true)] + $consultationErrors,
             ),
         ));
+        $consultationDetail = $this->consultationDetail();
+        $consultationId = new Parameter(name: 'consultationId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid']);
+        $decisionErrors = ['401' => $this->unauthorizedProblem(), '404' => $this->problem('Team, consultation, participant or option not found'), '410' => $this->problem('Team expired'), '500' => $this->problem('Unexpected internal error')];
+        $paths->addPath('/api/teams/current/consultations/{consultationId}', new PathItem(get: new Operation(
+            operationId: 'readConsultationDetail',
+            tags: ['Consultations'],
+            summary: 'Read current votes and resolution',
+            security: $security,
+            parameters: [$consultationId],
+            responses: ['200' => new Response(description: 'Consultation detail', content: new \ArrayObject(['application/json' => new MediaType(schema: $consultationDetail)]))] + $decisionErrors,
+        )));
+        $paths->addPath('/api/teams/current/consultations/{consultationId}/votes/{participantId}/options/{optionId}', new PathItem(put: new Operation(
+            operationId: 'setConsultationVoteOption',
+            tags: ['Consultations'],
+            summary: 'Set or remove one vote option',
+            security: $security,
+            parameters: [$consultationId, new Parameter(name: 'participantId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid']), new Parameter(name: 'optionId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid'])],
+            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['selected' => $this->schema('boolean')], ['selected']))]), required: true),
+            responses: ['200' => $this->response('Confirmed vote and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Consultation closed', 'urn:synqo:problem:consultation-closed'), '422' => $this->problem('Invalid selection', withViolations: true)] + $decisionErrors,
+        )));
+        $accepted = $this->schema('array');
+        $accepted['items'] = $this->schema('string', format: 'uuid');
+        $paths->addPath('/api/teams/current/consultations/{consultationId}/resolution', new PathItem(put: new Operation(
+            operationId: 'resolveConsultation',
+            tags: ['Consultations'],
+            summary: 'Accept options or reject an open consultation',
+            security: $security,
+            parameters: [$consultationId],
+            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'status' => $this->enumSchema(['resolved', 'rejected']), 'acceptedOptionIds' => $accepted], ['participantId', 'status', 'acceptedOptionIds']))]), required: true),
+            responses: ['200' => $this->response('Confirmed resolution and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Different resolution already recorded', 'urn:synqo:problem:consultation-closed'), '422' => $this->problem('Invalid resolution', withViolations: true)] + $decisionErrors,
+        )));
         $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer')]));
         return $openApi->withPaths($paths)->withComponents($components);
     }
@@ -163,7 +194,26 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'date' => $this->schema('string', format: 'date'), 'position' => $this->schema('integer')], ['id', 'date', 'position']),
         ];
 
-        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
+        $accepted = $this->schema('array');
+        $accepted['items'] = $this->schema('string', format: 'uuid');
+        $resolution = $this->schema('object', ['participant' => $this->participant(), 'resolvedAt' => $this->schema('string', format: 'date-time'), 'acceptedOptionIds' => $accepted], ['participant', 'resolvedAt', 'acceptedOptionIds']);
+        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options, 'resolution' => $resolution], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
+    }
+
+    private function consultationDetail(): Schema
+    {
+        $schema = $this->consultation();
+        $options = $this->schema('array');
+        $voters = $this->participants();
+        $common = ['id' => $this->schema('string', format: 'uuid'), 'position' => $this->schema('integer'), 'count' => $this->schema('integer'), 'voters' => $voters];
+        $option = $this->schema('object');
+        $option['oneOf'] = [
+            $this->schema('object', $common + ['text' => $this->schema('string', maxLength: 50)], ['id', 'position', 'count', 'voters', 'text']),
+            $this->schema('object', $common + ['date' => $this->schema('string', format: 'date')], ['id', 'position', 'count', 'voters', 'date']),
+        ];
+        $options['items'] = $option;
+        $schema['properties']['options'] = $options;
+        return $schema;
     }
 
     private function consultationRequest(): Schema

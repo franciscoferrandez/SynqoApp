@@ -22,7 +22,15 @@ export interface Consultation {
   createdAt: string;
   createdBy: Participant;
   options: ConsultationOption[];
+  resolution?: {
+    participant: Participant;
+    resolvedAt: string;
+    acceptedOptionIds: string[];
+  };
 }
+export type ConsultationDetail = Omit<Consultation, 'options'> & {
+  options: (ConsultationOption & { count: number; voters: Participant[] })[];
+};
 export interface ConsultationGroups {
   open: Consultation[];
   resolved: Consultation[];
@@ -87,6 +95,31 @@ export class TeamApi {
   }
   consultations(): Observable<ConsultationGroups> {
     return this.http.get<ConsultationGroups>('/api/teams/current/consultations');
+  }
+  consultation(id: string): Observable<ConsultationDetail> {
+    return this.http.get<ConsultationDetail>(`/api/teams/current/consultations/${id}`);
+  }
+  vote(
+    consultationId: string,
+    participantId: string,
+    optionId: string,
+    selected: boolean,
+  ): Observable<{ consultation: ConsultationDetail; expiresAt: string }> {
+    return this.http.put<{ consultation: ConsultationDetail; expiresAt: string }>(
+      `/api/teams/current/consultations/${consultationId}/votes/${participantId}/options/${optionId}`,
+      { selected },
+    );
+  }
+  resolveConsultation(
+    consultationId: string,
+    participantId: string,
+    status: 'resolved' | 'rejected',
+    acceptedOptionIds: string[],
+  ): Observable<{ consultation: ConsultationDetail; expiresAt: string }> {
+    return this.http.put<{ consultation: ConsultationDetail; expiresAt: string }>(
+      `/api/teams/current/consultations/${consultationId}/resolution`,
+      { participantId, status, acceptedOptionIds },
+    );
   }
   createConsultation(
     participantId: string,

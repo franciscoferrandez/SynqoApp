@@ -170,6 +170,9 @@ export class TeamLayout implements OnInit {
   protected readonly canShare = typeof navigator.share === 'function';
   protected linkFeedback = '';
   participantId = '';
+  get activeParticipantName(): string {
+    return this.participantName;
+  }
   ngOnInit(): void {
     this.load();
   }

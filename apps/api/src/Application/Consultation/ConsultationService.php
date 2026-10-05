@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Application\Consultation;
 
 use App\Application\Exception\InvalidConsultationInput;
+use App\Application\Exception\TeamNotFound;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
-use App\Application\Exception\TeamNotFound;
 use App\Application\Team\TeamRepository as TeamRepositoryPort;
 use App\Application\Team\TeamService;
 use App\Domain\Consultation\TextConsultationRules;
@@ -33,6 +33,80 @@ final readonly class ConsultationService
         $team = $this->access->current($token);
 
         return $this->consultations->listForTeam($team['id']);
+    }
+
+    /** @return array<string, mixed> */
+    public function detail(?string $token, string $consultationId): array
+    {
+        $team = $this->access->current($token);
+        return $this->consultations->detail($team['id'], $consultationId) ?? throw new TeamNotFound();
+    }
+
+    /** @return array{consultation: array<string, mixed>, expiresAt: string} */
+    public function vote(?string $token, string $consultationId, string $participantId, string $optionId, mixed $selected): array
+    {
+        if (!is_bool($selected)) {
+            throw new InvalidConsultationInput(['selected']);
+        }
+        return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->setVote($team['id'], $consultationId, $participantId, $optionId, $selected, $activity->format(DATE_ATOM)), $consultationId);
+    }
+
+    /** @param mixed $acceptedOptionIds
+     * @return array{consultation: array<string, mixed>, expiresAt: string}
+     */
+    public function resolve(?string $token, string $consultationId, mixed $participantId, mixed $state, mixed $acceptedOptionIds): array
+    {
+        $violations = [];
+        if (!is_string($participantId) || $participantId === '') {
+            $violations[] = 'participantId';
+        }
+        if (!is_string($state) || !in_array($state, ['resolved', 'rejected'], true)) {
+            $violations[] = 'status';
+        }
+        if (!is_array($acceptedOptionIds) || !array_is_list($acceptedOptionIds) || count(array_filter($acceptedOptionIds, is_string(...))) !== count($acceptedOptionIds) || count(array_unique($acceptedOptionIds)) !== count($acceptedOptionIds)) {
+            $violations[] = 'acceptedOptionIds';
+        } elseif (($state === 'resolved' && $acceptedOptionIds === []) || ($state === 'rejected' && $acceptedOptionIds !== [])) {
+            $violations[] = 'acceptedOptionIds';
+        }
+        if ($violations !== []) {
+            throw new InvalidConsultationInput($violations);
+        }
+        /** @var string $participantId */
+        /** @var string $state */
+        /** @var list<string> $acceptedOptionIds */
+        return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->resolve($team['id'], $consultationId, $participantId, $state, $acceptedOptionIds, $now->format(DATE_ATOM), $activity->format(DATE_ATOM)), $consultationId);
+    }
+
+    /** @param callable(array<string, string>, DateTimeImmutable, DateTimeImmutable): bool $work
+     * @return array{consultation: array<string, mixed>, expiresAt: string}
+     */
+    private function mutate(?string $token, callable $work, string $consultationId): array
+    {
+        if ($token === null) {
+            throw new MissingAccessCredential();
+        }
+        /** @var array{consultation: array<string, mixed>, expiresAt: string} $result */
+        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($work, $consultationId): array {
+            if ($team === null) {
+                throw new TeamNotFound();
+            }
+            $now = $this->clock->now()->setTimezone(new DateTimeZone('UTC'));
+            $lastActivity = new DateTimeImmutable($team['last_activity_at']);
+            if ($now >= $this->expiry->expiresAt($lastActivity, $team['time_zone'])) {
+                throw new TeamExpired();
+            }
+            $activity = $now > $lastActivity ? $now : $lastActivity;
+            $changed = $work($team, $now, $activity);
+            $detail = $this->consultations->detail($team['id'], $consultationId);
+            if ($detail === null) {
+                throw new TeamNotFound();
+            }
+            return [
+                'consultation' => $detail,
+                'expiresAt' => $this->expiry->expiresAt($changed ? $activity : $lastActivity, $team['time_zone'])->format(DATE_ATOM),
+            ];
+        });
+        return $result;
     }
 
     /** @return array{consultation: array<string, mixed>, expiresAt: string} */

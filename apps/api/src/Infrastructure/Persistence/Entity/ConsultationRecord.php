@@ -20,6 +20,20 @@ class ConsultationRecord
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $options;
 
+    /** @var Collection<int, ConsultationOptionRecord> */
+    #[ORM\ManyToMany(targetEntity: ConsultationOptionRecord::class)]
+    #[ORM\JoinTable(name: 'consultation_resolution_option')]
+    #[ORM\JoinColumn(name: 'consultation_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\InverseJoinColumn(name: 'option_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    private Collection $acceptedOptions;
+
+    #[ORM\ManyToOne(targetEntity: ParticipantRecord::class)]
+    #[ORM\JoinColumn(name: 'resolved_by_participant_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
+    private ?ParticipantRecord $resolvedBy = null;
+
+    #[ORM\Column(name: 'resolved_at', type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $resolvedAt = null;
+
     public function __construct(
         #[ORM\Id]
         #[ORM\Column(type: Types::GUID)]
@@ -40,6 +54,7 @@ class ConsultationRecord
         private DateTimeImmutable $createdAt,
     ) {
         $this->options = new ArrayCollection();
+        $this->acceptedOptions = new ArrayCollection();
     }
 
     public function addOption(ConsultationOptionRecord $option): void
@@ -52,12 +67,44 @@ class ConsultationRecord
         return $this->team;
     }
 
+    public function state(): string
+    {
+        return $this->state;
+    }
+
+    /** @param list<string> $optionIds */
+    public function resolutionMatches(string $state, ParticipantRecord $participant, array $optionIds): bool
+    {
+        $current = array_map(static fn(ConsultationOptionRecord $option): string => $option->toItem()['id'], $this->acceptedOptions->toArray());
+        sort($current);
+        sort($optionIds);
+
+        return $this->state === $state && $this->resolvedBy === $participant && $current === $optionIds;
+    }
+
+    /** @param list<ConsultationOptionRecord> $acceptedOptions */
+    public function resolve(string $state, ParticipantRecord $participant, DateTimeImmutable $at, array $acceptedOptions): void
+    {
+        $this->state = $state;
+        $this->resolvedBy = $participant;
+        $this->resolvedAt = $at;
+        foreach ($acceptedOptions as $option) {
+            $this->acceptedOptions->add($option);
+        }
+    }
+
+    /** @return Collection<int, ConsultationOptionRecord> */
+    public function options(): Collection
+    {
+        return $this->options;
+    }
+
     /** @return array<string, mixed> */
     public function toItem(): array
     {
         $options = array_map(static fn(ConsultationOptionRecord $option): array => $option->toItem(), $this->options->toArray());
 
-        return [
+        $item = [
             'id' => $this->id,
             'type' => $this->type,
             'title' => $this->title,
@@ -66,5 +113,14 @@ class ConsultationRecord
             'createdBy' => $this->createdBy->toListItem(),
             'options' => $options,
         ];
+        if ($this->resolvedBy !== null) {
+            $item['resolution'] = [
+                'participant' => $this->resolvedBy->toListItem(),
+                'resolvedAt' => $this->resolvedAt?->format(DATE_ATOM),
+                'acceptedOptionIds' => array_map(static fn(ConsultationOptionRecord $option): string => $option->toItem()['id'], $this->acceptedOptions->toArray()),
+            ];
+        }
+
+        return $item;
     }
 }
