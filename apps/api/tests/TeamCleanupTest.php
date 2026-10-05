@@ -46,6 +46,22 @@ final class TeamCleanupTest extends WebTestCase
         ], server: $headers);
         self::assertResponseStatusCodeSame(201);
         $consultation = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation'];
+        $consultationBase = '/api/teams/current/consultations/' . $consultation['id'];
+        $optionId = $consultation['options'][0]['id'];
+        $client->jsonRequest('PUT', $consultationBase . '/votes/' . $created['firstParticipant']['id'] . '/options/' . $optionId, [
+            'selected' => true,
+        ], server: $headers);
+        self::assertResponseStatusCodeSame(200);
+        $client->jsonRequest('PUT', $consultationBase . '/resolution', [
+            'participantId' => $created['firstParticipant']['id'],
+            'status' => 'resolved',
+            'acceptedOptionIds' => [$optionId],
+        ], server: $headers);
+        self::assertResponseStatusCodeSame(200);
+        $voteId = $this->db->fetchOne('SELECT id FROM consultation_vote WHERE consultation_id = ?', [$consultation['id']]);
+        self::assertIsString($voteId);
+        self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_vote_selection WHERE vote_id = ?', [$voteId]));
+        self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_resolution_option WHERE consultation_id = ?', [$consultation['id']]));
         $futureDate = (new DateTimeImmutable('today', new DateTimeZone('UTC')))->modify('+3 days')->format('Y-m-d');
         $client->jsonRequest('POST', '/api/teams/current/consultations', [
             'type' => 'date',
@@ -80,6 +96,9 @@ final class TeamCleanupTest extends WebTestCase
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation WHERE team_id = ?', [$created['id']]));
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ?', [$consultation['id']]));
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ?', [$dateConsultation['id']]));
+        self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_vote WHERE consultation_id = ?', [$consultation['id']]));
+        self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_vote_selection WHERE vote_id = ?', [$voteId]));
+        self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_resolution_option WHERE consultation_id = ?', [$consultation['id']]));
 
         $client->request('GET', '/api/teams/current', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
         self::assertResponseStatusCodeSame(404);
@@ -89,12 +108,32 @@ final class TeamCleanupTest extends WebTestCase
         self::assertStringContainsString('0.', $outputAfter);
     }
 
-    public function testFailureToDeleteRootRollsBackTheTeamAndItsParticipants(): void
+    public function testFailureToDeleteRootRollsBackTheTeamAndItsConsultationData(): void
     {
         $client = $this->client;
         $client->jsonRequest('POST', '/api/teams', ['name' => 'Rollback', 'firstParticipantName' => 'Bea', 'timeZone' => 'UTC']);
         self::assertResponseStatusCodeSame(201);
         $created = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        $token = substr($created['accessUrl'], strpos($created['accessUrl'], '#t=') + 3);
+        $headers = ['HTTP_AUTHORIZATION' => 'Bearer ' . $token];
+        $client->jsonRequest('POST', '/api/teams/current/consultations', [
+            'participantId' => $created['firstParticipant']['id'],
+            'title' => 'Consulta que debe sobrevivir',
+            'options' => ['Sí'],
+        ], server: $headers);
+        self::assertResponseStatusCodeSame(201);
+        $consultation = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation'];
+        $consultationBase = '/api/teams/current/consultations/' . $consultation['id'];
+        $client->jsonRequest('PUT', $consultationBase . '/votes/' . $created['firstParticipant']['id'] . '/options/' . $consultation['options'][0]['id'], [
+            'selected' => true,
+        ], server: $headers);
+        self::assertResponseStatusCodeSame(200);
+        $client->jsonRequest('PUT', $consultationBase . '/resolution', [
+            'participantId' => $created['firstParticipant']['id'],
+            'status' => 'resolved',
+            'acceptedOptionIds' => [$consultation['options'][0]['id']],
+        ], server: $headers);
+        self::assertResponseStatusCodeSame(200);
         $this->db->update('team', ['last_activity_at' => '2025-01-15 12:00:00+00'], ['id' => $created['id']]);
         $this->clock->sleep(1);
         $this->db->executeStatement("CREATE FUNCTION reject_participant_delete() RETURNS trigger LANGUAGE plpgsql AS '
@@ -112,6 +151,11 @@ final class TeamCleanupTest extends WebTestCase
             self::assertTrue($failed, 'The injected PostgreSQL failure must abort cleanup.');
             self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM team WHERE id = ?', [$created['id']]));
             self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM participant WHERE team_id = ?', [$created['id']]));
+            self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation WHERE id = ?', [$consultation['id']]));
+            self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ?', [$consultation['id']]));
+            self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_vote WHERE consultation_id = ?', [$consultation['id']]));
+            self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_vote_selection WHERE option_id = ?', [$consultation['options'][0]['id']]));
+            self::assertSame(1, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_resolution_option WHERE consultation_id = ?', [$consultation['id']]));
         } finally {
             $this->db->executeStatement('DROP TRIGGER reject_participant_delete ON participant');
             $this->db->executeStatement('DROP FUNCTION reject_participant_delete()');

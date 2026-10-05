@@ -53,7 +53,7 @@ erDiagram
     CONSULTATION_OPTION ||--o{ CONSULTATION_RESOLUTION_OPTION : es_aceptada
 ```
 
-Las migraciones en `apps/api/migrations/` crean ocho tablas: equipo, participante, disponibilidad, consulta, opción, voto, selección de voto y opción aceptada en la resolución. Cada opción de consulta guarda texto **o** fecha civil, con una restricción que exige exactamente uno de esos valores. La consulta conserva el participante y la fecha de resolución. Las claves foráneas aplican borrado en cascada desde el equipo; la verificación de esa cascada para votos y resoluciones forma parte del trabajo pendiente de [SPEC-EQU-002 — Borrado de equipos caducados](../../pdi_doc/08_especificaciones/01_activas/spec-equ-002-borrado-equipo-caducado.md).
+Las migraciones en `apps/api/migrations/` crean ocho tablas: equipo, participante, disponibilidad, consulta, opción, voto, selección de voto y opción aceptada en la resolución. Cada opción de consulta guarda texto **o** fecha civil, con una restricción que exige exactamente uno de esos valores. La consulta conserva el participante y la fecha de resolución. Las claves foráneas aplican borrado en cascada desde el equipo; la cascada para votos y resoluciones quedó verificada en [SPEC-EQU-002 — Borrado de equipos caducados](../../pdi_doc/08_especificaciones/99_archivadas/spec-equ-002-borrado-equipo-caducado.md).
 
 ## Desarrollo
 

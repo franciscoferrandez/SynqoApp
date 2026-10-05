@@ -1,7 +1,7 @@
 ---
 id: SPEC-EQU-002
 nivel: N2
-estado: listo
+estado: cerrado
 release: REL-001
 ---
 
@@ -143,15 +143,49 @@ Por instrucción expresa de la persona usuaria, esta fase conserva únicamente i
 
 **Siguiente paso:** ampliar y repetir la verificación al incorporar votos y resoluciones. Hasta entonces los criterios 2 y 4 siguen parciales y no se declara `READY_FOR_CHANGE_CONVERGE`.
 
-**Situación posterior — 2026-10-06:** [SPEC-CON-003 — Votar, ver votos y resolver consultas](spec-con-003-votar-ver-y-resolver-consultas.md) incorporó las tablas de votos y resolución y probó técnicamente su borrado en cascada con el equipo. La matriz anterior conserva la evidencia y el resultado de la verificación de este Change en su fecha: los criterios 2 y 4 siguen `PARTIAL` hasta repetir su verificación con el esquema ampliado. El gate de SPEC-CON-003 también permanece bloqueado por su propia evidencia visual.
+**Situación posterior — 2026-10-06:** [SPEC-CON-003 — Votar, ver votos y resolver consultas](../01_activas/spec-con-003-votar-ver-y-resolver-consultas.md) incorporó las tablas de votos y resolución y probó técnicamente su borrado en cascada con el equipo. La matriz anterior conserva la evidencia y el resultado de la verificación de este Change en su fecha: los criterios 2 y 4 siguen `PARTIAL` hasta repetir su verificación con el esquema ampliado. El gate de SPEC-CON-003 también permanece bloqueado por su propia evidencia visual.
+
+### Re-verificación de change-verify — 2026-10-06
+
+Se amplió `TeamCleanupTest::testCommandDeletesAtExactBoundaryAndIsSafeToRepeat` para crear un voto, su selección y una resolución aceptada antes de ejecutar `app:teams:cleanup`. La prueba comprueba que las tres referencias existen antes del límite y que desaparecen junto al resto de datos al borrar el equipo. Esta matriz reemplaza el resultado parcial anterior sin alterar su evidencia histórica.
+
+| Criterio | Estado | Evidencia |
+|---|---|---|
+| 1. Acceso denegado desde caducidad | PASS | `TeamCleanupTest` comprueba `410` antes del borrado con reloj controlado. |
+| 2. Borrado completo a los 90 días | PASS | La prueba ejecuta el comando antes y en el instante exacto; sólo en el límite elimina el equipo con disponibilidad, consultas, opciones, voto y resolución. |
+| 3. Configuración del plazo | PASS | `TeamDeletionConfigurationTest` cubre valor inicial, sustitución y valores inválidos. |
+| 4. Consistencia del borrado | PASS | `TeamCleanupTest` comprueba en PostgreSQL cero referencias del equipo en las tablas de participantes, disponibilidad, consultas, opciones, votos, selecciones y opciones de resolución. Su prueba de fallo inducido conserva también consulta, opción, voto, selección y resolución por rollback. |
+| 5. Enlace después del borrado | PASS | La prueba comprueba `410` antes y `404` genérico después, sin filtrar el nombre del equipo. |
+| 6. Reejecución segura | PASS | Una segunda ejecución del comando devuelve cero eliminaciones sin error. |
+| 7. Límites temporales controlados | PASS | `DomainRulesTest` y `TeamCleanupTest` cubren antes, justo en y después del límite con `MockClock`. |
+| 8. Base activa y copias | PASS | La prueba verifica únicamente PostgreSQL activo; retención de copias y restauración permanecen como omisiones expresas fuera del alcance de esta SPEC. |
+
+**Checks:** `docker compose exec -T api composer test` pasa con 41 pruebas y 384 aserciones; pasan `composer cs:check`, `composer stan`, `composer rector:check` y `php bin/console lint:container`. Se reconstruyó únicamente `synqo_test` con `composer db:reset:test` porque conservaba dos nombres antiguos de índices de disponibilidad; después de aplicar las cinco migraciones, `doctrine:schema:validate` y `doctrine:migrations:status` sobre `DATABASE_URL_TEST` muestran esquema sincronizado y ninguna migración pendiente. La base de desarrollo también validó su esquema. La verificación visual pendiente de [SPEC-CON-003 — Votar, ver votos y resolver consultas](../01_activas/spec-con-003-votar-ver-y-resolver-consultas.md) es independiente de este Change de API.
+
+**Gate de verificación: READY_FOR_CHANGE_CONVERGE.** Los ocho criterios del alcance de base activa tienen evidencia `PASS`; esta sección conserva el resultado de la fase de verificación.
 ## Definition of Ready
 
 **READY_FOR_CHANGE_APPLY.** El objetivo, alcance, baseline, módulo, diseño, estructura, slices y evidencia están concretados. La implementación queda limitada al borrado de la base activa y a su integración con el estado de acceso. Las decisiones sobre copias y restauración están registradas como pendientes fuera de scope, con gate operativo posterior explícito; no bloquean este incremento.
 
 ## Convergence
 
-Las tablas de votos y resolución ya están integradas por SPEC-CON-003. Pendiente de repetir la verificación de este Change para declarar completa la cascada de los criterios 2 y 4.
+### Convergencia — 2026-10-06
+
+Se contrastaron [RF-EQU-005 — Eliminar los datos del equipo caducado](../../03_requisitos/01_funcionales/EQU/rf-equ-005-eliminar-equipo-caducado.md), [RN-EQU-002 — Caducidad de equipos rápidos por inactividad](../../03_requisitos/02_reglas-negocio/EQU/rn-equ-002-caducidad-equipo.md), [RN-EQU-003 — Borrado de equipos caducados](../../03_requisitos/02_reglas-negocio/EQU/rn-equ-003-borrado-equipo.md), [RD-EQU-003 — Datos del equipo caducado](../../03_requisitos/03_datos/EQU/rd-equ-003-datos-equipo-caducado.md), esta SPEC, la REL, el comando, la política de borrado, las migraciones y las pruebas. La matriz de re-verificación anterior acredita los ocho criterios del alcance de la base activa.
+
+| Clase de drift | Resultado |
+|---|---|
+| A — Código | Sin desvío: `TeamDeletionPolicy` calcula el límite desde la caducidad efectiva, `OrmTeamCleanupRepository` relee y bloquea cada equipo antes de borrarlo en transacción, y las FK en cascada eliminan también votos y resolución. `TeamCleanupTest` cubre borrado y rollback del árbol ampliado. |
+| B — SPEC | Sin desvío vigente: las frases de Research y de la verificación de 2026-10-05 describen el esquema de aquellas fechas. La re-verificación registra el esquema actual sin reescribir esa evidencia histórica. |
+| C — Nueva información | Las tablas incorporadas por [SPEC-CON-003 — Votar, ver votos y resolver consultas](../01_activas/spec-con-003-votar-ver-y-resolver-consultas.md) permitieron completar la prueba de cascada; no introducen una regla de borrado nueva. |
+| D — Arquitectura | Sin desvío: comando y servicio de aplicación, reloj inyectado, política de dominio, transacción ORM y cascada PostgreSQL siguen las fronteras previstas para API. |
+| E — Baseline incorrecto | No se detectó conflicto normativo; no procede `pdi:baseline-update`. |
+| F — Fuera de scope | La retención de copias y la prevención de reaparición tras restaurar siguen como decisiones operativas no aprobadas para una entrega posterior. La comparación visual pendiente de [SPEC-CON-003 — Votar, ver votos y resolver consultas](../01_activas/spec-con-003-votar-ver-y-resolver-consultas.md) pertenece a ese Change y no altera el gate de este borrado en la base activa. |
+
+La [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md) describe [RF-EQU-005 — Eliminar los datos del equipo caducado](../../03_requisitos/01_funcionales/EQU/rf-equ-005-eliminar-equipo-caducado.md) como validado **para la base activa de la demo local**, sin atribuir cumplimiento sobre copias. Al cerrar el Change, los cambios de prueba y documentación de esta re-verificación siguen pendientes de commit en la rama actual; los cambios ajenos del diagnóstico visual de [SPEC-CON-003 — Votar, ver votos y resolver consultas](../01_activas/spec-con-003-votar-ver-y-resolver-consultas.md) permanecen separados.
+
+**Gate de convergencia: READY_FOR_CHANGE_CLOSE.** No hay drift significativo abierto dentro del alcance; no se cambió baseline ni implementación durante esta fase, por lo que no es necesario repetir `pdi:change-verify`.
 
 ## Resultado de cierre
 
-Pendiente.
+**DONE — Change cerrado y archivado el 2026-10-06.** Los ocho criterios del alcance de borrado en la base activa están en `PASS`; las pruebas y comprobaciones locales constan en la re-verificación anterior y la convergencia no dejó drift significativo abierto. La capacidad [RF-EQU-005 — Eliminar los datos del equipo caducado](../../03_requisitos/01_funcionales/EQU/rf-equ-005-eliminar-equipo-caducado.md) queda `VALIDADO` para la base activa en [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). No se declara `ENTREGADO`: no hay evidencia de integración en `main` ni de ejecución del CI remoto para los cambios de esta re-verificación. No hay PR ni commit de cierre que registrar en este momento. No se modifica el baseline. La retención de copias y la restauración segura siguen fuera de este Change y requieren decisiones posteriores. El siguiente pendiente de la entrega es completar la evidencia visual de [SPEC-CON-003 — Votar, ver votos y resolver consultas](../01_activas/spec-con-003-votar-ver-y-resolver-consultas.md) y su verificación; también permanece pendiente la auditoría WCAG completa.
