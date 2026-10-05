@@ -11,6 +11,12 @@ const team = {
   ],
 };
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/teams/current/availability**', (route) =>
+    route.fulfill({ json: { days: [] } }),
+  );
+});
+
 for (const participants of [team.participants, []]) {
   test(`invalid local identity cannot expose content (${participants.length} participants)`, async ({
     page,
@@ -44,6 +50,9 @@ test('selecting and changing identity is local and expiry uses the browser zone'
 }) => {
   const context = await browser.newContext({ timezoneId: 'Asia/Tokyo' });
   const page = await context.newPage();
+  await page.route('**/api/teams/current/availability**', (route) =>
+    route.fulfill({ json: { days: [] } }),
+  );
   const mutations: string[] = [];
   page.on('request', (request) => {
     if (request.method() !== 'GET') mutations.push(request.url());
@@ -189,6 +198,7 @@ test('native share receives the full link on confirmation and in the team', asyn
     }),
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
+  await page.addInitScript(() => localStorage.setItem('synqo-participant-recovery-team', 'ana'));
   await page.goto('/');
   await page.locator('#team-name').fill('Equipo');
   await page.locator('#participant-name').fill('Ana');

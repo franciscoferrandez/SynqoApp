@@ -9,6 +9,26 @@ export interface AvailabilityDay {
   counts: Record<AvailabilityState, number>;
   marks: { participantId: string; participantName: string; state: AvailabilityState }[];
 }
+export type ConsultationState = 'open' | 'resolved' | 'rejected';
+export interface ConsultationOption {
+  id: string;
+  text: string;
+  position: number;
+}
+export interface Consultation {
+  id: string;
+  type: 'text';
+  title: string;
+  state: ConsultationState;
+  createdAt: string;
+  createdBy: Participant;
+  options: ConsultationOption[];
+}
+export interface ConsultationGroups {
+  open: Consultation[];
+  resolved: Consultation[];
+  rejected: Consultation[];
+}
 export interface Participant {
   id: string;
   name: string;
@@ -64,6 +84,19 @@ export class TeamApi {
     return this.http.put<{ day: AvailabilityDay; expiresAt: string }>(
       `/api/teams/current/availability/${date}/participants/${participantId}`,
       { state, ...(timeZone ? { timeZone } : {}) },
+    );
+  }
+  consultations(): Observable<ConsultationGroups> {
+    return this.http.get<ConsultationGroups>('/api/teams/current/consultations');
+  }
+  createConsultation(
+    participantId: string,
+    title: string,
+    options: string[],
+  ): Observable<{ consultation: Consultation; expiresAt: string }> {
+    return this.http.post<{ consultation: Consultation; expiresAt: string }>(
+      '/api/teams/current/consultations',
+      { participantId, title, options },
     );
   }
   current(): Observable<TeamData> {

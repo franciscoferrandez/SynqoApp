@@ -9,11 +9,11 @@ use DateTimeZone;
 
 final class DailyAvailability
 {
-    public const STATES = ['available', 'maybe', 'unavailable'];
+    public const array STATES = ['available', 'maybe', 'unavailable'];
 
     public static function validDate(string $date): bool
     {
-        if (!preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $date) || substr($date, 0, 4) === '0000') {
+        if (!preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $date) || str_starts_with($date, '0000')) {
             return false;
         }
         $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);

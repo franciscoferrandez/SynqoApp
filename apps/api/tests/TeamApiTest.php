@@ -75,7 +75,7 @@ final class TeamApiTest extends WebTestCase
         self::assertStringContainsString('no-store', $client->getResponse()->headers->get('Cache-Control'));
     }
 
-    public function testOpenApiListsOnlyTheTeamOperations(): void
+    public function testOpenApiListsAllImplementedOperations(): void
     {
         $client = $this->client;
         $client->request('GET', '/api/docs.jsonopenapi');
@@ -84,7 +84,12 @@ final class TeamApiTest extends WebTestCase
         self::assertArrayHasKey('/api/teams', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current/participants', $spec['paths']);
-        self::assertCount(3, $spec['paths']);
+        self::assertArrayHasKey('/api/teams/current/availability', $spec['paths']);
+        self::assertArrayHasKey('/api/teams/current/availability/{date}/participants/{participantId}', $spec['paths']);
+        self::assertArrayHasKey('/api/teams/current/consultations', $spec['paths']);
+        self::assertArrayHasKey('get', $spec['paths']['/api/teams/current/consultations']);
+        self::assertArrayHasKey('post', $spec['paths']['/api/teams/current/consultations']);
+        self::assertCount(6, $spec['paths']);
         $operations = $spec['paths']['/api/teams/current/participants']['post'];
         self::assertSame(['urn:synqo:problem:duplicate-participant'], $operations['responses']['409']['content']['application/problem+json']['schema']['properties']['type']['enum']);
         self::assertArrayHasKey('WWW-Authenticate', $operations['responses']['401']['headers']);

@@ -124,13 +124,31 @@ Por instrucción expresa de la persona usuaria, esta fase conserva únicamente i
 
 **Omisiones activas:** retención de copias y prevención de reaparición tras restauración, por quedar fuera del alcance aprobado y requerir decisiones operativas posteriores.
 
+### Verificación local — 2026-10-05 (actualizada)
+
+**Gate: FAIL.** El borrado a plazo, la configuración, acceso previo/posterior y reejecución pasan sus pruebas. La consistencia queda `PARTIAL`: una prueba PostgreSQL del árbol integrado elimina en cascada los equipos, participantes, disponibilidades, consultas y opciones existentes; votos y resoluciones aún no existen en la implementación y quedan pendientes de comprobar cuando se incorporen.
+
+| Criterio | Estado | Evidencia y límite |
+|---|---|---|
+| 1. Acceso denegado desde caducidad | PASS | `TeamCleanupTest` usa reloj controlado y confirma `410` mientras el equipo sigue dentro del periodo previo al borrado. |
+| 2. Borrado a 90 días de la caducidad | PARTIAL | Pruebas de dominio y comando cubren el valor por defecto y el límite exacto. `TeamCleanupTest` crea y borra en PostgreSQL equipo, participante, disponibilidad, consulta y opciones; votos y resoluciones quedan por verificar cuando existan. |
+| 3. Configuración del plazo | PASS | `TeamDeletionConfigurationTest` valida el valor por defecto de 90 días, una sustitución explícita y rechazo de valores inválidos. |
+| 4. Borrado consistente de todos los datos del equipo | PARTIAL | `TeamCleanupTest` persiste actividad en las cinco tablas existentes y verifica cero filas para equipo, participante, disponibilidad, consulta y opciones tras `app:teams:cleanup`; otro caso verifica rollback ante un fallo inducido en el borrado de participantes. No hay todavía tablas de votos o resoluciones que permitan verificar esos tipos de datos. |
+| 5. Enlace posterior al borrado | PASS | E2E API integrado: el equipo caducado responde `410` antes de limpieza y `404` genérico después, sin revelar su nombre. |
+| 6. Reejecución segura | PASS | PHPUnit ejecuta el comando de nuevo y confirma resultado cero sin error. |
+| 7. Límites temporales controlados | PASS | `DomainRulesTest` y `TeamCleanupTest` cubren antes, instante exacto y después con reloj controlado; PostgreSQL verifica la ejecución en el límite. |
+| 8. Base activa y copias | PASS | La evidencia se limita a la base activa. Copias y prevención de reaparición tras restauración siguen como omisiones explícitas fuera del Change, conforme al alcance aprobado. |
+
+**Checks integrados — 2026-10-05:** PostgreSQL efímera: PHPUnit (**30 pruebas, 249 aserciones**), `composer cs:check`, `composer stan`, `composer rector:check`, `lint:container` y `doctrine:schema:validate` pasan. `TeamCleanupTest` ahora prueba una cascada real que incluye disponibilidad y consulta/opciones. WEB pasa build, 4 pruebas unitarias, lint y formato. La última suite E2E global obtuvo **30/31**; el fallo intermitente fue ajeno al borrado y pasó al repetirse aislado. Las migraciones de disponibilidad y consulta/opciones están aplicadas en la base de desarrollo sin reiniciarla.
+
+**Siguiente paso:** ampliar y repetir la verificación al incorporar votos y resoluciones. Hasta entonces los criterios 2 y 4 siguen parciales y no se declara `READY_FOR_CHANGE_CONVERGE`.
 ## Definition of Ready
 
 **READY_FOR_CHANGE_APPLY.** El objetivo, alcance, baseline, módulo, diseño, estructura, slices y evidencia están concretados. La implementación queda limitada al borrado de la base activa y a su integración con el estado de acceso. Las decisiones sobre copias y restauración están registradas como pendientes fuera de scope, con gate operativo posterior explícito; no bloquean este incremento.
 
 ## Convergence
 
-Pendiente.
+Pendiente de integrar y verificar futuras tablas de votos y resoluciones antes de declarar completa la cascada de los criterios 2 y 4.
 
 ## Resultado de cierre
 

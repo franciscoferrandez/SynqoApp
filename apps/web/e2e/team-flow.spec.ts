@@ -47,7 +47,9 @@ test('creates a team, opens its link in another browser and remembers a local id
   await expect(page.locator('[data-identity-trigger]')).toContainText('Ana');
   await expect(page.getByText('1 participante')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Disponibilidad del equipo' })).toBeVisible();
-  await expect(page.getByText('Detalle del día')).toBeVisible();
+  await page.locator('.calendar-day.today').press('Enter');
+  await expect(page.getByRole('dialog').getByText('Detalle del día')).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cerrar detalle del día' }).press('Enter');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await expect(page.getByRole('button', { name: 'Copiar enlace' })).toHaveCSS('cursor', 'pointer');
   await expect(page.getByRole('button', { name: 'Compartir enlace' })).toBeDisabled();

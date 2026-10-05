@@ -3,7 +3,7 @@ import { CreatePage } from './pages/create-page';
 import { ConfirmationPage } from './pages/confirmation-page';
 import { TeamLayout } from './pages/team-layout';
 import { AvailabilityCalendar } from './pages/availability-calendar';
-import { EmptySection } from './pages/empty-section';
+import { ConsultationsPage } from './pages/consultations-page';
 import { LinkMessagePage } from './pages/link-message-page';
 
 export const routes: Routes = [
@@ -22,7 +22,7 @@ export const routes: Routes = [
       },
       {
         path: 'consultas',
-        component: EmptySection,
+        component: ConsultationsPage,
         data: { section: 'consultas' },
         title: 'Consultas · Synqo',
       },

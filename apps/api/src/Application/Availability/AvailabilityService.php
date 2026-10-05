@@ -30,7 +30,7 @@ final readonly class AvailabilityService
     public function read(?string $token, string $from, string $to): array
     {
         $team = $this->access->current($token);
-        if (!DailyAvailability::validDate($from) || !DailyAvailability::validDate($to) || $from > $to || (new DateTimeImmutable($from))->diff(new DateTimeImmutable($to))->days > 41) {
+        if (!DailyAvailability::validDate($from) || !DailyAvailability::validDate($to) || $from > $to || new DateTimeImmutable($from)->diff(new DateTimeImmutable($to))->days > 41) {
             throw new InvalidTeamInput(['from', 'to']);
         }
         $marks = $this->availability->marks($team['id'], $from, $to);

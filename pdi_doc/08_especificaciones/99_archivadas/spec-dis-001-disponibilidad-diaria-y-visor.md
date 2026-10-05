@@ -1,7 +1,7 @@
 ---
 id: SPEC-DIS-001
 nivel: N2
-estado: ready
+estado: cerrada
 release: REL-001
 ---
 
@@ -126,14 +126,49 @@ Los cuatro slices tienen implementación de producto en la rama aislada `change/
 
 **Pendientes concretos para la fase siguiente:** integrar con la capacidad de borrado de equipos, ejecutar la migración y comprobar esquema, integridad, concurrencia y rollback en PostgreSQL; preparar la evidencia WEB/API y comprobar el recorrido móvil/escritorio en ambos temas. La prueba existente `TeamApiTest::testOpenApiListsOnlyTheTeamOperations` contiene una expectativa de tres rutas que deberá revisarse en la fase de pruebas al añadir estas dos operaciones. No se identificaron decisiones nuevas de producto ni drift normativo durante apply.
 
+### Verificación local — 2026-10-05 (actualizada)
+
+**Gate: FAIL.** Los criterios 1–8 tienen evidencia funcional en pruebas API, PostgreSQL y navegador. El criterio 9 queda `PARTIAL`: foco, nombres, estados y regiones de anuncio están comprobados en navegador; falta comprobar la salida hablada con tecnología de asistencia y completar la auditoría WCAG. Las siete pruebas E2E de disponibilidad pasan; la suite global tiene además un fallo de consultas fuera del scope DIS. No hay hallazgos independientes `BLOCKER` ni `MAJOR`. El Change no queda listo para convergencia.
+
+| Criterio | Estado | Evidencia y límite |
+|---|---|---|
+| 1. Marcar, cambiar y retirar | PASS | PHPUnit verifica persistencia y mutaciones; E2E cubre marcar, cambiar, retirar al pulsar la opción activa y recargar el enlace. |
+| 2. Fecha editable y zona horaria | PASS | `AvailabilityApiTest` cubre fechas pasadas, zona inválida, hoy del dispositivo cerca de medianoche UTC, zona del equipo como fallback y lectura de una marca de un día pasado. |
+| 3. Persistencia, actividad y concurrencia | PASS | PHPUnit comprueba idempotencia, renovación solo en cambios efectivos y rollback. La prueba concurrente mantiene bloqueada la fila de equipo, observa dos sesiones PostgreSQL esperando el lock y confirma ambas escrituras con una sola marca final. E2E confirma persistencia al reabrir el enlace en otro contexto. |
+| 4. Agregado y detalle | PASS | PHPUnit prueba resumen neutro, recuentos y estado más restrictivo. E2E con dos identidades confirma el recuento compartido, omite una tercera sin marca y pone «Tú» primero en el grupo propio. |
+| 5. Navegación del calendario | PASS | E2E recorre meses, comprueba semanas completas de lunes a domingo, fecha visible de hoy y retorno a «Hoy»; las fechas del calendario conservan representación civil `YYYY-MM-DD`. |
+| 6. Equipo / Mi disponibilidad | PASS | E2E alterna modos y dos contextos de identidad; el detalle compartido conserva los datos. |
+| 7. Detalle, móvil y días pasados | PASS | E2E verifica diálogo móvil, cierre con retorno de foco y controles deshabilitados para un día pasado; API rechaza su escritura. |
+| 8. Optimismo, fallo y reintento | PASS | E2E fuerza un `500`, comprueba restauración y reintenta la misma acción. PHPUnit fuerza un error PostgreSQL y confirma rollback de marca y actividad. |
+| 9. Responsive, temas y accesibilidad | PARTIAL | La suite E2E cubre móvil, teclado, cierre de diálogo con retorno de foco, nombres/estados y tema oscuro. Chromium expone los días como botones con nombre accesible y `aria-pressed`; las tarjetas también exponen `aria-pressed` y hay regiones `status`/`alert`. Las combinaciones de texto/estado revisadas superan 4.5:1 en claro y oscuro. La prueba focal del 2026-10-05 confirma que el día seleccionado conserva una marca interior y muestra, al recibir foco por teclado, un anillo exterior de 3 px con el token `--focus` y separación de 3 px. No hay lector de pantalla instalado para comprobar anuncios de voz y esta ejecución no repite la revisión integral de accesibilidad; la conformidad WCAG completa sigue siendo un gate de REL-001. |
+
+**Checks ejecutados — 2026-10-05:** `synqo_test` tenía una conexión inactiva de HeidiSQL y no se cerró ni reinició. Para API se creó una base temporal `synqo_verify_dis_20261005_dis001`, se aplicaron las tres migraciones hasta `Version20261005160000` y luego se eliminó: PHPUnit (**30 pruebas, 249 aserciones**), `composer cs:check`, `composer stan`, `composer rector:check`, `lint:container` y `doctrine:schema:validate` pasan. WEB con Node 22: pruebas unitarias (**4/4**), lint, format y build pasan. Playwright global terminó con **30/31**: las siete pruebas de disponibilidad pasan; falla una prueba de consultas, fuera del scope DIS, al no encontrar el campo «Texto de la opción 10» en `consultations.spec.ts`. Playwright integrado usa la API local y sus pruebas crean datos de prueba en la base de desarrollo; esta base no se reinició ni se limpió.
+
+**Comprobación de accesibilidad — 2026-10-05:** Chromium Accessibility Tree confirma rol/nombre del botón de día (`lunes, 5 de octubre de 2026: ✓ Disponible`) y controles de estado. Las pruebas WEB usan nombres accesibles para activar controles y verifican `aria-pressed`; el E2E comprueba anuncios de guardado y alertas de fallo. La prueba focal de foco pasa: el día seleccionado conserva el indicador interior y el foco de teclado presenta anillo exterior de 3 px, color `--focus` y offset de 3 px. Los contrastes de texto/estado medidos en claro y oscuro y los tamaños adaptables constan en la revisión focal anterior. No hay Orca ni otro lector de pantalla instalado, por lo que no se verificó la salida hablada; la auditoría completa de criterios WCAG tampoco forma parte de esta ejecución. El criterio 9 permanece `PARTIAL`. El revisor independiente mantiene un hallazgo `MINOR` sobre integridad ante asociación equipo/participante cruzada por SQL directo; la API rechaza esa asociación y no se encontró camino HTTP que la permita.
+
+**Siguiente paso:** resolver o aceptar explícitamente el resultado `PARTIAL` del criterio 9 antes de `pdi:change-converge`. La suite global también conserva el fallo de consultas fuera del scope DIS. Resultado de esta verificación: `FAIL`; no se declara `READY_FOR_CHANGE_CONVERGE` ni conformidad WCAG 2.2 AA.
 ## Definition of Ready
 
 **READY_FOR_CHANGE_APPLY.** Objetivo, scope y exclusiones delimitados; requisitos, reglas, datos, UX y módulos WEB/API enlazados; contratos, persistencia, slices y evidencia definidos. No se han encontrado preguntas funcionales bloqueantes en este alcance. El estado global `NOT_READY` de la release corresponde a capacidades posteriores y auditoría completa, no impide preparar este incremento focal. La validación estructural de PDI no detecta enlaces rotos ni denominaciones incorrectas.
 
 ## Convergence
 
-Pendiente de implementación y verificación. No se modifica el baseline para acomodar la futura implementación.
+### Aceptación expresa del resultado parcial
+
+El 5 de octubre de 2026, la persona impulsora acepta avanzar con el criterio 9 en `PARTIAL` y considera no crítico ese resultado para este Change. **Omisión activa:** queda pendiente comprobar la salida hablada con tecnología de asistencia y completar la auditoría WCAG 2.2 AA de la entrega. Esta aceptación no convierte el criterio en `PASS`, no acredita conformidad de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) ni reduce el requisito vigente; la auditoría continúa como gate de [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md).
+
+### Comparación y resolución
+
+| Aspecto | Clasificación | Resolución |
+|---|---|---|
+| Requisitos de disponibilidad diaria, persistencia, agregación y recorrido WEB | A — código | API, migraciones y recorrido WEB coinciden con la SPEC; criterios 1–8 están en `PASS` con las pruebas registradas. No requiere cambio del baseline. |
+| Foco del día seleccionado | A — código | La marca interior de selección y el anillo exterior de foco de teclado se verifican con Playwright; no queda discrepancia en este punto. |
+| Criterio 9 y auditoría WCAG completa | F — omisión aceptada para este Change | El resultado `PARTIAL` se acepta expresamente para avanzar. Se mantiene pendiente la evidencia de tecnología asistiva y la auditoría completa a nivel de REL-001. |
+| Fallo en Playwright de creación de consulta de texto | F — fuera de scope | El recorrido DIS pasa 7/7. La suite global falla únicamente en `consultations.spec.ts` al buscar la opción 10; pertenece a consultas y no altera evidencia ni comportamiento cubierto por SPEC-DIS-001. Debe atenderse en el Change de consultas correspondiente. |
+| Integridad ante asociación equipo/participante por SQL directo | Sin drift significativo | La API valida la pertenencia y no se halló una ruta HTTP que permita asociar una marca al participante de otro equipo. Se conserva el hallazgo `MINOR` del revisor como límite de integridad ante escrituras SQL directas; no contradice el contrato de operaciones del Change. |
+
+No se encontró drift significativo de producto, arquitectura o contrato dentro del scope aceptado. No apareció nueva verdad normativa y no procede `pdi:baseline-update`. **Gate: READY_FOR_CHANGE_CLOSE con la omisión activa de accesibilidad descrita arriba.**
 
 ## Resultado de cierre
 
-Change abierto; sin resultado de cierre.
+**DONE — Change cerrado y archivado el 2026-10-05 con aceptación expresa del criterio 9 en `PARTIAL`.** Los criterios 1–8 están en `PASS`; no se declara conformidad WCAG 2.2 AA. La accesibilidad completa sigue pendiente para REL-001. La verificación se realizó localmente; no se registra commit ni integración en `main`, por lo que el delivery queda `VALIDADO`, no `ENTREGADO`. El fallo de E2E de consultas queda fuera del scope de este Change y registrado para atenderse desde esa capacidad. No se modifica el baseline.

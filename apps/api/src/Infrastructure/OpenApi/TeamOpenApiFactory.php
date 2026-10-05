@@ -90,6 +90,31 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['state' => $state, 'timeZone' => $this->schema('string')], ['state']))]), required: true),
             responses: ['200' => $this->response('Confirmed day', ['day' => $day, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid state, civil date, time zone or past day', withViolations: true)] + $errors,
         )));
+        $consultation = $this->consultation();
+        $consultations = $this->schema('array');
+        $consultations['items'] = $consultation;
+        $consultationErrors = ['400' => $this->problem('Malformed JSON'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team or participant not found'), '410' => $this->problem('Team expired'), '500' => $this->problem('Unexpected internal error')];
+        $paths->addPath('/api/teams/current/consultations', new PathItem(
+            get: new Operation(
+                operationId: 'listTeamConsultations',
+                tags: ['Consultations'],
+                summary: 'List the consultations for the current team',
+                security: $security,
+                responses: ['200' => $this->response('Consultations grouped by state', ['open' => $consultations, 'resolved' => $consultations, 'rejected' => $consultations])] + $consultationErrors,
+            ),
+            post: new Operation(
+                operationId: 'createTextConsultation',
+                tags: ['Consultations'],
+                summary: 'Create an open text consultation',
+                security: $security,
+                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', [
+                    'participantId' => $this->schema('string', format: 'uuid'),
+                    'title' => $this->schema('string', maxLength: 250),
+                    'options' => $this->textOptionsSchema(),
+                ], ['participantId', 'title', 'options']))]), required: true),
+                responses: ['201' => $this->response('Created text consultation', ['consultation' => $consultation, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid title or options', withViolations: true)] + $consultationErrors,
+            ),
+        ));
         $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer')]));
         return $openApi->withPaths($paths)->withComponents($components);
     }
@@ -127,6 +152,28 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $marks = $this->schema('array');
         $marks['items'] = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'participantName' => $this->schema('string'), 'state' => $state], ['participantId', 'participantName', 'state']);
         return $this->schema('object', ['date' => $this->schema('string', format: 'date'), 'state' => $aggregate, 'counts' => $this->schema('object', ['available' => $this->schema('integer'), 'maybe' => $this->schema('integer'), 'unavailable' => $this->schema('integer')], ['available', 'maybe', 'unavailable']), 'marks' => $marks], ['date', 'state', 'counts', 'marks']);
+    }
+
+    private function consultation(): Schema
+    {
+        $state = $this->schema('string');
+        $state['enum'] = ['open', 'resolved', 'rejected'];
+        $type = $this->schema('string');
+        $type['enum'] = ['text'];
+        $options = $this->schema('array');
+        $options['items'] = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50), 'position' => $this->schema('integer')], ['id', 'text', 'position']);
+
+        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
+    }
+
+    private function textOptionsSchema(): Schema
+    {
+        $options = $this->schema('array');
+        $options['minItems'] = 1;
+        $options['maxItems'] = 10;
+        $options['items'] = $this->schema('string', maxLength: 50);
+
+        return $options;
     }
 
     private function participant(): Schema
