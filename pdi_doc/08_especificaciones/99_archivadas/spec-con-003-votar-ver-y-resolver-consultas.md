@@ -1,7 +1,7 @@
 ---
 id: SPEC-CON-003
 nivel: N3
-estado: listo
+estado: cerrado
 release: REL-001
 ---
 
@@ -36,7 +36,7 @@ Change **N3 de realización**: reúne tres requisitos dependientes, persistencia
 - [FLUJO-CON-002 — Responder una consulta abierta](../../04_experiencia-usuario/02_flujos/flujo-con-002-responder-consulta.md) y [FLUJO-CON-003 — Resolver una consulta](../../04_experiencia-usuario/02_flujos/flujo-con-003-resolver-consulta.md).
 - [WF-CON-001 — Lista de consultas del equipo](../../04_experiencia-usuario/03_wireframes/wf-con-001-lista-consultas.md), [WF-CON-002 — Detalle de una consulta abierta](../../04_experiencia-usuario/03_wireframes/wf-con-002-detalle-consulta.md), [WF-CON-003 — Consulta resuelta o rechazada](../../04_experiencia-usuario/03_wireframes/wf-con-003-consulta-cerrada.md) y [WF-CON-005 — Confirmar la resolución de una consulta](../../04_experiencia-usuario/03_wireframes/wf-con-005-confirmar-resolucion.md).
 - [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) y [RNF-COO-003 — Uso adaptable en navegador móvil](../../03_requisitos/04_no-funcionales/COO/rnf-coo-003-uso-en-navegador-movil.md).
-- [SPEC-CON-001 — Crear una consulta con opciones de texto](../99_archivadas/spec-con-001-crear-consulta-texto.md), [SPEC-CON-002 — Crear una consulta de fechas](../99_archivadas/spec-con-002-crear-consulta-fechas.md) y [SPEC-EQU-002 — Borrado de equipos caducados](spec-equ-002-borrado-equipo-caducado.md).
+- [SPEC-CON-001 — Crear una consulta con opciones de texto](spec-con-001-crear-consulta-texto.md), [SPEC-CON-002 — Crear una consulta de fechas](spec-con-002-crear-consulta-fechas.md) y [SPEC-EQU-002 — Borrado de equipos caducados](spec-equ-002-borrado-equipo-caducado.md).
 
 ## Módulos afectados
 
@@ -154,14 +154,43 @@ Se ejecutaron los checks sobre `28803b0` y PostgreSQL local. La matriz distingue
 
 La comprobación manual adicional creó un equipo temporal, una consulta y dos participantes por la API de desarrollo, ejecutó los casos HTTP descritos en los criterios 2 y 6 y abrió el enlace en dos contextos Chromium sin simular HTTP. El equipo temporal se eliminó al terminar; no quedó dato de esta comprobación en la base de desarrollo.
 
-**Bloqueo de evidencia visual:** Playwright `page.screenshot` agotó 30 s incluso para una página HTML mínima sin la aplicación; una segunda prueba sin `fullPage` y con animaciones desactivadas también agotó el tiempo. Se descartó la interferencia del servidor WEB que ya escuchaba en 4200: una instancia temporal propia en `127.0.0.1:4300` sirvió la aplicación, pero la captura de su primera vista agotó otros 12 s; la instancia se cerró después. `Page.captureScreenshot` por CDP no respondió y Chromium CLI `--headless --screenshot` terminó por timeout de 20 s sin imagen. No se obtuvieron capturas fiables para comparar con el prototipo. Debe repetirse la comparación en un navegador con capturas operativas antes de reabrir este gate.
+**Diagnóstico histórico de la evidencia visual automatizada:** Playwright `page.screenshot` agotó 30 s incluso para una página HTML mínima sin la aplicación; una segunda prueba sin `fullPage` y con animaciones desactivadas también agotó el tiempo. Se descartó la interferencia del servidor WEB que ya escuchaba en 4200: una instancia temporal propia en `127.0.0.1:4300` sirvió la aplicación, pero la captura de su primera vista agotó otros 12 s; la instancia se cerró después. `Page.captureScreenshot` por CDP no respondió y Chromium CLI `--headless --screenshot` terminó por timeout de 20 s sin imagen. No se obtuvieron capturas fiables para una comparación reproducible.
 
-**Gate de verificación: BLOCKED.** No se inicia `pdi:change-converge` ni se declara convergencia mientras el criterio 8 siga PARTIAL. La siguiente acción permitida es completar evidencia visual y repetir `pdi:change-verify`; cualquier desviación de implementación que aparezca vuelve a `pdi:change-apply`.
+El diagnóstico quedó reproducible dentro de la suite como `apps/web/e2e/screenshot-capability.spec.ts`. Con `RUN_SCREENSHOT_CHECK=1` y el timeout de captura ampliado a 60 s, `page.screenshot` agotó igualmente el plazo sobre HTML mínimo, después de cargar las fuentes. No apareció otro error que explicase el bloqueo. La prueba es optativa para no bloquear los recorridos funcionales ordinarios mientras se investiga el entorno.
+
+Se identificaron y terminaron procesos Chromium headless huérfanos de pruebas de otro proyecto, incluida una ejecución `ng test` detenida durante horas. Una nueva ejecución de la prueba de captura, ya sin esos procesos, agotó de nuevo los 60 s en el mismo punto. El servidor WEB de desarrollo en 4200 permaneció activo.
+
+**Gate de verificación en esta evaluación: BLOCKED.** El criterio 8 seguía `PARTIAL` por la comparación visual pendiente. Esta conclusión histórica queda superada por la re-verificación focal posterior.
+
+### Re-verificación focal del criterio 8 — 2026-10-06
+
+La persona impulsora comunicó que **validó personalmente de forma visual el criterio 8 completo** y autorizó cerrar este Change con esa validación. Esta es una aceptación humana del criterio, no una captura generada por Playwright ni una comparación automatizada reproducible. No se han comunicado observaciones detalladas por vista, tamaño o tema y no se atribuyen aquí. El recorrido E2E `consultation-decisions.spec.ts` se repitió con Node 24.21.0 y pasó (1 prueba); cubre una parte técnica de interacción, foco, diálogo y adaptación. Los criterios 1–7 conservan la evidencia `PASS` anterior; no se modificó la implementación entre ambas verificaciones.
+
+| Criterio re-verificado | Evidencia | Resultado |
+|---|---|---|
+| 8. Composición, interacción, tamaños, temas y accesibilidad del recorrido | Validación visual personal del criterio completo declarada por la persona impulsora; E2E focal de interacción, foco, diálogo y adaptación (1/1 PASS). La declaración no incluye capturas ni desglose de observaciones por vista, tamaño o tema. | PASS |
+
+La matriz queda con ocho criterios `PASS` para el alcance de este Change. La imposibilidad de capturar con Playwright se conserva como limitación de reproducibilidad de la evidencia visual. La auditoría completa de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) continúa como gate de la entrega y esta aceptación no declara conformidad global.
+
+**Gate de verificación: READY_FOR_CHANGE_CONVERGE.**
 
 ## Convergence
 
-No iniciada: gate de verificación bloqueado por evidencia pendiente.
+### Convergencia — 2026-10-06
+
+Se contrastaron los requisitos, reglas y datos CON enlazados, los flujos y la dirección visual, esta SPEC, los contratos y pruebas API/WEB y el delivery de [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). Los criterios 1–7 cuentan con pruebas previas y el criterio 8 con la validación visual personal declarada por la persona impulsora y las comprobaciones E2E focales. La diferencia entre captura automatizada fallida y aceptación humana queda expresamente documentada; no se transforma en evidencia de captura ni en conformidad WCAG global.
+
+| Clase de drift | Resultado |
+|---|---|
+| A — Código | Sin desvío significativo identificado: API y WEB realizan voto, lectura y resolución según las pruebas y los contratos verificados. La última comprobación focal E2E pasó. |
+| B — SPEC | La verificación histórica decía `PARTIAL` y `BLOCKED` por falta de comparación visual reproducible. La re-verificación documenta la aceptación humana posterior sin borrar el diagnóstico histórico. |
+| C — Nueva información | La persona impulsora validó personalmente el criterio visual completo. No se desprende una regla nueva ni una modificación de producto. |
+| D — Arquitectura | Sin cambio de fronteras API/WEB ni decisión arquitectónica nueva; no procede ADR. |
+| E — Baseline | No se identificó conflicto con la intención normativa; no procede `pdi:baseline-update`. |
+| F — Fuera de scope | La auditoría WCAG completa y la capturabilidad automatizada siguen fuera del cierre de este Change. |
+
+**Gate de convergencia: READY_FOR_CHANGE_CLOSE.** No queda drift significativo abierto dentro del alcance; no se cambió implementación ni baseline al resolver el gate.
 
 ## Resultado de cierre
 
-Pendiente.
+**DONE — Change cerrado y archivado el 2026-10-06.** Los ocho criterios del alcance del Change constan en `PASS`: siete con la evidencia técnica previa y el octavo con la validación visual personal declarada por la persona impulsora, complementada por E2E. La convergencia no dejó drift significativo abierto. [RF-CON-002 — Registrar y cambiar un voto](../../03_requisitos/01_funcionales/CON/rf-con-002-votar.md), [RF-CON-003 — Ver los votos por participante](../../03_requisitos/01_funcionales/CON/rf-con-003-ver-votos.md) y [RF-CON-004 — Resolver una consulta](../../03_requisitos/01_funcionales/CON/rf-con-004-resolver-consulta.md) quedan `VALIDADO` en [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). No se declara `ENTREGADO`: la integración en `main` y el CI remoto no se han acreditado para este cierre. No hay PR asociado ni cambio de baseline. El siguiente gate de la entrega es la auditoría completa de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md); las capturas automatizadas del recorrido siguen sin ser reproducibles en el entorno documentado.
