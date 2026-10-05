@@ -8,6 +8,7 @@ use ApiPlatform\OpenApi\Factory\OpenApiFactoryInterface;
 use ApiPlatform\OpenApi\Model\Header;
 use ApiPlatform\OpenApi\Model\MediaType;
 use ApiPlatform\OpenApi\Model\Operation;
+use ApiPlatform\OpenApi\Model\Parameter;
 use ApiPlatform\OpenApi\Model\Paths;
 use ApiPlatform\OpenApi\Model\PathItem;
 use ApiPlatform\OpenApi\Model\RequestBody;
@@ -65,6 +66,24 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 '400' => $this->problem('Malformed JSON'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team not found'), '409' => $this->problem('Participant name already exists', 'urn:synqo:problem:duplicate-participant'), '410' => $this->problem('Team expired'), '422' => $this->problem('Invalid name', withViolations: true), '500' => $this->problem('Unexpected internal error'),
             ],
         )));
+        $day = $this->availabilityDay();
+        $days = $this->schema('array');
+        $days['items'] = $day;
+        $errors = ['400' => $this->problem('Malformed request'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team or participant not found'), '410' => $this->problem('Team expired'), '500' => $this->problem('Unexpected internal error')];
+        $paths->addPath('/api/teams/current/availability', new PathItem(get: new Operation(
+            operationId: 'readAvailability', tags: ['Availability'], summary: 'Read up to 42 inclusive civil dates', security: $security,
+            parameters: [new Parameter(name: 'from', in: 'query', required: true, schema: ['type' => 'string', 'format' => 'date']), new Parameter(name: 'to', in: 'query', required: true, schema: ['type' => 'string', 'format' => 'date'])],
+            responses: ['200' => $this->response('Availability days', ['days' => $days])] + $errors,
+        )));
+        $state = $this->schema('string');
+        $state['enum'] = ['available', 'maybe', 'unavailable', null];
+        $state['nullable'] = true;
+        $paths->addPath('/api/teams/current/availability/{date}/participants/{participantId}', new PathItem(put: new Operation(
+            operationId: 'writeAvailability', tags: ['Availability'], summary: 'Set or remove the current mark', security: $security,
+            parameters: [new Parameter(name: 'date', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'date']), new Parameter(name: 'participantId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid'])],
+            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['state' => $state, 'timeZone' => $this->schema('string')], ['state']))]), required: true),
+            responses: ['200' => $this->response('Confirmed day', ['day' => $day, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid state, civil date, time zone or past day', withViolations: true)] + $errors,
+        )));
         $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer')]));
         return $openApi->withPaths($paths)->withComponents($components);
     }
@@ -90,6 +109,18 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             $schema['maxLength'] = $maxLength;
         }
         return $schema;
+    }
+
+    private function availabilityDay(): Schema
+    {
+        $state = $this->schema('string');
+        $state['enum'] = ['available', 'maybe', 'unavailable'];
+        $aggregate = clone $state;
+        $aggregate['enum'] = ['available', 'maybe', 'unavailable', null];
+        $aggregate['nullable'] = true;
+        $marks = $this->schema('array');
+        $marks['items'] = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'participantName' => $this->schema('string'), 'state' => $state], ['participantId', 'participantName', 'state']);
+        return $this->schema('object', ['date' => $this->schema('string', format: 'date'), 'state' => $aggregate, 'counts' => $this->schema('object', ['available' => $this->schema('integer'), 'maybe' => $this->schema('integer'), 'unavailable' => $this->schema('integer')], ['available', 'maybe', 'unavailable']), 'marks' => $marks], ['date', 'state', 'counts', 'marks']);
     }
 
     private function participant(): Schema

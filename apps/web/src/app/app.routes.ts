@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { CreatePage } from './pages/create-page';
 import { ConfirmationPage } from './pages/confirmation-page';
 import { TeamLayout } from './pages/team-layout';
+import { AvailabilityCalendar } from './pages/availability-calendar';
 import { EmptySection } from './pages/empty-section';
 import { LinkMessagePage } from './pages/link-message-page';
 
@@ -15,7 +16,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'calendario' },
       {
         path: 'calendario',
-        component: EmptySection,
+        component: AvailabilityCalendar,
         data: { section: 'calendario' },
         title: 'Calendario · Synqo',
       },

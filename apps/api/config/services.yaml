@@ -37,3 +37,8 @@ services:
     App\Controller\TeamController:
         public: true
         tags: ['controller.service_arguments']
+
+    App\Application\Availability\AvailabilityRepository: '@App\Infrastructure\Persistence\OrmAvailabilityRepository'
+    App\Controller\AvailabilityController:
+        public: true
+        tags: ['controller.service_arguments']

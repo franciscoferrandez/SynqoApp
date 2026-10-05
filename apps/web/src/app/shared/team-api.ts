@@ -2,6 +2,13 @@ import { HttpClient, HttpInterceptorFn } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+export type AvailabilityState = 'available' | 'maybe' | 'unavailable';
+export interface AvailabilityDay {
+  date: string;
+  state: AvailabilityState | null;
+  counts: Record<AvailabilityState, number>;
+  marks: { participantId: string; participantName: string; state: AvailabilityState }[];
+}
 export interface Participant {
   id: string;
   name: string;
@@ -42,6 +49,22 @@ export class TeamApi {
       firstParticipantName,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
+  }
+  availability(from: string, to: string): Observable<{ days: AvailabilityDay[] }> {
+    return this.http.get<{ days: AvailabilityDay[] }>('/api/teams/current/availability', {
+      params: { from, to },
+    });
+  }
+  mark(
+    date: string,
+    participantId: string,
+    state: AvailabilityState | null,
+    timeZone?: string,
+  ): Observable<{ day: AvailabilityDay; expiresAt: string }> {
+    return this.http.put<{ day: AvailabilityDay; expiresAt: string }>(
+      `/api/teams/current/availability/${date}/participants/${participantId}`,
+      { state, ...(timeZone ? { timeZone } : {}) },
+    );
   }
   current(): Observable<TeamData> {
     return this.http.get<TeamData>('/api/teams/current');

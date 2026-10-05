@@ -158,7 +158,7 @@ export class TeamLayout implements OnInit {
   private readonly api = inject(TeamApi);
   private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
-  protected team?: TeamData;
+  team?: TeamData;
   protected error: '' | 'expired' | 'missing' | 'auth' = '';
   protected loadFailed = false;
   protected identityFieldError = false;
@@ -169,7 +169,7 @@ export class TeamLayout implements OnInit {
   protected expiry = '';
   protected readonly canShare = typeof navigator.share === 'function';
   protected linkFeedback = '';
-  protected participantId = '';
+  participantId = '';
   ngOnInit(): void {
     this.load();
   }
@@ -256,12 +256,18 @@ export class TeamLayout implements OnInit {
       },
     });
   }
-  private handleAccessError(e: HttpErrorResponse): boolean {
+  handleAccessError(e: HttpErrorResponse): boolean {
     if (![401, 404, 410].includes(e.status)) return false;
     this.error = e.status === 410 ? 'expired' : e.status === 404 ? 'missing' : 'auth';
     this.team = undefined;
     this.choose = false;
     return true;
+  }
+  updateExpiry(expiresAt: string): void {
+    if (!this.team) return;
+    this.team.expiresAt = expiresAt;
+    this.expiry = this.formatExpiry(expiresAt, this.team.timeZone);
+    this.changeDetector.markForCheck();
   }
   private formatExpiry(expiresAt: string, timeZone: string): string {
     const options: Intl.DateTimeFormatOptions = { dateStyle: 'long', timeZone };
