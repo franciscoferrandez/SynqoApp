@@ -116,6 +116,14 @@ La evidencia incluirá:
 
 La retención de copias y la prevención de reaparición tras restauración no tendrán evidencia de implementación en este Change; quedan registradas como omisiones activas y no se declararán cubiertas.
 
+### Implementación de change-apply (2026-10-05)
+
+La implementación añade `TeamDeletionPolicy`, que reutiliza la caducidad vigente y suma el plazo sobre su instante UTC; `TeamCleanupService`, que recibe reloj y política; y el puerto `TeamCleanupRepository`, con un adaptador independiente que bloquea y relee cada raíz antes del borrado transaccional. `app:teams:cleanup` muestra únicamente el número de equipos eliminados. El parámetro de entorno tiene valor inicial de 90 y rechaza valores no positivos o no enteros cuando se resuelve la configuración del comando. No se necesita migración: la FK de participantes ya usa cascada.
+
+Por instrucción expresa de la persona usuaria, esta fase conserva únicamente implementación y documentación descriptiva. Las pruebas y comprobaciones corresponden a la verificación posterior. No se modifica baseline y no se marca el Change verificado, convergido ni cerrado.
+
+**Omisiones activas:** retención de copias y prevención de reaparición tras restauración, por quedar fuera del alcance aprobado y requerir decisiones operativas posteriores.
+
 ## Definition of Ready
 
 **READY_FOR_CHANGE_APPLY.** El objetivo, alcance, baseline, módulo, diseño, estructura, slices y evidencia están concretados. La implementación queda limitada al borrado de la base activa y a su integración con el estado de acceso. Las decisiones sobre copias y restauración están registradas como pendientes fuera de scope, con gate operativo posterior explícito; no bloquean este incremento.

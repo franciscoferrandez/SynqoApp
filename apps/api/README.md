@@ -21,3 +21,13 @@ Para inspeccionar la base de desarrollo desde HeidiSQL, crea una sesión de tipo
 Las operaciones implementadas son `POST /api/teams`, `GET /api/teams/current` y `POST /api/teams/current/participants`. El enlace conserva el secreto en el fragmento de URL. La API guarda solo su SHA-256 y exige Bearer para las operaciones del equipo.
 
 La web muestra la confirmación después de crear un equipo. Una configuración interna puede registrar `TEAM_CREATION_CONFIRMATION` con `useValue: false` en `appConfig.providers` para abrir directamente el enlace; el valor predeterminado es `true`.
+
+La limpieza de equipos caducados se ejecuta desde la raíz:
+
+```sh
+docker compose exec api php bin/console app:teams:cleanup
+```
+
+`TEAM_DELETION_RETENTION_DAYS` permite sustituir el valor inicial de `90` en `.env` sin cambiar código. Después de modificarlo, recrea el servicio API con `docker compose up -d api`. Debe ser un entero positivo; un valor vacío, cero, negativo o no entero rechaza la configuración al resolver el comando. El plazo cuenta días de 24 horas desde el instante efectivo de caducidad calculado en la zona del equipo y convertido a UTC; no cuenta desde la última lectura. El comando informa solo del número de equipos eliminados y se puede repetir: cada raíz se bloquea, se vuelve a comprobar su elegibilidad y se elimina en una transacción. PostgreSQL aplica las cascadas de sus datos dependientes; cualquier nueva tabla con datos del equipo debe mantener esa frontera mediante su FK.
+
+El proceso elimina únicamente datos de la base activa; no implementa retención de copias de seguridad ni medidas de restauración.
