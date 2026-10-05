@@ -18,18 +18,39 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version-file: web/.nvmrc
+          node-version-file: apps/web/.nvmrc
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            web/package-lock.json
+            apps/web/package-lock.json
       - run: npm ci
-      - run: npm --prefix web ci
+      - run: npm --prefix apps/web ci
+      - name: Instalar Chromium para pruebas de navegador
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+      - name: Preparar API y PostgreSQL
+        run: docker compose up -d --build database
+      - name: Construir imagen PHP
+        run: docker compose build api
+      - name: Instalar dependencias PHP bloqueadas
+        run: docker compose run --rm --no-deps api composer install --no-interaction
+      - name: Revisiones estáticas PHP
+        run: docker compose run --rm --no-deps api sh -lc "composer cs:check && composer stan && composer rector:check"
+      - name: Migrar base de pruebas
+        run: docker compose run --rm api composer db:reset:test
+      - name: Probar API
+        run: docker compose run --rm api composer test
+      - name: Iniciar API para prueba de navegador
+        run: docker compose up -d api
+      - name: Migrar la base local de E2E
+        run: docker compose exec -T api php bin/console doctrine:migrations:migrate --no-interaction
+      - name: Probar recorrido con dos navegadores
+        run: npm --prefix apps/web run test:e2e
       - name: Comprobar mensajes de commit
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: node scripts/check-commit-range.mjs "$BASE_SHA"
-      - run: npm --prefix web run lint
-      - run: npm --prefix web run format:check
-      - run: npm --prefix web run build
-      - run: npm --prefix web test
+      - run: npm --prefix apps/web run lint
+      - run: npm --prefix apps/web run format:check
+      - run: npm --prefix apps/web run build
+      - run: npm --prefix apps/web test

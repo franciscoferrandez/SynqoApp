@@ -55,7 +55,7 @@ La estructura de carpetas, interfaces, agregados y casos de uso de cada capacida
 
 ## Pendiente
 
-Concretar en los módulos WEB y API las primeras unidades de dominio, aplicación y adaptadores cuando se prepare [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../../08_especificaciones/spec-equ-001-arranque-equipo-local.md). No se decide todavía el número de contextos delimitados ni la forma final de los agregados.
+Concretar en los módulos WEB y API las primeras unidades de dominio, aplicación y adaptadores cuando se prepare [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../../08_especificaciones/99_archivadas/spec-equ-001-arranque-equipo-local.md). No se decide todavía el número de contextos delimitados ni la forma final de los agregados.
 
 ## Sustituye
 

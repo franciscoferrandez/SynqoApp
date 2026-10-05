@@ -1,8 +1,11 @@
 pre-commit:
   commands:
     web-check:
-      glob: 'web/**'
-      run: 'export CI=1; node scripts/check-staged-web.mjs && npm --prefix web run lint && npm --prefix web run format:check && npm --prefix web run build'
+      glob: 'apps/web/**'
+      run: 'export CI=1; node scripts/check-staged-web.mjs && npm --prefix apps/web run lint && npm --prefix apps/web run format:check && npm --prefix apps/web run build'
+    api-check:
+      glob: 'apps/api/**'
+      run: 'node scripts/check-staged-api.mjs && docker compose run --build --rm --no-deps api sh -lc "composer cs:check && composer stan && composer rector:check"'
 commit-msg:
   commands:
     convention:

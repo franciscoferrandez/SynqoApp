@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 
 function paths(args) {
   return new Set(
-    execFileSync('git', ['diff', '--name-only', ...args, '--', 'web'], { encoding: 'utf8' })
+    execFileSync('git', ['diff', '--name-only', ...args, '--', 'apps/web'], { encoding: 'utf8' })
       .trim()
       .split('\n')
       .filter(Boolean),

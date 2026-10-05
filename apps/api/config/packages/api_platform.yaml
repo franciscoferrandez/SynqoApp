@@ -1,0 +1,11 @@
+api_platform:
+    title: Synqo API
+    mapping:
+        paths: ['%kernel.project_dir%/src/ApiResource']
+    version: 1.0.0
+    formats:
+        json: ['application/json']
+    error_formats:
+        jsonproblem: ['application/problem+json']
+    defaults:
+        stateless: true

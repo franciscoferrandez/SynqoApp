@@ -1,0 +1,42 @@
+name: synqo-equ-001
+
+services:
+  database:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-synqo}
+      POSTGRES_USER: ${POSTGRES_USER:-synqo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-synqo-local}
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-synqo_test}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./docker/postgres-init/10-test-db.sh:/docker-entrypoint-initdb.d/10-test-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-synqo} -d ${POSTGRES_DB:-synqo}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: apps/api
+    working_dir: /app
+    volumes:
+      - ./apps/api:/app
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_SECRET: ${APP_SECRET:-local-only-synqo-secret}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-synqo}:${POSTGRES_PASSWORD:-synqo-local}@database:5432/${POSTGRES_DB:-synqo}?serverVersion=18&charset=utf8
+      DATABASE_URL_TEST: postgresql://${POSTGRES_USER:-synqo}:${POSTGRES_PASSWORD:-synqo-local}@database:5432/${POSTGRES_TEST_DB:-synqo_test}?serverVersion=18&charset=utf8
+    ports:
+      - "${API_PORT:-8000}:8000"
+    command: php -S 0.0.0.0:8000 -t public
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

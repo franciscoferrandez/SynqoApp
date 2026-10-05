@@ -1,0 +1,27 @@
+# Configuración de este proyecto; conserva la configuración personal de ~/.codex/config.toml.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
+
+[agents.explorer]
+description = "Exploración de código y documentación en solo lectura."
+config_file = "agents/explorer.toml"
+
+[agents.implementer]
+description = "Implementación localizada de comportamiento ya definido."
+config_file = "agents/implementer.toml"
+
+[agents.test_writer]
+description = "Tests de comportamiento explícito y fixtures de prueba."
+config_file = "agents/test_writer.toml"
+
+[agents.validator]
+description = "Ejecución de checks reales sin corrección de código."
+config_file = "agents/validator.toml"
+
+[agents.reviewer]
+description = "Revisión independiente en solo lectura de la slice."
+config_file = "agents/reviewer.toml"

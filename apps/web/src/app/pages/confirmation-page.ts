@@ -1,0 +1,98 @@
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  ViewChild,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ArrivalIntro } from '../shared/arrival-intro';
+import { TeamApi } from '../shared/team-api';
+
+@Component({
+  imports: [RouterLink, ArrivalIntro],
+  template: `
+    <div
+      class="grid flex-1 items-center gap-9 py-10 md:grid-cols-[minmax(0,.9fr)_minmax(340px,1fr)] md:gap-14 md:py-16"
+    >
+      <app-arrival-intro />
+      @if (team) {
+        <section class="panel confirmation-panel" aria-labelledby="confirmation-title">
+          <p class="eyebrow">Equipo creado</p>
+          <h2 #confirmationTitle id="confirmation-title" tabindex="-1">
+            {{ team.name }}
+          </h2>
+          <p class="confirmation-person">
+            Primer participante: {{ team.firstParticipant.name }}. Ya podéis empezar a coordinaros.
+          </p>
+          @if (hadEmail) {
+            <p class="confirmation-mail-note" role="status">
+              No se ha enviado ningún correo. Guarda el enlace que aparece abajo para volver al
+              equipo.
+            </p>
+          }
+          <div class="confirmation-link-field">
+            <p id="team-link-label">Enlace de acceso</p>
+            <div
+              class="confirmation-link"
+              tabindex="0"
+              aria-labelledby="team-link-label"
+              data-access-url
+            >
+              {{ team.accessUrl }}
+            </div>
+          </div>
+          <div class="confirmation-actions">
+            <button class="outline" type="button" (click)="copy()">Copiar enlace</button>
+            <button class="outline" type="button" [disabled]="!canShare" (click)="share()">
+              Compartir
+            </button>
+          </div>
+          <p class="confirmation-status" role="status" aria-live="polite">{{ linkStatus }}</p>
+          <a class="confirmation-enter" [href]="team.accessUrl"
+            >Ver el calendario del equipo <span aria-hidden="true">→</span></a
+          >
+        </section>
+      } @else {
+        <section class="panel">
+          <h1 class="text-2xl font-bold">No hay una creación reciente</h1>
+          <a class="primary mt-5 inline-flex" routerLink="/">Crear equipo</a>
+        </section>
+      }
+    </div>
+  `,
+})
+export class ConfirmationPage implements AfterViewInit {
+  private readonly api = inject(TeamApi);
+  private readonly changeDetector = inject(ChangeDetectorRef);
+  protected readonly team = this.api.recentCreation;
+  protected readonly hadEmail = this.api.recentCreationHadEmail;
+  protected readonly canShare = typeof navigator.share === 'function';
+  protected linkStatus = '';
+  @ViewChild('confirmationTitle') private confirmationTitle?: ElementRef<HTMLElement>;
+  ngAfterViewInit(): void {
+    this.confirmationTitle?.nativeElement.focus();
+  }
+  protected async copy(): Promise<void> {
+    if (!this.team) return;
+    try {
+      await navigator.clipboard.writeText(this.team.accessUrl);
+      this.linkStatus = 'Enlace copiado.';
+    } catch {
+      this.linkStatus = 'Selecciona y copia el enlace mostrado.';
+    }
+    this.changeDetector.markForCheck();
+  }
+  protected async share(): Promise<void> {
+    if (!this.team || !navigator.share) return;
+    try {
+      await navigator.share({
+        title: `Equipo ${this.team.name} en Synqo`,
+        url: this.team.accessUrl,
+      });
+    } catch {
+      // Cancelar el diálogo del dispositivo no cambia el equipo.
+    }
+  }
+}

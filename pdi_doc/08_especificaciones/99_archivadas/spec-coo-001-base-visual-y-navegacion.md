@@ -60,7 +60,7 @@ El primer incremento en este repositorio configura un workflow de GitHub con los
 - Escribir en el formulario y activar su acción lleva a la confirmación ilustrativa, pero el contenido mostrado procede de datos fijos. No se guarda ni transmite lo escrito, no se crea un UUID y no se presenta un enlace operativo como si diera acceso real. La confirmación identifica el enlace como ejemplo y no ofrece copiarlo ni compartirlo.
 - Los temas Claro y Oscuro conservan el aspecto de partida de los mockups con los ajustes necesarios para WCAG 2.2 AA. Automático sigue el tema del dispositivo y usa Claro como respaldo; la elección manual persiste en el navegador.
 - Las páginas y controles presentes se usan con teclado y foco visible, conservan lectura y disposición en móvil y escritorio, y superan las comprobaciones de accesibilidad aplicables a este incremento. La comparación visual cubre las partes efectivamente maquetadas en ambos temas y tamaños.
-- La cuadrícula del calendario, las listas y los controles de disponibilidad y consultas no se implementan ni se evalúan aquí. La creación y el acceso reales corresponden a [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../spec-equ-001-arranque-equipo-local.md).
+- La cuadrícula del calendario, las listas y los controles de disponibilidad y consultas no se implementan ni se evalúan aquí. La creación y el acceso reales corresponden a [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](spec-equ-001-arranque-equipo-local.md).
 
 ## Impacto baseline esperado
 
@@ -71,7 +71,7 @@ Materialización visual del baseline vigente. Si la comparación con los mockups
 - Por decisión expresa de quien impulsa Synqo, la simulación navegará con datos de ejemplo fijos, sin procesar ni conservar los valores escritos en el formulario. Las rutas de vista previa y el texto «Ejemplo» la distinguen de un equipo realmente guardado.
 - Por decisión expresa de quien impulsa Synqo, la animación de ejemplos del formulario se deja para la creación real posterior.
 - Por decisión expresa de quien impulsa Synqo, la pantalla de equipo mostrará bloques vacíos en lugar de maquetar los componentes de Calendario y Consultas. La comparación con sus mockups se limitará al layout compartido y a la ubicación de las secciones.
-- Esta SPEC precede a [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../spec-equ-001-arranque-equipo-local.md); no cambia el alcance final de [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). Las rutas de vista previa y el texto «Ejemplo» diferencian la simulación; desaparecen al conectar los datos reales en la siguiente SPEC.
+- Esta SPEC precede a [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](spec-equ-001-arranque-equipo-local.md); no cambia el alcance final de [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). Las rutas de vista previa y el texto «Ejemplo» diferencian la simulación; desaparecen al conectar los datos reales en la siguiente SPEC.
 - Por decisión expresa de quien impulsa Synqo, el selector de tema se sitúa visible y discreto en la cabecera global compartida. La barra de vista previa de los mockups no se incorpora a la aplicación. El símbolo de marca del mockup se utiliza provisionalmente junto a «Synqo» en este incremento; el lema sigue siendo exploratorio y no se aprueba como identidad definitiva, según la [dirección visual inicial de Synqo](../../04_experiencia-usuario/04_direccion-visual/direccion-visual-synqo.md).
 
 ## Research necesario
@@ -132,4 +132,4 @@ No queda drift significativo dentro del alcance de esta SPEC. No se descubrió n
 
 ## Resultado de cierre
 
-**DONE — Change cerrado y archivado el 2026-10-05.** Evidencia de implementación y convergencia registrada arriba. Commits locales: `8c90968`, `518421b`, `77747a3` y `edfa4d9`. El workflow remoto no se ha ejecutado sobre estos commits y la rama `main` no tiene protección; por ello el delivery queda como VALIDADO, no ENTREGADO. No se modifica el baseline. Siguiente incremento preparado: [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](../spec-equ-001-arranque-equipo-local.md), todavía sin implementar.
+**DONE — Change cerrado y archivado el 2026-10-05.** Evidencia de implementación y convergencia registrada arriba. Commits locales: `8c90968`, `518421b`, `77747a3` y `edfa4d9`. El workflow remoto no se ha ejecutado sobre estos commits y la rama `main` no tiene protección; por ello el delivery queda como VALIDADO, no ENTREGADO. No se modifica el baseline. Siguiente incremento preparado: [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](spec-equ-001-arranque-equipo-local.md), todavía sin implementar.

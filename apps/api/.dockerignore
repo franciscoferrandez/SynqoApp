@@ -1,0 +1,7 @@
+.env
+.env.*
+.git
+.phpunit.cache
+.php-cs-fixer.cache
+var
+vendor
