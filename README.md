@@ -1,12 +1,12 @@
 # Synqo
 
-Synqo es una aplicación para tomar decisiones en grupo sin que las propuestas y respuestas se pierdan entre mensajes de chat. Cada equipo reúne la disponibilidad diaria de sus participantes en un calendario que ayuda a identificar fechas viables. Después, el grupo puede proponer esas fechas en una consulta y votar; también puede decidir sobre opciones de texto, como una actividad o una canción.
+Synqo es una aplicación para tomar decisiones en grupo sin que las propuestas y respuestas se pierdan entre mensajes de chat. Cada equipo reúne la disponibilidad diaria de sus participantes en un calendario que ayuda a identificar fechas viables. El grupo ya puede proponer fechas u opciones de texto en consultas; la votación llegará en un incremento posterior.
 
-El uso básico está pensado para empezar en minutos: crear un equipo, compartir su enlace y participar sin registro. Las respuestas son visibles para el equipo y una consulta termina al aceptar una o varias opciones o rechazarla.
+El uso básico está pensado para empezar en minutos: crear un equipo, compartir su enlace y participar sin registro. La entrega prevista añadirá votos visibles para el equipo y la posibilidad de terminar una consulta aceptando una o varias opciones o rechazándola.
 
 Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con IA. La inteligencia artificial se utiliza como apoyo para analizar, diseñar, documentar y, en fases posteriores, implementar y verificar. Las decisiones de producto y tecnología las valida la persona impulsora.
 
-> **Estado actual:** la demo local permite crear equipos, conservarlos en PostgreSQL y entrar desde un enlace en otro navegador. Disponibilidad y consultas siguen como superficies ilustrativas de incrementos posteriores; no hay publicación pública.
+> **Estado actual:** la demo local permite crear equipos, compartir el enlace, marcar y consultar disponibilidad, y crear consultas de texto o fechas con datos persistentes. El voto y la resolución de consultas siguen pendientes; no hay publicación pública.
 
 ---
 
@@ -16,6 +16,7 @@ Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con I
 - [Primera entrega](#primera-entrega)
 - [Funcionamiento previsto](#funcionamiento-previsto)
 - [Tecnologías y arquitectura](#tecnologías-y-arquitectura)
+- [Documentación de los módulos](#documentación-de-los-módulos)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Desarrollo local](#desarrollo-local)
 - [Calidad y reglas de implementación](#calidad-y-reglas-de-implementación)
@@ -51,15 +52,22 @@ El [alcance conceptual](pdi_doc/01_producto/04_alcance/alcance-conceptual.md) re
 |---|---|---|
 | [WEB](doc/architecture/web.md) | Angular 21, TypeScript y Node.js 24.21 | Navegación, presentación, preferencias locales y cliente HTTP. |
 | [API](doc/architecture/api.md) | PHP 8.5, Symfony 7.4 y API Platform 5 | Operaciones HTTP, casos de uso, reglas del dominio y persistencia ORM. |
-| Persistencia | PostgreSQL 18 y Doctrine ORM | En el alcance actual guarda equipos y participantes. |
+| Persistencia | PostgreSQL 18 y Doctrine ORM | Guarda equipos, participantes, disponibilidad, consultas y opciones de texto o fecha. |
 
 WEB consume JSON de API y envía el valor de acceso como Bearer desde el fragmento del enlace. API responde con JSON o Problem Details y publica su contrato OpenAPI. La arquitectura separa presentación, casos de uso, dominio y adaptadores; los detalles están en las páginas de [WEB](doc/architecture/web.md) y [API](doc/architecture/api.md), los [principios de implementación](pdi_doc/07_desarrollo/01_principios-y-convenciones/arquitectura-limpia-y-ddd.md) y la [convención HTTP](pdi_doc/06_arquitectura/03_modulos/API/convencion-http.md).
+
+## Documentación de los módulos
+
+- [Arquitectura y componentes de API](doc/architecture/api.md): operaciones HTTP, reglas, persistencia y limpieza de equipos.
+- [Arquitectura y componentes de WEB](doc/architecture/web.md): rutas, calendario, consultas y cliente HTTP.
+- [Documentación PDI del producto](pdi_doc/README.md): requisitos, experiencia, decisiones y especificaciones.
 
 ## Estructura del proyecto
 
 ```text
 pdi_doc/                    documentación de producto y solución de Synqo
 pdi/                    plugin reutilizable de diseño e implementación
+doc/                    arquitectura de módulos, workflow de IA y registro del TFM
 doc/tfm/                materiales del trabajo de fin de máster
 apps/api/               API Symfony y adaptador PostgreSQL
 apps/web/               aplicación Angular
@@ -94,7 +102,7 @@ npm --prefix apps/web start
 
 WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el proxy Angular reenvía `/api` a esa dirección. Swagger/OpenAPI se sirve en `/api/docs`. La base publica el puerto `5433` del equipo y escucha en `5432` dentro de Docker.
 
-`.env.example` contiene valores locales de ejemplo. Ajusta `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `API_PORT`, `APP_ENV`, `APP_SECRET` o `APP_PUBLIC_URL` en `.env` si el entorno lo necesita; no uses estos valores locales en despliegues.
+`.env.example` contiene valores locales de ejemplo. Ajusta `POSTGRES_DB`, `POSTGRES_TEST_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `API_PORT`, `APP_ENV`, `APP_SECRET`, `APP_PUBLIC_URL` o `TEAM_DELETION_RETENTION_DAYS` en `.env` si el entorno lo necesita; no uses estos valores locales en despliegues.
 
 ### Scripts y comandos de desarrollo
 
@@ -124,6 +132,7 @@ WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el pr
 | `docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction` | Aplicar migraciones a la base configurada por `DATABASE_URL` (local de desarrollo). |
 | `docker compose exec api php bin/console doctrine:schema:validate` | Validar mapeo Doctrine frente al esquema conectado. |
 | `docker compose exec api php bin/console debug:router` | Listar rutas Symfony y API Platform. |
+| `docker compose exec api php bin/console app:teams:cleanup` | Borrar de la base activa los equipos cuyo plazo de retención tras caducar ha vencido. Ejecutarlo manualmente; no hay programación automática. |
 
 **Docker Compose:** `docker compose ps` lista servicios; `docker compose logs -f api database` sigue sus logs; `docker compose stop` y `start` paran o reanudan los servicios; `docker compose down` los elimina y conserva el volumen de PostgreSQL. `docker compose down -v` elimina también ese volumen y todos los datos locales.
 
@@ -143,7 +152,7 @@ GitHub Actions define el pipeline en [`.github/workflows/web.yml`](.github/workf
 
 Crea una conexión **PostgreSQL (TCP/IP)** con servidor `127.0.0.1`, puerto `5433`, base `synqo`, usuario `synqo` y contraseña `synqo-local`, si conservas los valores de `.env.example`. Si cambias `POSTGRES_*` o `POSTGRES_PORT`, introduce esos valores. `synqo_test` es exclusiva de pruebas; `db:reset:test` la borra y recrea.
 
-La demo operativa actual permite crear y compartir equipos y participantes. Las vistas de disponibilidad y consultas siguen siendo ilustrativas. Consulta los detalles por módulo en la [arquitectura WEB](doc/architecture/web.md) y la [arquitectura API](doc/architecture/api.md), la base visual previa en [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md) y el incremento implementado en [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/99_archivadas/spec-equ-001-arranque-equipo-local.md).
+La demo también permite marcar disponibilidad y crear consultas de texto y fechas. Consulta la [arquitectura WEB](doc/architecture/web.md) y la [arquitectura API](doc/architecture/api.md); el estado de cada capacidad y sus pendientes se sigue en [REL-001 — Demo local operativa de Synqo](pdi_doc/01_producto/10_entregas/rel-001-demo-local-operativa.md).
 
 ## Calidad y reglas de implementación
 
@@ -156,7 +165,7 @@ La demo operativa actual permite crear y compartir equipos y participantes. Las 
 
 El [registro de ayuda de la IA a la toma de decisiones](doc/tfm/registro-decisiones-ia.md) resume hitos verificables en entradas breves: qué problema se abordó, qué aportó la IA y qué decisión se tomó. Su primera entrada describe la creación del plugin PDI y el problema de separación entre framework reutilizable y documentación de producto que resuelve. El [PDF de documentación del TFM](doc/tfm/Documentacion-TFM-2.pdf) se conserva en la misma carpeta.
 
-El método PDI, sus skills y plantillas se encuentran en [pdi/](pdi/README.md). El [índice de trazabilidad](pdi_doc/00_gobierno/11_trazabilidad.md) permite seguir las relaciones directas entre las especificaciones preparadas y los artefactos que las sustentan.
+El método PDI, sus skills y plantillas se encuentran en [pdi/](pdi/README.md). El [índice de trazabilidad](pdi_doc/00_gobierno/11_trazabilidad.md) permite seguir las relaciones directas entre las especificaciones activas o archivadas y los artefactos que las sustentan.
 
 ## Evolución futura
 

@@ -1,64 +1,53 @@
 # Arquitectura del módulo API
 
-La API usa PHP 8.5, Symfony 7.4, API Platform 5 y Doctrine ORM con PostgreSQL 18. Las operaciones existentes son creación de equipo, lectura protegida del equipo e incorporación de participante. El calendario y las consultas todavía no tienen operaciones.
+La API usa PHP 8.5, Symfony 7.4, API Platform 5, Doctrine ORM y PostgreSQL 18. Permite crear equipos y publica operaciones protegidas para leerlos, incorporar participantes, gestionar disponibilidad y crear/listar consultas. El voto y la resolución aún no tienen operaciones.
 
 ```mermaid
 flowchart LR
-    Web[WEB Angular] -->|JSON / Bearer| Platform[API Platform · rutas y OpenAPI]
-    Platform --> Controller[TeamController · HTTP y Problem Details]
-    Controller --> Service[TeamService · casos de uso]
-
-    Service --> Domain[Dominio de equipo]
-    Domain --> Names[ParticipantName]
-    Domain --> Expiry[ExpiryCalculator / TeamTimeZone]
-
-    Service --> Clock[ClockInterface]
-    Service --> IDs[IdentifierGenerator]
-    Service --> Tokens[AccessTokenGenerator]
-    Service --> Port[TeamRepository · puerto]
-
-    Port -. implementación .-> ORM[OrmTeamRepository]
-    ORM --> Entities[TeamRecord / ParticipantRecord]
-    Entities --> DB[(PostgreSQL)]
-
-    Platform -. contrato .-> OpenAPI[TeamOpenApiFactory]
-    Kernel[ProblemDetailsSubscriber] -. errores inesperados .-> Controller
+    Web[WEB Angular] -->|JSON / Bearer| Operations[API Platform · operaciones y OpenAPI]
+    Operations --> Controllers[Team / Availability / Consultation Controllers]
+    Controllers --> Services[Servicios de aplicación]
+    Services --> Rules[Reglas de equipo, disponibilidad y consultas]
+    Services --> Ports[Puertos de repositorio]
+    Ports -. Doctrine ORM .-> Records[Entidades Team, Participant, Availability, Consultation, Option]
+    Records --> DB[(PostgreSQL)]
+    Command[app:teams:cleanup] --> Cleanup[TeamCleanupService]
+    Cleanup --> Ports
+    Operations -. contrato .-> OpenAPI[TeamOpenApiFactory]
 ```
 
 ## Componentes y responsabilidades
 
-- **API Platform y `TeamOperations`:** publican exclusivamente `POST /api/teams`, `GET /api/teams/current` y `POST /api/teams/current/participants`; generan el documento OpenAPI.
-- **TeamController:** adapta HTTP a los casos de uso: decodifica JSON, extrae Bearer y convierte errores conocidos en Problem Details con sus estados.
-- **TeamService:** implementa creación y lectura del equipo, autorización por el verificador del enlace, alta de participantes, reloj y cálculo de caducidad. Recibe interfaces para persistencia e identificadores/secreto.
-- **Dominio:** `ParticipantName` valida y normaliza nombres; `TeamTimeZone` aplica la zona por defecto; `ExpiryCalculator` calcula la fecha límite.
-- **TeamRepository:** puerto de aplicación. `OrmTeamRepository` lo implementa con Doctrine ORM y transacciones; al incorporar un participante bloquea y refresca el equipo antes de revisar caducidad y guardar.
-- **Entidades Doctrine:** `TeamRecord` y `ParticipantRecord` mapean las tablas `team` y `participant`. PostgreSQL impone la unicidad del nombre normalizado por equipo y elimina participantes al borrar su equipo.
-- **OpenAPI y errores globales:** `TeamOpenApiFactory` describe entradas, salidas, autenticación y respuestas; `ProblemDetailsSubscriber` devuelve un error genérico ante excepciones HTTP no controladas.
+- **Recursos y controladores:** `TeamOperations`, `AvailabilityOperations` y `ConsultationOperations` declaran las rutas. Sus controladores adaptan JSON, Bearer y respuestas HTTP; `TeamOpenApiFactory` publica el contrato y `ProblemDetailsSubscriber` gestiona errores inesperados.
+- **Equipo:** `TeamService` crea y lee equipos, incorpora participantes y verifica el enlace. `ParticipantName`, `TeamTimeZone` y `ExpiryCalculator` contienen reglas comprobables del dominio.
+- **Disponibilidad:** `AvailabilityService` lee el intervalo y guarda marcas de participante; `DailyAvailability` valida estados, fechas editables y resumen diario.
+- **Consultas:** `ConsultationService` lista y crea consultas abiertas de texto o fechas. `TextConsultationRules` y `DateConsultationRules` validan las opciones; la creación comprueba acceso, identidad y vigencia bajo bloqueo del equipo. La API aún no registra votos ni resuelve consultas.
+- **Persistencia y limpieza:** los repositorios `Orm*Repository` implementan los puertos de aplicación con Doctrine. `TeamCleanupService`, `TeamDeletionPolicy` y el comando `app:teams:cleanup` eliminan de la base activa los equipos cuyo plazo de retención terminó. El comando requiere ejecución externa; no hay tarea programada en el repositorio.
 
-## Estructura de datos actual
+## Operaciones actuales
+
+| Recurso | Operaciones |
+|---|---|
+| Equipo | `POST /api/teams`, `GET /api/teams/current`, `POST /api/teams/current/participants` |
+| Disponibilidad | `GET /api/teams/current/availability`, `PUT /api/teams/current/availability/{date}/participants/{participantId}` |
+| Consultas | `GET /api/teams/current/consultations`, `POST /api/teams/current/consultations` para opciones de texto o fecha |
+
+Las rutas del equipo vigente comprueban el Bearer del enlace. Las respuestas son JSON o Problem Details y se describen en `/api/docs`.
+
+## Persistencia
 
 ```mermaid
 erDiagram
-    TEAM ||--o{ PARTICIPANT : contiene
-    TEAM {
-        uuid id PK
-        string name
-        string access_verifier
-        string time_zone
-        datetime created_at
-        datetime last_activity_at
-    }
-    PARTICIPANT {
-        uuid id PK
-        uuid team_id FK
-        string name
-        string name_normalized
-        datetime created_at
-    }
+    TEAM ||--|{ PARTICIPANT : contiene
+    TEAM ||--o{ AVAILABILITY : agrupa
+    PARTICIPANT ||--o{ AVAILABILITY : marca
+    TEAM ||--o{ CONSULTATION : contiene
+    PARTICIPANT ||--o{ CONSULTATION : crea
+    CONSULTATION ||--|{ CONSULTATION_OPTION : propone
 ```
 
-La aplicación conserva el SHA-256 del valor de acceso, no el secreto del enlace. La migración vigente está en `migrations/`; Doctrine ORM gestiona las operaciones de lectura y escritura.
+Las migraciones en `apps/api/migrations/` crean las cinco tablas. Cada opción de consulta guarda texto **o** fecha civil, con una restricción que exige exactamente uno de esos valores. Las claves foráneas aplican borrado en cascada desde el equipo; las futuras tablas de votos y resoluciones deberán integrarse y verificarse antes de cerrar [SPEC-EQU-002 — Borrado de equipos caducados](../../pdi_doc/08_especificaciones/01_activas/spec-equ-002-borrado-equipo-caducado.md).
 
 ## Desarrollo
 
-Los comandos de Composer, migraciones, base de prueba, análisis estático y ejecución local están en el [README principal](../../README.md#desarrollo-local). Los comandos reales también están declarados en `apps/api/composer.json`.
+Los comandos de Composer, migraciones, limpieza, base de prueba y análisis estático están en el [README principal](../../README.md#desarrollo-local). Los scripts ejecutables se declaran en `apps/api/composer.json`.

@@ -149,7 +149,7 @@ No queda drift significativo de producto, contrato o arquitectura en este alcanc
 
 ## Resultado de cierre
 
-**DONE — Change cerrado y archivado el 2026-10-05.** Los nueve criterios están en `PASS`; PHPUnit (30 pruebas, 249 aserciones), validaciones API, esquema ORM, WEB y E2E: el último recorrido global obtuvo 30/31; la única prueba fallida pasó al repetirse aislada (1/1). Las migraciones están aplicadas en la base local `synqo` sin reiniciarla. La auditoría WCAG completa de REL-001 permanece pendiente; no se afirma conformidad global. No hay commit asociado todavía y no se modifica el baseline.
+**DONE — Change cerrado y archivado el 2026-10-05.** Los nueve criterios están en `PASS`; PHPUnit (30 pruebas, 249 aserciones), validaciones API, esquema ORM, WEB y E2E: el último recorrido global obtuvo 30/31; la única prueba fallida pasó al repetirse aislada (1/1). Las migraciones están aplicadas en la base local `synqo` sin reiniciarla. La auditoría WCAG completa de REL-001 permanece pendiente; no se afirma conformidad global. La implementación quedó integrada posteriormente en `71f532a`; no se modifica el baseline.
 
 ## Definition of Ready
 

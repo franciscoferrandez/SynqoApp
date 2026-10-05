@@ -174,7 +174,7 @@ La comparación inicial detectó que [RF-CON-001 — Crear una consulta de fecha
 
 ## Resultado de cierre
 
-**DONE — Change cerrado y archivado el 2026-10-05.** Los nueve criterios pasan; API (35 pruebas, 291 aserciones), checks estáticos, esquema/migración Doctrine, WEB y E2E focal (4/4) están validados. `RF-CON-001` queda `VALIDADO` en `REL-001`. No se modificó el baseline. Los votos, resolución y auditoría WCAG global permanecen como trabajo posterior según sus requisitos. Sin commit asociado todavía.
+**DONE — Change cerrado y archivado el 2026-10-05.** Los nueve criterios pasan; API (35 pruebas, 291 aserciones), checks estáticos, esquema/migración Doctrine, WEB y E2E focal (4/4) están validados. `RF-CON-001` queda `VALIDADO` en `REL-001`. No se modificó el baseline. Los votos, resolución y auditoría WCAG global permanecen como trabajo posterior según sus requisitos. El commit posterior de implementación y cierre es `77c7c44`.
 
 ## Definition of Ready
 

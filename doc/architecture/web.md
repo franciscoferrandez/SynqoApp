@@ -1,6 +1,6 @@
 # Arquitectura del módulo WEB
 
-WEB es una aplicación Angular 21 que se ejecuta en el navegador con Node.js 24 durante el desarrollo. Presenta los recorridos, conserva preferencias e identidad seleccionada en el navegador y consulta la API por HTTP. No accede a PostgreSQL.
+WEB es una aplicación Angular 21 que se ejecuta en el navegador; Node.js 24 se usa para desarrollo y compilación. Conserva tema e identidad seleccionada en el navegador y consume la API por HTTP. No accede directamente a PostgreSQL.
 
 ```mermaid
 flowchart LR
@@ -8,30 +8,29 @@ flowchart LR
     Routes --> Create[CreatePage]
     Routes --> Confirm[ConfirmationPage]
     Routes --> Team[TeamLayout]
-    Team --> Calendar[EmptySection · calendario ilustrativo]
-    Team --> Polls[EmptySection · consultas ilustrativas]
     Routes --> LinkState[LinkMessagePage]
-
-    Create --> TeamApi[TeamApi · HttpClient]
-    Confirm --> TeamApi
-    Team --> TeamApi
-    TeamApi --> Interceptor[Interceptor de acceso]
-    Interceptor -->|Bearer extraído de #t=...| API[API Symfony · /api]
-
-    App[App] --> Theme[ThemePicker / ThemeService]
-    Theme --> LocalStorage[(Preferencia de tema)]
-    Team --> LocalIdentity[(Identidad por equipo)]
+    Team --> Calendar[AvailabilityCalendar]
+    Team --> Consultations[ConsultationsPage]
+    Calendar --> Client[TeamApi + interceptor]
+    Consultations --> Client
+    Create --> Client
+    Confirm --> Client
+    Team --> Client
+    Client -->|Bearer desde #t=...| API[API Symfony · /api]
+    Team --> Identity[(Identidad por equipo en localStorage)]
+    Routes --> Theme[ThemePicker / ThemeService]
+    Theme --> Preference[(Tema en localStorage)]
 ```
 
 ## Componentes
 
-- **App y rutas:** `app.ts`, `app.routes.ts` y `app.config.ts` montan el selector de tema, la navegación y el interceptor HTTP. Las rutas separan creación, confirmación, equipo y estados de enlace.
-- **CreatePage:** recoge nombre del equipo y primer participante y envía la creación a la API. El campo de correo es ilustrativo y no se transmite.
-- **ConfirmationPage:** muestra el equipo creado y permite copiar o compartir el enlace. Su estado reciente se mantiene en memoria del servicio durante la navegación.
-- **TeamLayout:** carga el equipo, comprueba la identidad local elegida y presenta la cabecera, selector de identidad, enlace y navegación interior. La selección por UUID se recuerda en `localStorage`; el valor secreto del enlace permanece en el fragmento URL.
-- **TeamApi e interceptor:** agrupan las peticiones JSON. El interceptor obtiene el secreto `t` del fragmento y lo envía como Bearer en las llamadas `/api/`.
-- **ThemePicker y ThemeService:** aplican tema automático, claro u oscuro; la preferencia se guarda en `localStorage`.
-- **EmptySection y LinkMessagePage:** renderizan las superficies actuales de calendario y consultas, y los estados de enlace caducado o no encontrado. Calendario y consultas aún son ilustrativos y no leen ni escriben disponibilidad o consultas.
+- **App y rutas:** `app.ts`, `app.routes.ts` y `app.config.ts` configuran navegación, tema y el interceptor HTTP. Hay páginas de creación, confirmación, equipo y estados de enlace.
+- **CreatePage y ConfirmationPage:** permiten crear el equipo y copiar o compartir su enlace. El correo mostrado en el formulario se descarta en esta demo; el resultado reciente se conserva en memoria durante la navegación.
+- **TeamLayout:** carga el equipo y presenta cabecera, selector de identidad, enlace y pestañas. La identidad activa se recuerda por equipo en `localStorage`; el secreto de acceso permanece en el fragmento URL.
+- **AvailabilityCalendar:** lee las marcas y los recuentos por día, permite marcar o cambiar la disponibilidad propia y consultar el detalle. Desde el calendario se crea una consulta de fechas seleccionando entre una y diez fechas; el panel de edición se adapta a escritorio y móvil.
+- **ConsultationsPage:** lista consultas de texto y fecha por estado y permite crear consultas con opciones de texto mediante un diálogo. Los votos y la resolución aún no están implementados.
+- **TeamApi e interceptor:** agrupan las peticiones JSON de equipo, disponibilidad y consultas. El interceptor lee `t` del fragmento y lo envía como Bearer en las llamadas `/api/`.
+- **ThemePicker, ThemeService y LinkMessagePage:** gestionan el tema automático, claro u oscuro, y los mensajes de equipo caducado o enlace no encontrado.
 
 ## Recorrido HTTP
 
@@ -42,14 +41,17 @@ sequenceDiagram
     participant Client as TeamApi + interceptor
     participant API as API Symfony
 
-    User->>Page: Crea equipo o abre /e#t=...
-    Page->>Client: Crear, leer o añadir participante
-    Client->>Client: Añade Bearer desde el fragmento para rutas protegidas
-    Client->>API: JSON por /api/teams...
+    User->>Page: Abre /e#t=... y selecciona una identidad
+    Page->>Client: Lee equipo, disponibilidad o consultas
+    Client->>API: JSON con Bearer para rutas protegidas
     API-->>Client: JSON o Problem Details
-    Client-->>Page: Resultado para actualizar la vista
+    Client-->>Page: Actualiza calendario, lista o estado de error
+    User->>Page: Marca un día o crea una consulta
+    Page->>Client: Envía la mutación
+    Client->>API: PUT o POST con identidad del participante
+    API-->>Client: Resultado persistido o problema
 ```
 
 ## Desarrollo
 
-Los comandos de instalación, servidor, pruebas, lint, formato y build están en el [README principal](../../README.md#desarrollo-local). Las rutas reales y los tests de navegador están bajo `src/app/` y `e2e/`.
+Los comandos de instalación, servidor, pruebas, lint, formato y build están en el [README principal](../../README.md#desarrollo-local). Las rutas y los recorridos Playwright están en `apps/web/src/app/` y `apps/web/e2e/`.
