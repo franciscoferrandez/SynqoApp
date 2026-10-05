@@ -6,6 +6,7 @@ namespace App\Tests;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\DBAL\Exception;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -161,6 +162,103 @@ final class ConsultationApiTest extends WebTestCase
 
         $this->client->request('GET', '/api/teams/current/consultations', server: ['HTTP_AUTHORIZATION' => 'Bearer invalid']);
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testDateOptionsPersistAsCivilDatesAndDatabaseEnforcesTypedValueAndUniqueness(): void
+    {
+        $team = $this->createTeam('Elena');
+        $this->client->jsonRequest('POST', '/api/teams/current/consultations', [
+            'participantId' => $team['participantId'],
+            'title' => 'Consulta base',
+            'options' => ['Texto existente'],
+        ], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(201);
+        $consultationId = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation']['id'];
+        $connection = static::getContainer()->get(Connection::class);
+        $id = '0199e314-73bd-7a2c-9c00-000000000001';
+        $connection->insert('consultation_option', [
+            'id' => $id,
+            'consultation_id' => $consultationId,
+            'option_text' => null,
+            'option_date' => '2026-10-15',
+            'position' => 1,
+        ]);
+
+        self::assertSame('2026-10-15', $connection->fetchOne('SELECT option_date::text FROM consultation_option WHERE id = ?', [$id]));
+        self::assertSame('Texto existente', $connection->fetchOne('SELECT option_text FROM consultation_option WHERE consultation_id = ? AND position = 0', [$consultationId]));
+
+        try {
+            $connection->insert('consultation_option', [
+                'id' => '0199e314-73bd-7a2c-9c00-000000000002',
+                'consultation_id' => $consultationId,
+                'option_text' => null,
+                'option_date' => '2026-10-15',
+                'position' => 2,
+            ]);
+            self::fail('The same date cannot be added twice to a consultation.');
+        } catch (Exception) {
+            self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ? AND option_date = ?', [$consultationId, '2026-10-15']));
+        }
+
+        try {
+            $connection->insert('consultation_option', [
+                'id' => '0199e314-73bd-7a2c-9c00-000000000003',
+                'consultation_id' => $consultationId,
+                'option_text' => null,
+                'option_date' => null,
+                'position' => 3,
+            ]);
+            self::fail('An option must have either text or a date.');
+        } catch (Exception) {
+            self::assertSame(2, (int) $connection->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ?', [$consultationId]));
+        }
+    }
+
+    public function testCreatesListsAndValidatesDateConsultationsInTheSubmittedTimeZone(): void
+    {
+        $this->client->disableReboot();
+        $clock = new MockClock('2026-10-05T00:30:00+00:00');
+        static::getContainer()->set('clock', $clock);
+        $team = $this->createTeam('Fátima');
+        $clock->modify('+1 minute');
+        $connection = static::getContainer()->get(Connection::class);
+        $activity = $connection->fetchOne('SELECT last_activity_at FROM team WHERE id = ?', [$team['id']]);
+
+        $this->client->jsonRequest('POST', '/api/teams/current/consultations', [
+            'type' => 'date',
+            'participantId' => $team['participantId'],
+            'title' => '¿Qué día nos va bien?',
+            'options' => ['2026-10-04', '2026-10-05'],
+            'timeZone' => 'America/Los_Angeles',
+        ], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation'];
+        self::assertSame('date', $created['type']);
+        self::assertSame(['2026-10-04', '2026-10-05'], array_column($created['options'], 'date'));
+        self::assertSame([0, 1], array_column($created['options'], 'position'));
+        self::assertArrayNotHasKey('text', $created['options'][0]);
+        self::assertNotSame($activity, $connection->fetchOne('SELECT last_activity_at FROM team WHERE id = ?', [$team['id']]));
+
+        $this->client->request('GET', '/api/teams/current/consultations', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(200);
+        $listed = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['open'][0];
+        self::assertSame('date', $listed['type']);
+        self::assertSame(['2026-10-04', '2026-10-05'], array_column($listed['options'], 'date'));
+
+        $beforeInvalid = $connection->fetchOne('SELECT last_activity_at FROM team WHERE id = ?', [$team['id']]);
+        $invalidPayloads = [
+            ['type' => 'date', 'participantId' => $team['participantId'], 'title' => 'Ayer', 'options' => ['2026-10-04'], 'timeZone' => 'Europe/Madrid'],
+            ['type' => 'date', 'participantId' => $team['participantId'], 'title' => 'Inválida', 'options' => ['2026-02-30'], 'timeZone' => 'UTC'],
+            ['type' => 'date', 'participantId' => $team['participantId'], 'title' => 'Repetida', 'options' => ['2026-10-05', '2026-10-05'], 'timeZone' => 'UTC'],
+            ['type' => 'date', 'participantId' => $team['participantId'], 'title' => 'Zona', 'options' => ['2026-10-05'], 'timeZone' => 'No/Such_Zone'],
+            ['type' => 'unknown', 'participantId' => $team['participantId'], 'title' => 'Tipo', 'options' => ['Valor']],
+        ];
+        foreach ($invalidPayloads as $payload) {
+            $this->client->jsonRequest('POST', '/api/teams/current/consultations', $payload, server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+            self::assertResponseStatusCodeSame(422);
+        }
+        self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM consultation WHERE team_id = ?', [$team['id']]));
+        self::assertSame($beforeInvalid, $connection->fetchOne('SELECT last_activity_at FROM team WHERE id = ?', [$team['id']]));
     }
 
     private function createTeam(string $participantName): array

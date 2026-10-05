@@ -11,6 +11,7 @@ use App\Application\Exception\TeamNotFound;
 use App\Application\Team\TeamRepository as TeamRepositoryPort;
 use App\Application\Team\TeamService;
 use App\Domain\Consultation\TextConsultationRules;
+use App\Domain\Consultation\DateConsultationRules;
 use App\Domain\Team\ExpiryCalculator;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -35,12 +36,18 @@ final readonly class ConsultationService
     }
 
     /** @return array{consultation: array<string, mixed>, expiresAt: string} */
-    public function create(?string $token, mixed $participantId, mixed $title, mixed $options): array
+    public function create(?string $token, mixed $participantId, mixed $title, mixed $options, mixed $type = null, mixed $timeZone = null): array
     {
         if ($token === null) {
             throw new MissingAccessCredential();
         }
-        $violations = TextConsultationRules::violations($title, $options);
+        $kind = $type ?? 'text';
+        if (!is_string($kind) || !in_array($kind, ['text', 'date'], true)) {
+            throw new InvalidConsultationInput(['type']);
+        }
+        $violations = $kind === 'date'
+            ? DateConsultationRules::violations($title, $options, $timeZone)
+            : TextConsultationRules::violations($title, $options);
         if (!is_string($participantId) || $participantId === '') {
             $violations[] = 'participantId';
         }
@@ -48,18 +55,21 @@ final readonly class ConsultationService
             throw new InvalidConsultationInput(array_values(array_unique($violations)));
         }
         if (!is_string($title) || !is_array($options) || !array_is_list($options) || !is_string($participantId)) {
-            throw new InvalidConsultationInput(['participantId', 'title', 'options']);
+            throw new InvalidConsultationInput(array_values(array_unique([...$violations, 'participantId', 'title', 'options'])));
         }
-        $optionTexts = [];
+        $optionValues = [];
         foreach ($options as $option) {
             if (!is_string($option)) {
                 throw new InvalidConsultationInput(['options']);
             }
-            $optionTexts[] = $option;
+            $optionValues[] = $option;
+        }
+        if ($kind === 'date' && !is_string($timeZone)) {
+            throw new InvalidConsultationInput(['timeZone']);
         }
 
         /** @var array{consultation: array<string, mixed>, expiresAt: string} $result */
-        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($participantId, $title, $optionTexts): array {
+        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($participantId, $title, $optionValues, $kind, $timeZone): array {
             if ($team === null) {
                 throw new TeamNotFound();
             }
@@ -71,12 +81,19 @@ final readonly class ConsultationService
             if (!in_array($participantId, array_column($this->teams->participants($team['id']), 'id'), true)) {
                 throw new TeamNotFound();
             }
+            if ($kind === 'date') {
+                $pastDates = DateConsultationRules::pastDateViolations($optionValues, $timeZone, $now);
+                if ($pastDates !== []) {
+                    throw new InvalidConsultationInput($pastDates);
+                }
+            }
             $activity = $now > $lastActivity ? $now : $lastActivity;
             $consultation = $this->consultations->create(
                 $team['id'],
                 $participantId,
                 $title,
-                $optionTexts,
+                $kind,
+                $optionValues,
                 $now->format(DATE_ATOM),
                 $activity->format(DATE_ATOM),
             );

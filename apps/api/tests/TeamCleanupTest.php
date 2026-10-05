@@ -47,6 +47,15 @@ final class TeamCleanupTest extends WebTestCase
         self::assertResponseStatusCodeSame(201);
         $consultation = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation'];
         $futureDate = (new DateTimeImmutable('today', new DateTimeZone('UTC')))->modify('+3 days')->format('Y-m-d');
+        $client->jsonRequest('POST', '/api/teams/current/consultations', [
+            'type' => 'date',
+            'participantId' => $created['firstParticipant']['id'],
+            'title' => 'Fecha que debe borrarse',
+            'options' => [$futureDate],
+            'timeZone' => 'UTC',
+        ], server: $headers);
+        self::assertResponseStatusCodeSame(201);
+        $dateConsultation = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation'];
         $client->jsonRequest('PUT', '/api/teams/current/availability/' . $futureDate . '/participants/' . $created['firstParticipant']['id'], [
             'state' => 'available',
             'timeZone' => 'UTC',
@@ -70,6 +79,7 @@ final class TeamCleanupTest extends WebTestCase
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM availability WHERE team_id = ?', [$created['id']]));
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation WHERE team_id = ?', [$created['id']]));
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ?', [$consultation['id']]));
+        self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_option WHERE consultation_id = ?', [$dateConsultation['id']]));
 
         $client->request('GET', '/api/teams/current', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
         self::assertResponseStatusCodeSame(404);

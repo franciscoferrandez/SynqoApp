@@ -769,6 +769,33 @@ html[data-theme='dark'] {
 .calendar-day.unavailable {
   background: var(--rose-soft);
 }
+.calendar-day.date-option-selected {
+  outline: 3px solid var(--blue-strong);
+  outline-offset: 1px;
+  box-shadow: inset 0 0 0 1px var(--surface);
+}
+.date-selection-count {
+  margin: 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.date-selection-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.date-selection-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-left: 0.2rem;
+}
+.date-selection-list .remove-option {
+  width: 36px;
+  height: 36px;
+}
 .calendar-day.unavailable .status {
   color: var(--rose);
 }
@@ -895,6 +922,9 @@ html[data-theme='dark'] {
 @media (max-width: 700px) {
   .calendar-detail {
     display: none;
+  }
+  .calendar-detail.calendar-detail-composer {
+    display: block;
   }
   .calendar-filters {
     width: auto;

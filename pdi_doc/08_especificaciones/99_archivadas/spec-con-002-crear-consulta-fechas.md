@@ -1,7 +1,7 @@
 ---
 id: SPEC-CON-002
 nivel: N2
-estado: ready
+estado: cerrada
 release: REL-001
 ---
 
@@ -124,13 +124,57 @@ No se prevé cambio normativo: alcance, límites, unicidad, fechas válidas, con
 - Comandos WEB reales: `npm --prefix apps/web test`, `npm --prefix apps/web run test:e2e`, `npm --prefix apps/web run lint`, `npm --prefix apps/web run format:check`, `npm --prefix apps/web run build`. Usar Node 22 para los comandos WEB.
 - Repositorio: `python3 pdi/scripts/validate_structure.py` y `python3 pdi/scripts/artifact_index.py --id REL-001`.
 
+## Registro de implementación — 2026-10-05
+
+- **Slice 1 — Persistencia y reglas: implementada.** `ConsultationOptionRecord` representa texto o fecha civil; migración `Version20261005170000` permite datos tipados, conserva las filas de texto, impone exactamente un valor y unicidad parcial de fecha. `ConsultationApiTest` verifica fecha `DATE`, compatibilidad textual, restricción única, restricción de tipo y persistencia/cascada.
+- **Slice 2 — API date: implementada.** El campo `type` ausente conserva `text`; `date` requiere zona IANA, fechas ISO estrictas y entre 1 y 10 valores distintos. La fecha mínima se calcula en la zona enviada dentro del bloqueo transaccional, antes de persistir o actualizar actividad. Respuesta, listado y OpenAPI distinguen opciones de fecha/texto.
+- **Slice 3 — Calendario y composer: implementada.** El icono activa selección manual y el panel reemplaza el detalle; fechas ordenadas, límite 10, confirmación y cancelación condicional. En móvil, el composer queda debajo del calendario, acorde a WF-CON-004.
+- **Slice 4 — Integración y regresión: implementación completada.** Al cerrar apply, Playwright focal cubría alta, navegación entre meses, respuesta/listado de fecha, confirmación, cancelación y borrador móvil; PHPUnit cubría persistencia, autorización, fechas/zona horaria, actividad y compatibilidad de texto. La verificación formal amplió la cobertura E2E a recarga, segundo contexto y errores anunciados; `TeamCleanupTest` añade cascada de opciones tipadas de fecha sin introducir tablas de votos/resoluciones.
+- Checks de apply ejecutados inicialmente: API, 35 pruebas / 291 aserciones, CS Fixer, PHPStan, Rector y esquema Doctrine sincronizado; WEB, 4 pruebas unitarias, lint, formato y build. El E2E focal inicial pasó 3/3. La validación formal y sus pruebas ampliadas se registran a continuación.
+- No se modifica el baseline ni se amplía scope. Los criterios sobre votos/resoluciones de SPEC-EQU-002 siguen parciales mientras esos conceptos no se implementen.
+
 ## Convergence
 
 Al verificar, contrastar criterios, contrato OpenAPI, migración real/mapeo ORM, UX frente al wireframe enlazado y regresiones de texto. Registrar cualquier límite de accesibilidad global como fuera de scope, sin convertir evidencia focal en afirmación de conformidad completa.
 
+La comparación inicial detectó que [RF-CON-001 — Crear una consulta de fechas](../../03_requisitos/01_funcionales/CON/rf-con-001-crear-consulta.md) seguía `PLANIFICADO` en [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md) pese a tener implementación verificada. Se actualizó el estado a `VALIDADO`, acotado a la creación de consultas de fechas; los votos y la resolución permanecen en sus requisitos planificados.
+
+| Aspecto | Clasificación | Resolución |
+|---|---|---|
+| Reglas, API, persistencia y UX de creación de consultas de fechas | Sin drift — código conforme | Tests, migración y criterios de aceptación respaldan la implementación. |
+| Votos y resolución | F — fuera del scope de SPEC-CON-002 | No se añaden como comportamiento implementado; siguen pendientes en [RF-CON-002 — Registrar y cambiar un voto](../../03_requisitos/01_funcionales/CON/rf-con-002-votar.md) y [RF-CON-004 — Resolver una consulta](../../03_requisitos/01_funcionales/CON/rf-con-004-resolver-consulta.md). |
+| Estado de delivery en REL-001 | Desfase de delivery, sin drift normativo | Corregido a `VALIDADO` para la creación cubierta por esta SPEC, sin cambiar el baseline. |
+| Arquitectura y contrato API | Sin drift | Dominio, aplicación, persistencia y transporte siguen separados; OpenAPI y compatibilidad del tipo texto están probados. No se requiere ADR ni `pdi:baseline-update`. |
+
+## Resultado de verificación — 2026-10-05
+
+| Criterio de aceptación | Evidencia | Resultado |
+|---|---|---|
+| 1. Inicio desde calendario, identidad y sustitución del detalle | `date-consultations.spec.ts` ejecuta el flujo con teclado, comprueba que ningún día queda seleccionado al abrir el composer y navega a Consultas después de crear. Suite focal actual: 4/4. | PASS |
+| 2. Título, estado inicial del formulario, activación y máximo | La prueba focal comprueba el botón desactivado al abrir el formulario y tras escribir solo el título, y activado tras seleccionar una fecha. El componente limita a 250 caracteres y muestra el máximo 10; API rechaza título 251 y más de 10 opciones. E2E 4/4 y API 35/291. | PASS |
+| 3. Añadir/quitar, unicidad, orden, navegación y límite 10 | Playwright cubre selección con teclado, conservar fechas al cambiar de mes, orden cronológico, bloqueo de la undécima fecha y selección tras retirar una; E2E focal 4/4. API verifica unicidad en dominio y base de datos; suite API 35/291. | PASS |
+| 4. Zona efectiva y rechazo de fechas no admisibles sin mutación parcial | `ConsultationApiTest::testCreatesListsAndValidatesDateConsultationsInTheSubmittedTimeZone` cubre el cambio de día entre zonas, fechas ISO inválidas, ayer, duplicados, zona no válida, ausencia de persistencia parcial y actividad intacta. Los tests API pasaron durante apply (35 pruebas, 291 aserciones). | PASS |
+| 5. Confirmación y cancelación condicional conservando borrador y foco | E2E cubre confirmación de creación, cancelación vacía y con borrador, foco inicial en «Seguir editando» y conservación de título/fecha. Suite focal 4/4. | PASS |
+| 6. Creación API autorizada, atómica y atribuida | `ConsultationApiTest` comprueba creación, participante, Bearer, persistencia de consulta y opciones, renovación de actividad solo al confirmar e invariantes ante errores; API 35 pruebas / 291 aserciones. | PASS |
+| 7. Lista tipada y compatibilidad con consultas de texto | `ConsultationApiTest` crea y vuelve a listar consulta de fecha con opciones ISO/posiciones y conserva creación/lista textual; `TeamApiTest` contrasta OpenAPI. API 35/291. | PASS |
+| 8. Consulta disponible tras confirmar, recargar y abrir otro navegador | E2E verifica tras crear que la lista vuelve a solicitarse al recargar y al abrir un segundo `BrowserContext`; ambas lecturas reciben la consulta. `ConsultationApiTest` confirma create/list persistidos en PostgreSQL. La lectura WEB usa respuestas simuladas y la persistencia se verifica en la integración API, no en un E2E único de extremo a extremo. | PASS |
+| 9. Disposición escritorio/móvil, teclado, nombres, foco y anuncios | E2E comprueba composición móvil de una columna, controles localizables por nombre accesible, activación por teclado, foco inicial en confirmación de cancelación y `role=alert` al fallar la creación preservando borrador. E2E 4/4. No es auditoría WCAG completa. | PASS |
+
+### Checks de esta verificación
+
+- API: `docker compose exec -T api composer test` PASS, 35 pruebas / 291 aserciones; `composer cs:check`, `composer stan` y `composer rector:check` PASS; `lint:container` y `doctrine:schema:validate` PASS.
+- PostgreSQL/Doctrine: `doctrine:migrations:status` indica aplicada `Version20261005170000`, 4/4 migraciones; validación de esquema PASS en la base `synqo` y bajo `--env=test`.
+- WEB con Node 22: 4 pruebas unitarias, lint, Prettier y build PASS.
+- E2E Playwright focal actual: 4/4 PASS. Incluye estado inicial desactivado, alta/lista, recarga y segundo contexto con rutas simuladas, recorrido móvil, error HTTP anunciado con borrador preservado y máximo de 10.
+- `python3 pdi/scripts/validate_structure.py`, Prettier del archivo E2E y `git diff --check`: PASS.
+
+**Gate: READY_FOR_CHANGE_CONVERGE.** Los nueve criterios tienen evidencia PASS. La persistencia se verifica en la integración API PostgreSQL y la restauración de lista tras recarga/segundo contexto en E2E con respuestas HTTP simuladas; no se afirma que exista una E2E única conectada a PostgreSQL.
+
+**Gate de convergencia: READY_FOR_CHANGE_CLOSE.** El drift de delivery fue corregido. No queda drift significativo de baseline, SPEC, implementación, tests o arquitectura en el alcance; la auditoría WCAG global y los votos/resolución permanecen fuera de esta SPEC.
+
 ## Resultado de cierre
 
-Pendiente de implementación, verificación, convergencia y cierre.
+**DONE — Change cerrado y archivado el 2026-10-05.** Los nueve criterios pasan; API (35 pruebas, 291 aserciones), checks estáticos, esquema/migración Doctrine, WEB y E2E focal (4/4) están validados. `RF-CON-001` queda `VALIDADO` en `REL-001`. No se modificó el baseline. Los votos, resolución y auditoría WCAG global permanecen como trabajo posterior según sus requisitos. Sin commit asociado todavía.
 
 ## Definition of Ready
 
@@ -140,4 +184,4 @@ Pendiente de implementación, verificación, convergencia y cierre.
 - Slices implementables y evidencia de validación definida con comandos existentes.
 - El alcance no requiere modificar el baseline.
 
-**Gate: READY_FOR_CHANGE_APPLY.**
+**Gate de preparación (histórico): READY_FOR_CHANGE_APPLY.**

@@ -11,7 +11,7 @@ interface ConsultationRepository
 
     /**
      * @param list<string> $options
-     * @return array{id: string, type: string, title: string, state: string, createdAt: string, createdBy: array{id: string, name: string}, options: list<array{id: string, text: string, position: int}>}
+     * @return array<string, mixed>
      */
-    public function create(string $teamId, string $participantId, string $title, array $options, string $createdAt, string $activityAt): array;
+    public function create(string $teamId, string $participantId, string $title, string $type, array $options, string $createdAt, string $activityAt): array;
 }

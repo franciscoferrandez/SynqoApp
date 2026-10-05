@@ -89,6 +89,15 @@ final class TeamApiTest extends WebTestCase
         self::assertArrayHasKey('/api/teams/current/consultations', $spec['paths']);
         self::assertArrayHasKey('get', $spec['paths']['/api/teams/current/consultations']);
         self::assertArrayHasKey('post', $spec['paths']['/api/teams/current/consultations']);
+        $consultationCreate = $spec['paths']['/api/teams/current/consultations']['post'];
+        $requestSchema = $consultationCreate['requestBody']['content']['application/json']['schema'];
+        self::assertSame(['participantId', 'title', 'options'], $requestSchema['required']);
+        self::assertSame(['text', 'date'], $requestSchema['properties']['type']['enum']);
+        self::assertStringContainsString('se omite', $requestSchema['properties']['type']['description']);
+        self::assertStringContainsString('IANA', $requestSchema['properties']['timeZone']['description']);
+        $consultationResponse = $consultationCreate['responses']['201']['content']['application/json']['schema']['properties']['consultation'];
+        self::assertSame(['text', 'date'], $consultationResponse['properties']['type']['enum']);
+        self::assertCount(2, $consultationResponse['properties']['options']['items']['oneOf']);
         self::assertCount(6, $spec['paths']);
         $operations = $spec['paths']['/api/teams/current/participants']['post'];
         self::assertSame(['urn:synqo:problem:duplicate-participant'], $operations['responses']['409']['content']['application/problem+json']['schema']['properties']['type']['enum']);

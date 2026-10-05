@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AvailabilityDay, AvailabilityState, TeamApi } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
@@ -141,7 +142,9 @@ export function visibleDates(year: number, month: number, extended: boolean): st
                 type="button"
                 aria-label="Crear consulta de fechas"
                 title="Crear consulta de fechas"
-                disabled
+                [disabled]="!canStartDateConsultation"
+                [attr.aria-pressed]="creatingDateConsultation"
+                (click)="startDateConsultation()"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -174,6 +177,7 @@ export function visibleDates(year: number, month: number, extended: boolean): st
                 [class.available]="displayState(date) === 'available'"
                 [class.maybe]="displayState(date) === 'maybe'"
                 [class.unavailable]="displayState(date) === 'unavailable'"
+                [class.date-option-selected]="selectedDates.includes(date)"
                 [class.past]="date < today"
                 [class.today]="date === today"
                 [attr.aria-label]="
@@ -182,7 +186,14 @@ export function visibleDates(year: number, month: number, extended: boolean): st
                   statusLabel(displayState(date)) +
                   (date < today ? ', pasado, solo lectura' : '')
                 "
-                [attr.aria-pressed]="selected === date"
+                [attr.aria-pressed]="
+                  creatingDateConsultation ? selectedDates.includes(date) : selected === date
+                "
+                [disabled]="
+                  creatingDateConsultation &&
+                  !selectedDates.includes(date) &&
+                  (date < today || selectedDates.length >= maxDateOptions)
+                "
                 [attr.data-date]="date"
                 (click)="select(date, $event)"
               >
@@ -197,8 +208,89 @@ export function visibleDates(year: number, month: number, extended: boolean): st
           </div>
           <p class="calendar-legend">✓ Disponible · ? Quizá · × No disponible · · Sin marcas</p>
         </div>
-        <aside class="panel calendar-detail" aria-label="Detalle del día">
-          <ng-container *ngTemplateOutlet="detail" />
+        <aside
+          class="panel calendar-detail"
+          [class.calendar-detail-composer]="creatingDateConsultation"
+          [attr.aria-labelledby]="creatingDateConsultation ? 'date-composer-heading' : null"
+          aria-label="Detalle del día"
+        >
+          @if (creatingDateConsultation) {
+            <form class="date-composer" (submit)="beginDateCreateConfirmation($event)">
+              <div class="detail-heading">
+                <div>
+                  <p class="eyebrow">Nueva consulta</p>
+                  <h3 id="date-composer-heading">Proponer fechas</h3>
+                </div>
+                <button
+                  class="dialog-close"
+                  type="button"
+                  aria-label="Cancelar consulta"
+                  (click)="cancelDateConsultation()"
+                >
+                  ×
+                </button>
+              </div>
+              <label class="text-query-field" for="date-consultation-title">Título breve</label>
+              <input
+                #dateTitleInput
+                id="date-consultation-title"
+                class="text-query-input"
+                type="text"
+                maxlength="250"
+                autocomplete="off"
+                placeholder="Por ejemplo, ¿qué día nos va bien?"
+                [value]="dateTitle"
+                [attr.aria-invalid]="dateTitleTouched && !dateTitle.trim() ? true : null"
+                aria-describedby="date-selection-help"
+                (input)="dateTitle = $any($event.target).value; dateServerError = ''"
+                (blur)="dateTitleTouched = true"
+              />
+              <p id="date-selection-help" class="text-query-help">
+                Elige entre una y diez fechas desde hoy. Puedes cambiar de mes; las fechas elegidas
+                se conservan.
+              </p>
+              <p class="date-selection-count">
+                {{ selectedDates.length }} de {{ maxDateOptions }} fechas
+              </p>
+              @if (selectedDates.length) {
+                <ol class="date-selection-list" aria-label="Fechas elegidas, en orden cronológico">
+                  @for (date of selectedDates; track date) {
+                    <li [attr.data-date]="date">
+                      <span>{{ label(date) }}</span
+                      ><button
+                        class="remove-option"
+                        type="button"
+                        [attr.aria-label]="'Quitar ' + label(date)"
+                        (click)="toggleDate(date)"
+                      >
+                        ×
+                      </button>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="calendar-note">Pulsa los días del calendario para añadir fechas.</p>
+              }
+              @if (dateServerError) {
+                <p class="text-query-error" role="alert">{{ dateServerError }}</p>
+              }
+              <div class="text-query-actions">
+                <button class="outline" type="button" (click)="cancelDateConsultation()">
+                  Cancelar
+                </button>
+                <button
+                  class="primary"
+                  type="button"
+                  [disabled]="!canCreateDateConsultation"
+                  (click)="beginDateCreateConfirmation()"
+                >
+                  Crear consulta
+                </button>
+              </div>
+            </form>
+          } @else {
+            <ng-container *ngTemplateOutlet="detail" />
+          }
         </aside>
       </div>
       <dialog
@@ -209,6 +301,59 @@ export function visibleDates(year: number, month: number, extended: boolean): st
       >
         <ng-container *ngTemplateOutlet="detail; context: { mobile: true }" />
       </dialog>
+      @if (showDateConfirmation) {
+        <dialog
+          #dateConfirmationDialog
+          class="consultation-dialog consultation-confirmation"
+          aria-labelledby="date-confirmation-heading"
+          (cancel)="returnToDateComposer($event)"
+        >
+          <p class="eyebrow">Confirmación</p>
+          <h2 id="date-confirmation-heading">
+            {{
+              dateConfirmationKind === 'create'
+                ? '¿Crear esta consulta?'
+                : '¿Abandonar la consulta?'
+            }}
+          </h2>
+          <p>
+            {{
+              dateConfirmationKind === 'create'
+                ? '«' +
+                  dateTitle.trim() +
+                  '» tendrá ' +
+                  selectedDates.length +
+                  ' fechas propuestas.'
+                : 'Se descartarán el título y las fechas que has elegido. ¿Quieres continuar?'
+            }}
+          </p>
+          <div class="text-query-actions">
+            <button
+              #dateConfirmationBack
+              class="outline"
+              type="button"
+              [attr.autofocus]="''"
+              [disabled]="submittingDate"
+              (click)="returnToDateComposer()"
+            >
+              {{ dateConfirmationKind === 'cancel' ? 'Seguir editando' : 'Volver' }}
+            </button>
+            <button
+              class="primary"
+              [class.danger]="dateConfirmationKind === 'cancel'"
+              type="button"
+              [disabled]="submittingDate"
+              (click)="acceptDateConfirmation()"
+            >
+              @if (submittingDate) {
+                Creando…
+              } @else {
+                {{ dateConfirmationKind === 'cancel' ? 'Abandonar edición' : 'Confirmar creación' }}
+              }
+            </button>
+          </div>
+        </dialog>
+      }
       <ng-template #detail let-mobile="mobile">
         <div class="detail-heading">
           <div>
@@ -283,8 +428,14 @@ export function visibleDates(year: number, month: number, extended: boolean): st
 export class AvailabilityCalendar implements OnInit, OnDestroy {
   readonly team = inject(TeamLayout);
   private readonly api = inject(TeamApi);
+  private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
   @ViewChild('dayDialog') dialog?: ElementRef<HTMLDialogElement>;
+  @ViewChild('dateTitleInput') private dateTitleInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('dateConfirmationDialog')
+  set dateConfirmationDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
+    if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
+  }
   private focusReturn?: HTMLElement;
   private reading?: Subscription;
   private writing?: Subscription;
@@ -301,16 +452,53 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   data: Record<string, AvailabilityDay> = {};
   month = this.today.slice(0, 7);
   selected = this.today;
-  get deviceZone(): string | undefined {
+  readonly maxDateOptions = 10;
+  creatingDateConsultation = false;
+  selectedDates: string[] = [];
+  dateTitle = '';
+  dateTitleTouched = false;
+  dateServerError = '';
+  submittingDate = false;
+  showDateConfirmation = false;
+  dateConfirmationKind: 'create' | 'cancel' = 'create';
+  get effectiveTimeZone(): string {
     try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (zone) {
+        new Intl.DateTimeFormat('en', { timeZone: zone });
+        return zone;
+      }
     } catch {
-      return undefined;
+      // Fall back to the team's configured zone.
     }
+    const fallback = this.team.team?.timeZone ?? 'Europe/Madrid';
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: fallback });
+      return fallback;
+    } catch {
+      return 'Europe/Madrid';
+    }
+  }
+  get canStartDateConsultation(): boolean {
+    return (
+      !!this.team.participantId &&
+      !!this.team.team &&
+      !this.loading &&
+      !this.loadFailed &&
+      new Date(this.team.team.expiresAt).getTime() > Date.now()
+    );
+  }
+  get canCreateDateConsultation(): boolean {
+    return (
+      this.dateTitle.trim().length > 0 &&
+      this.selectedDates.length > 0 &&
+      this.selectedDates.length <= this.maxDateOptions &&
+      !this.submittingDate
+    );
   }
   get today(): string {
     const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: this.deviceZone ?? this.team.team?.timeZone ?? 'Europe/Madrid',
+      timeZone: this.effectiveTimeZone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -384,6 +572,10 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.load();
   }
   select(date: string, event: Event): void {
+    if (this.creatingDateConsultation) {
+      this.toggleDate(date);
+      return;
+    }
     this.selected = date;
     this.focusReturn = event.currentTarget as HTMLElement;
     if (matchMedia('(max-width: 700px)').matches) this.dialog?.nativeElement.showModal();
@@ -474,7 +666,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.message = 'Guardando disponibilidad…';
     this.changeDetector.markForCheck();
     this.writing = this.api
-      .mark(action.date, action.participantId, action.state, this.deviceZone)
+      .mark(action.date, action.participantId, action.state, this.effectiveTimeZone)
       .subscribe({
         next: ({ day, expiresAt }) => {
           this.data[day.date] = day;
@@ -504,6 +696,115 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   private parse(date: string): Date {
     const [year, month, day] = date.split('-').map(Number);
     return new Date(Date.UTC(year, month - 1, day));
+  }
+  startDateConsultation(): void {
+    if (!this.canStartDateConsultation) return;
+    this.dialog?.nativeElement.close();
+    this.creatingDateConsultation = true;
+    this.selectedDates = [];
+    this.dateTitle = '';
+    this.dateTitleTouched = false;
+    this.dateServerError = '';
+    this.changeDetector.detectChanges();
+    setTimeout(() => document.querySelector<HTMLInputElement>('#date-consultation-title')?.focus());
+  }
+  toggleDate(date: string): void {
+    if (!this.creatingDateConsultation) return;
+    const selection = new Set(this.selectedDates);
+    if (selection.has(date)) selection.delete(date);
+    else if (date >= this.today && selection.size < this.maxDateOptions) selection.add(date);
+    this.selectedDates = [...selection].sort();
+    this.dateServerError = '';
+    this.changeDetector.markForCheck();
+  }
+  beginDateCreateConfirmation(event?: Event): void {
+    event?.preventDefault();
+    this.dateTitleTouched = true;
+    if (!this.canCreateDateConsultation) return;
+    this.dateConfirmationKind = 'create';
+    this.showDateConfirmation = true;
+    this.openDateConfirmation();
+  }
+  cancelDateConsultation(): void {
+    if (!this.creatingDateConsultation) return;
+    if (!this.dateTitle.trim() && this.selectedDates.length === 0) {
+      this.discardDateDraft();
+      return;
+    }
+    this.dateConfirmationKind = 'cancel';
+    this.showDateConfirmation = true;
+    this.openDateConfirmation();
+  }
+  returnToDateComposer(event?: Event): void {
+    event?.preventDefault();
+    this.showDateConfirmation = false;
+    this.changeDetector.markForCheck();
+    setTimeout(() => this.dateTitleInput?.nativeElement.focus());
+  }
+  acceptDateConfirmation(): void {
+    if (this.submittingDate) return;
+    if (this.dateConfirmationKind === 'cancel') {
+      this.showDateConfirmation = false;
+      this.discardDateDraft();
+      return;
+    }
+    const participantId = this.team.participantId;
+    if (!participantId) {
+      this.showDateConfirmation = false;
+      this.dateServerError = 'Elige una identidad del equipo para crear la consulta.';
+      return;
+    }
+    this.submittingDate = true;
+    this.dateServerError = '';
+    this.api
+      .createDateConsultation(
+        participantId,
+        this.dateTitle.trim(),
+        this.selectedDates,
+        this.effectiveTimeZone,
+      )
+      .subscribe({
+        next: ({ expiresAt }) => {
+          this.team.updateExpiry(expiresAt);
+          this.showDateConfirmation = false;
+          this.discardDateDraft();
+          void this.router.navigate(['/e/consultas'], { preserveFragment: true });
+        },
+        error: (error: HttpErrorResponse) => {
+          this.submittingDate = false;
+          this.showDateConfirmation = false;
+          const violations = error.error?.violations as { propertyPath?: string }[] | undefined;
+          if (
+            error.status === 422 &&
+            violations?.some((item) => item.propertyPath?.startsWith('options.'))
+          ) {
+            this.dateServerError =
+              'Alguna fecha ya no es admisible. Revisa las fechas elegidas e inténtalo de nuevo.';
+          } else {
+            this.dateServerError =
+              'No se pudo crear la consulta. El borrador se ha conservado; puedes volver a intentarlo.';
+          }
+          this.team.handleAccessError(error);
+          this.changeDetector.markForCheck();
+        },
+      });
+  }
+  private discardDateDraft(): void {
+    this.creatingDateConsultation = false;
+    this.selectedDates = [];
+    this.dateTitle = '';
+    this.dateTitleTouched = false;
+    this.dateServerError = '';
+    this.submittingDate = false;
+    this.selected = this.today;
+    this.changeDetector.markForCheck();
+  }
+  private openDateConfirmation(): void {
+    this.changeDetector.detectChanges();
+    const dialog = document
+      .querySelector<HTMLDialogElement>('#date-confirmation-heading')
+      ?.closest('dialog');
+    if (dialog && !dialog.open) dialog.showModal();
   }
   label(date: string): string {
     return new Intl.DateTimeFormat('es', { dateStyle: 'full', timeZone: 'UTC' }).format(

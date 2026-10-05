@@ -103,16 +103,12 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 responses: ['200' => $this->response('Consultations grouped by state', ['open' => $consultations, 'resolved' => $consultations, 'rejected' => $consultations])] + $consultationErrors,
             ),
             post: new Operation(
-                operationId: 'createTextConsultation',
+                operationId: 'createConsultation',
                 tags: ['Consultations'],
-                summary: 'Create an open text consultation',
+                summary: 'Create an open text or date consultation',
                 security: $security,
-                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', [
-                    'participantId' => $this->schema('string', format: 'uuid'),
-                    'title' => $this->schema('string', maxLength: 250),
-                    'options' => $this->textOptionsSchema(),
-                ], ['participantId', 'title', 'options']))]), required: true),
-                responses: ['201' => $this->response('Created text consultation', ['consultation' => $consultation, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid title or options', withViolations: true)] + $consultationErrors,
+                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->consultationRequest())]), required: true),
+                responses: ['201' => $this->response('Created text or date consultation', ['consultation' => $consultation, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid type, title, time zone or options', withViolations: true)] + $consultationErrors,
             ),
         ));
         $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer')]));
@@ -159,14 +155,45 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $state = $this->schema('string');
         $state['enum'] = ['open', 'resolved', 'rejected'];
         $type = $this->schema('string');
-        $type['enum'] = ['text'];
+        $type['enum'] = ['text', 'date'];
         $options = $this->schema('array');
-        $options['items'] = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50), 'position' => $this->schema('integer')], ['id', 'text', 'position']);
+        $options['items'] = $this->schema('object');
+        $options['items']['oneOf'] = [
+            $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50), 'position' => $this->schema('integer')], ['id', 'text', 'position']),
+            $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'date' => $this->schema('string', format: 'date'), 'position' => $this->schema('integer')], ['id', 'date', 'position']),
+        ];
 
         return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
     }
 
-    private function textOptionsSchema(): Schema
+    private function consultationRequest(): Schema
+    {
+        $type = $this->enumSchema(['text', 'date']);
+        $type['description'] = 'Opcional por compatibilidad: si se omite, se interpreta como text.';
+        $timeZone = $this->schema('string');
+        $timeZone['description'] = 'Zona horaria IANA obligatoria para type date.';
+        $options = $this->consultationOptionsSchema();
+        $options['items']['description'] = 'Texto para type text; fecha civil YYYY-MM-DD para type date.';
+
+        return $this->schema('object', [
+            'participantId' => $this->schema('string', format: 'uuid'),
+            'type' => $type,
+            'title' => $this->schema('string', maxLength: 250),
+            'options' => $options,
+            'timeZone' => $timeZone,
+        ], ['participantId', 'title', 'options']);
+    }
+
+    /** @param list<string> $values */
+    private function enumSchema(array $values): Schema
+    {
+        $schema = $this->schema('string');
+        $schema['enum'] = $values;
+
+        return $schema;
+    }
+
+    private function consultationOptionsSchema(): Schema
     {
         $options = $this->schema('array');
         $options['minItems'] = 1;

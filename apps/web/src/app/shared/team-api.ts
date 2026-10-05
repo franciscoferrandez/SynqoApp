@@ -10,14 +10,13 @@ export interface AvailabilityDay {
   marks: { participantId: string; participantName: string; state: AvailabilityState }[];
 }
 export type ConsultationState = 'open' | 'resolved' | 'rejected';
-export interface ConsultationOption {
+export type ConsultationOption = {
   id: string;
-  text: string;
   position: number;
-}
+} & ({ text: string; date?: never } | { date: string; text?: never });
 export interface Consultation {
   id: string;
-  type: 'text';
+  type: 'text' | 'date';
   title: string;
   state: ConsultationState;
   createdAt: string;
@@ -97,6 +96,17 @@ export class TeamApi {
     return this.http.post<{ consultation: Consultation; expiresAt: string }>(
       '/api/teams/current/consultations',
       { participantId, title, options },
+    );
+  }
+  createDateConsultation(
+    participantId: string,
+    title: string,
+    dates: string[],
+    timeZone: string,
+  ): Observable<{ consultation: Consultation; expiresAt: string }> {
+    return this.http.post<{ consultation: Consultation; expiresAt: string }>(
+      '/api/teams/current/consultations',
+      { type: 'date', participantId, title, options: dates, timeZone },
     );
   }
   current(): Observable<TeamData> {
