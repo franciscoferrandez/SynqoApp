@@ -47,14 +47,13 @@ El [alcance conceptual](pdi_doc/01_producto/04_alcance/alcance-conceptual.md) re
 
 ## Tecnologías y arquitectura
 
-| Parte | Tecnología prevista | Función |
+| Módulo | Tecnología actual | Responsabilidad y arquitectura |
 |---|---|---|
-| Web | Angular 21, TypeScript y Node 24 LTS | Interfaz adaptable, navegación y estado visual. |
-| API | PHP 8.5, Symfony 7.4 LTS y API Platform 5 | Casos de uso, reglas compartidas y contrato HTTP. |
-| Datos | PostgreSQL 18 | Persistencia de equipos, disponibilidades y consultas. |
-| Desarrollo local | Docker Compose para API y base de datos; Angular local | Arranque reproducible de la demo. |
+| [WEB](doc/architecture/web.md) | Angular 21, TypeScript y Node.js 24.21 | Navegación, presentación, preferencias locales y cliente HTTP. |
+| [API](doc/architecture/api.md) | PHP 8.5, Symfony 7.4 y API Platform 5 | Operaciones HTTP, casos de uso, reglas del dominio y persistencia ORM. |
+| Persistencia | PostgreSQL 18 y Doctrine ORM | En el alcance actual guarda equipos y participantes. |
 
-La web consumirá recursos JSON de la API; los errores seguirán Problem Details y OpenAPI describirá el contrato. La arquitectura busca aplicar SOLID, arquitectura limpia y DDD de forma pragmática: las reglas del dominio y los casos de uso no dependen de Angular, HTTP ni Doctrine. Los detalles y motivos están en las [tecnologías de la demo](pdi_doc/06_arquitectura/08_tecnologias/demo-local.md), los [principios de implementación](pdi_doc/07_desarrollo/01_principios-y-convenciones/arquitectura-limpia-y-ddd.md) y la [convención HTTP](pdi_doc/06_arquitectura/03_modulos/API/convencion-http.md).
+WEB consume JSON de API y envía el valor de acceso como Bearer desde el fragmento del enlace. API responde con JSON o Problem Details y publica su contrato OpenAPI. La arquitectura separa presentación, casos de uso, dominio y adaptadores; los detalles están en las páginas de [WEB](doc/architecture/web.md) y [API](doc/architecture/api.md), los [principios de implementación](pdi_doc/07_desarrollo/01_principios-y-convenciones/arquitectura-limpia-y-ddd.md) y la [convención HTTP](pdi_doc/06_arquitectura/03_modulos/API/convencion-http.md).
 
 ## Estructura del proyecto
 
@@ -71,7 +70,80 @@ Este es el repositorio [SynqoApp](https://github.com/franciscoferrandez/SynqoApp
 
 ## Desarrollo local
 
-Requisitos: Docker con Compose y Node.js 24. Copia `.env.example` a `.env`, instala la web con `npm --prefix apps/web ci` y arranca API y PostgreSQL con `docker compose up -d --build`. Instala las dependencias PHP con `docker compose exec api composer install`, aplica la migración con `docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction` y arranca Angular con `npm --prefix apps/web start`. El proxy local envía `/api` al puerto 8000. Las instrucciones de pruebas y mantenimiento están en [apps/api/README.md](apps/api/README.md). [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md) cubre la base visual previa; [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/99_archivadas/spec-equ-001-arranque-equipo-local.md) documenta el incremento funcional validado en local.
+### Requisitos
+
+- Docker con Docker Compose.
+- Node.js `24.21.0` y npm `11.19.0` para WEB; la versión de Node está fijada en `apps/web/.nvmrc`.
+- `nvm` es opcional y facilita instalar la versión indicada.
+
+### Instalación y arranque
+
+Desde la raíz del repositorio, en un clon nuevo:
+
+```bash
+nvm install 24.21.0
+nvm use 24.21.0
+npm ci
+npm --prefix apps/web ci
+cp .env.example .env
+docker compose up -d --build database api
+docker compose exec api composer install
+docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
+npm --prefix apps/web start
+```
+
+WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el proxy Angular reenvía `/api` a esa dirección. Swagger/OpenAPI se sirve en `/api/docs`. La base publica el puerto `5433` del equipo y escucha en `5432` dentro de Docker.
+
+`.env.example` contiene valores locales de ejemplo. Ajusta `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `API_PORT`, `APP_ENV`, `APP_SECRET` o `APP_PUBLIC_URL` en `.env` si el entorno lo necesita; no uses estos valores locales en despliegues.
+
+### Scripts y comandos de desarrollo
+
+**Raíz del repositorio:** `npm ci` instala Lefthook y ejecuta `npm run prepare`, que instala los hooks Git. `npm run prepare` permite reinstalarlos si hace falta. No hay scripts de build o test definidos en el `package.json` raíz.
+
+**WEB** (`apps/web/package.json`):
+
+| Comando | Uso |
+|---|---|
+| `npm --prefix apps/web start` | Servidor Angular de desarrollo con proxy para `/api`. |
+| `npm --prefix apps/web run build` | Compilación de producción. |
+| `npm --prefix apps/web run watch` | Compilación de desarrollo en modo observación. |
+| `npm --prefix apps/web test` | Pruebas unitarias y de componentes, sin modo watch. |
+| `npm --prefix apps/web run test:e2e` | Recorridos Playwright en Chromium; si falta el navegador, instala con `(cd apps/web && npx playwright install chromium)`. |
+| `npm --prefix apps/web run lint` / `lint:fix` | ESLint; el segundo aplica correcciones. |
+| `npm --prefix apps/web run format:check` / `format:fix` | Comprobar o aplicar Prettier. |
+
+**API** (`apps/api/composer.json`, ejecutado en el contenedor `api`):
+
+| Comando | Uso |
+|---|---|
+| `docker compose exec api composer cs:check` / `cs:fix` | Comprobar o aplicar PHP CS Fixer. |
+| `docker compose exec api composer stan` | Análisis estático PHPStan. |
+| `docker compose exec api composer rector:check` | Comprobar Rector en modo dry-run. |
+| `docker compose exec api composer test` | PHPUnit. |
+| `docker compose exec api composer db:reset:test` | Borrar y reconstruir `synqo_test`, aplicar migraciones. Ejecuta este comando antes de PHPUnit si la base de prueba está vacía; elimina los datos de esa base. |
+| `docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction` | Aplicar migraciones a la base configurada por `DATABASE_URL` (local de desarrollo). |
+| `docker compose exec api php bin/console doctrine:schema:validate` | Validar mapeo Doctrine frente al esquema conectado. |
+| `docker compose exec api php bin/console debug:router` | Listar rutas Symfony y API Platform. |
+
+**Docker Compose:** `docker compose ps` lista servicios; `docker compose logs -f api database` sigue sus logs; `docker compose stop` y `start` paran o reanudan los servicios; `docker compose down` los elimina y conserva el volumen de PostgreSQL. `docker compose down -v` elimina también ese volumen y todos los datos locales.
+
+**Git y hooks:** al instalar las dependencias de la raíz (`npm ci`), `npm run prepare` ejecuta `lefthook install` y registra los hooks de Git para este clon. La configuración está en [`lefthook.yml`](lefthook.yml):
+
+- **`pre-commit` en WEB:** si entre los archivos preparados hay alguno bajo `apps/web/`, Lefthook ejecuta `scripts/check-staged-web.mjs` y después, en ese orden, `lint`, `format:check` y `build` de WEB. Si falla un comando, el hook termina con error y Git no crea el commit.
+- **`pre-commit` en API:** si hay archivos preparados bajo `apps/api/`, ejecuta `scripts/check-staged-api.mjs` y luego `composer cs:check`, `composer stan` y `composer rector:check` dentro de un contenedor API temporal. Compose lo construye si hace falta y elimina el contenedor al acabar; el servicio no necesita estar levantado, aunque sí Docker.
+- **Cambios en ambos módulos:** se ejecutan ambas validaciones. Si el commit no contiene cambios de WEB ni API, esos comandos no se activan.
+- **Preparación parcial:** cada `check-staged-*.mjs` compara los archivos staged del módulo con los cambios aún unstaged. Si un mismo archivo tiene cambios preparados y pendientes, rechaza el commit para evitar validar una versión diferente de la que se va a confirmar; prepara el archivo completo o separa los cambios antes de reintentar.
+- **`commit-msg`:** valida el mensaje con `scripts/check-commit-message.mjs`; un mensaje que no cumpla Conventional Commits en castellano bloquea el commit.
+
+Los hooks se ejecutan automáticamente al hacer `git commit`; el pre-commit también puede ejecutarse manualmente con `npx lefthook run pre-commit`. Para validar un mensaje manualmente: `node scripts/check-commit-message.mjs <ruta-al-archivo-del-mensaje>`. Para revisar un rango de commits: `node scripts/check-commit-range.mjs <SHA-base-completo>`. Los scripts `check-staged-web.mjs` y `check-staged-api.mjs` son comprobaciones internas para evitar mezclar versiones staged y unstaged de un mismo archivo.
+
+GitHub Actions define el pipeline en [`.github/workflows/web.yml`](.github/workflows/web.yml): instala Node y Chromium, prepara Docker/API/PostgreSQL, migra y prueba API, ejecuta E2E, revisa mensajes de commit y corre los checks WEB. Se activa en `push` a `main` y en Pull Requests.
+
+### Acceso a PostgreSQL desde HeidiSQL
+
+Crea una conexión **PostgreSQL (TCP/IP)** con servidor `127.0.0.1`, puerto `5433`, base `synqo`, usuario `synqo` y contraseña `synqo-local`, si conservas los valores de `.env.example`. Si cambias `POSTGRES_*` o `POSTGRES_PORT`, introduce esos valores. `synqo_test` es exclusiva de pruebas; `db:reset:test` la borra y recrea.
+
+La demo operativa actual permite crear y compartir equipos y participantes. Las vistas de disponibilidad y consultas siguen siendo ilustrativas. Consulta los detalles por módulo en la [arquitectura WEB](doc/architecture/web.md) y la [arquitectura API](doc/architecture/api.md), la base visual previa en [SPEC-COO-001 — Base visual y navegación de Synqo](pdi_doc/08_especificaciones/99_archivadas/spec-coo-001-base-visual-y-navegacion.md) y el incremento implementado en [SPEC-EQU-001 — Arranque de equipo compartido en la demo local](pdi_doc/08_especificaciones/99_archivadas/spec-equ-001-arranque-equipo-local.md).
 
 ## Calidad y reglas de implementación
 
