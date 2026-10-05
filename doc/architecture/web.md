@@ -28,7 +28,8 @@ flowchart LR
 - **CreatePage y ConfirmationPage:** permiten crear el equipo y copiar o compartir su enlace. El correo mostrado en el formulario se descarta en esta demo; el resultado reciente se conserva en memoria durante la navegación.
 - **TeamLayout:** carga el equipo y presenta cabecera, selector de identidad, enlace y pestañas. La identidad activa se recuerda por equipo en `localStorage`; el secreto de acceso permanece en el fragmento URL.
 - **AvailabilityCalendar:** lee las marcas y los recuentos por día, permite marcar o cambiar la disponibilidad propia y consultar el detalle. Desde el calendario se crea una consulta de fechas seleccionando entre una y diez fechas; el panel de edición se adapta a escritorio y móvil.
-- **ConsultationsPage:** lista consultas de texto y fecha por estado y permite crear consultas con opciones de texto mediante un diálogo. Los votos y la resolución aún no están implementados.
+- **ConsultationsPage:** lista consultas de texto y fecha por estado, permite crear consultas con opciones de texto y abre el detalle de una consulta.
+- **ConsultationDetailPage:** muestra opciones, recuentos y votantes; permite cambiar el voto propio en consultas abiertas. Presenta el diálogo de resolución y la lectura de resultados o rechazo cuando la consulta se cierra. Si falla una mutación, restaura el estado confirmado y ofrece reintento.
 - **TeamApi e interceptor:** agrupan las peticiones JSON de equipo, disponibilidad y consultas. El interceptor lee `t` del fragmento y lo envía como Bearer en las llamadas `/api/`.
 - **ThemePicker, ThemeService y LinkMessagePage:** gestionan el tema automático, claro u oscuro, y los mensajes de equipo caducado o enlace no encontrado.
 
@@ -46,7 +47,7 @@ sequenceDiagram
     Client->>API: JSON con Bearer para rutas protegidas
     API-->>Client: JSON o Problem Details
     Client-->>Page: Actualiza calendario, lista o estado de error
-    User->>Page: Marca un día o crea una consulta
+    User->>Page: Marca un día, crea o abre una consulta, vota o resuelve
     Page->>Client: Envía la mutación
     Client->>API: PUT o POST con identidad del participante
     API-->>Client: Resultado persistido o problema

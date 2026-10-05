@@ -142,13 +142,15 @@ Por instrucción expresa de la persona usuaria, esta fase conserva únicamente i
 **Checks integrados — 2026-10-05:** PostgreSQL efímera: PHPUnit (**30 pruebas, 249 aserciones**), `composer cs:check`, `composer stan`, `composer rector:check`, `lint:container` y `doctrine:schema:validate` pasan. `TeamCleanupTest` ahora prueba una cascada real que incluye disponibilidad y consulta/opciones. WEB pasa build, 4 pruebas unitarias, lint y formato. La última suite E2E global obtuvo **30/31**; el fallo intermitente fue ajeno al borrado y pasó al repetirse aislado. Las migraciones de disponibilidad y consulta/opciones están aplicadas en la base de desarrollo sin reiniciarla.
 
 **Siguiente paso:** ampliar y repetir la verificación al incorporar votos y resoluciones. Hasta entonces los criterios 2 y 4 siguen parciales y no se declara `READY_FOR_CHANGE_CONVERGE`.
+
+**Situación posterior — 2026-10-06:** [SPEC-CON-003 — Votar, ver votos y resolver consultas](spec-con-003-votar-ver-y-resolver-consultas.md) incorporó las tablas de votos y resolución y probó técnicamente su borrado en cascada con el equipo. La matriz anterior conserva la evidencia y el resultado de la verificación de este Change en su fecha: los criterios 2 y 4 siguen `PARTIAL` hasta repetir su verificación con el esquema ampliado. El gate de SPEC-CON-003 también permanece bloqueado por su propia evidencia visual.
 ## Definition of Ready
 
 **READY_FOR_CHANGE_APPLY.** El objetivo, alcance, baseline, módulo, diseño, estructura, slices y evidencia están concretados. La implementación queda limitada al borrado de la base activa y a su integración con el estado de acceso. Las decisiones sobre copias y restauración están registradas como pendientes fuera de scope, con gate operativo posterior explícito; no bloquean este incremento.
 
 ## Convergence
 
-Pendiente de integrar y verificar futuras tablas de votos y resoluciones antes de declarar completa la cascada de los criterios 2 y 4.
+Las tablas de votos y resolución ya están integradas por SPEC-CON-003. Pendiente de repetir la verificación de este Change para declarar completa la cascada de los criterios 2 y 4.
 
 ## Resultado de cierre
 

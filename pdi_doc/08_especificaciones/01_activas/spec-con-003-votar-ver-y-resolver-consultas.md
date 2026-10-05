@@ -135,9 +135,32 @@ Se aplicó la migración `Version20261005180000` a las bases locales de desarrol
 
 **Gate de aplicación: READY_FOR_CHANGE_VERIFY.** No se cambia la verdad normativa ni se cierra el Change en esta fase.
 
+## Verificación de change-verify (2026-10-06)
+
+Se ejecutaron los checks sobre `28803b0` y PostgreSQL local. La matriz distingue las pruebas de comportamiento y la evidencia visual que aún falta; pasar los checks no sustituye la comparación exigida por el criterio 8.
+
+| Criterio de aceptación | Evidencia | Resultado |
+|---|---|---|
+| 1. Voto múltiple, cambio, retirada, fecha pasada y actividad efectiva | `ConsultationDecisionApiTest::testVoteIsPublicEditableAndIdempotentAndResolutionIsFinal`, `testPastDateReceivesVotesFromTwoParticipantsAndTeamDeletionCascades`, `testFailedVotePersistenceRollsBackSelectionAndActivity`; recorrido E2E de voto. | PASS |
+| 2. Recuento, tres votantes, expansión, identidad activa y persistencia entre contextos | API prueba recuentos y atribución de dos identidades; `consultation-decisions.spec.ts` prueba cuatro votantes, «(+1)» y «Tú». Comprobación adicional con API real y dos contextos Chromium: tras votar, ambos leen «1 voto», la identidad correspondiente y el mismo estado tras recargar. | PASS |
+| 3. Voto optimista, restauración, anuncio y reintento | `consultation-decisions.spec.ts` induce HTTP 500, comprueba restauración de selección y recuento, aviso y reintento. | PASS |
+| 4. Aceptación múltiple o rechazo sin votos, selección independiente, confirmación y cancelación | `ConsultationDecisionApiTest` prueba aceptación múltiple y rechazo sin votos; `consultation-decisions.spec.ts` prueba casillas inicialmente vacías y confirmación. El código del diálogo conserva el estado abierto al cancelar. | PASS |
+| 5. Resultado atribuido, grupos, resumen y detalle cerrado de solo lectura | `ConsultationDecisionApiTest` prueba resultado y grupo; `consultation-decisions.spec.ts` prueba resumen, cierre sin casillas y grupo «Resueltas». La variante de rechazo se prueba en API. | PASS |
+| 6. Acceso, pertenencia, estado, concurrencia y atomicidad | `ConsultationDecisionApiTest` prueba Bearer ausente/ajeno/caducado, opción ajena, carrera real con dos procesos PostgreSQL, rollback forzado e idempotencia sin actividad nueva. Comprobación HTTP real: 401 sin Bearer; 422 en voto y resolución inválidos; 200 en voto y resolución válidos; 409 con tipo `urn:synqo:problem:consultation-closed` tras cierre; `Cache-Control: no-store, private` en respuestas comprobadas. OpenAPI exportado contiene las tres operaciones. | PASS |
+| 7. Cascada y regresión de creación/lectura | `ConsultationDecisionApiTest::testPastDateReceivesVotesFromTwoParticipantsAndTeamDeletionCascades` borra el equipo y comprueba las cinco tablas; `ConsultationApiTest` conserva texto y fechas. Esquema y migración `Version20261005180000` sincronizados en desarrollo y test. | PASS |
+| 8. Composición, interacción, tamaños, temas y accesibilidad del recorrido | E2E prueba teclado, foco, diálogo y anchura de 390 px en oscuro; revisión del DOM y CSS muestra las superficies previstas. Falta comparación visual fiel de lista, detalle, fallo, diálogo y cierre a 1280/390 px y claro/oscuro. | PARTIAL |
+
+**Checks ejecutados:** `docker compose exec -T api composer test` (41 pruebas, 368 aserciones); `composer cs:check`, `composer stan`, `composer rector:check`, `php bin/console lint:container`, `php bin/console doctrine:schema:validate` y `doctrine:migrations:status` en API; esquema y migraciones también comprobados con `--env=test`; `php bin/console api:openapi:export --output=/tmp/con003-openapi.json`; `npm --prefix apps/web test` (4 pruebas), `run test:e2e` (36 pruebas), `run lint`, `run format:check` y `run build` con Node 24.21.0; `python3 /home/fran/.codex/plugins/cache/pdi-local/pdi/1.1.1/scripts/validate_structure.py`. Todos terminaron correctamente. La primera invocación WEB con el Node 18 predeterminado no arrancó; se repitió con la versión 24.21.0 indicada por el repositorio.
+
+La comprobación manual adicional creó un equipo temporal, una consulta y dos participantes por la API de desarrollo, ejecutó los casos HTTP descritos en los criterios 2 y 6 y abrió el enlace en dos contextos Chromium sin simular HTTP. El equipo temporal se eliminó al terminar; no quedó dato de esta comprobación en la base de desarrollo.
+
+**Bloqueo de evidencia visual:** Playwright `page.screenshot` agotó 30 s incluso para una página HTML mínima sin la aplicación; una segunda prueba sin `fullPage` y con animaciones desactivadas también agotó el tiempo. Se descartó la interferencia del servidor WEB que ya escuchaba en 4200: una instancia temporal propia en `127.0.0.1:4300` sirvió la aplicación, pero la captura de su primera vista agotó otros 12 s; la instancia se cerró después. `Page.captureScreenshot` por CDP no respondió y Chromium CLI `--headless --screenshot` terminó por timeout de 20 s sin imagen. No se obtuvieron capturas fiables para comparar con el prototipo. Debe repetirse la comparación en un navegador con capturas operativas antes de reabrir este gate.
+
+**Gate de verificación: BLOCKED.** No se inicia `pdi:change-converge` ni se declara convergencia mientras el criterio 8 siga PARTIAL. La siguiente acción permitida es completar evidencia visual y repetir `pdi:change-verify`; cualquier desviación de implementación que aparezca vuelve a `pdi:change-apply`.
+
 ## Convergence
 
-Pendiente.
+No iniciada: gate de verificación bloqueado por evidencia pendiente.
 
 ## Resultado de cierre
 

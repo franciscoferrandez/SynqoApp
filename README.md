@@ -1,12 +1,12 @@
 # Synqo
 
-Synqo es una aplicación para tomar decisiones en grupo sin que las propuestas y respuestas se pierdan entre mensajes de chat. Cada equipo reúne la disponibilidad diaria de sus participantes en un calendario que ayuda a identificar fechas viables. El grupo ya puede proponer fechas u opciones de texto en consultas; la votación llegará en un incremento posterior.
+Synqo es una aplicación para tomar decisiones en grupo sin que las propuestas y respuestas se pierdan entre mensajes de chat. Cada equipo reúne la disponibilidad diaria de sus participantes en un calendario que ayuda a identificar fechas viables. El grupo puede proponer fechas u opciones de texto en consultas, votar y resolverlas.
 
-El uso básico está pensado para empezar en minutos: crear un equipo, compartir su enlace y participar sin registro. La entrega prevista añadirá votos visibles para el equipo y la posibilidad de terminar una consulta aceptando una o varias opciones o rechazándola.
+El uso básico está pensado para empezar en minutos: crear un equipo, compartir su enlace y participar sin registro. Los votos son visibles para el equipo y una consulta puede terminar aceptando una o varias opciones o rechazándola.
 
-Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con IA. La inteligencia artificial se utiliza como apoyo para analizar, diseñar, documentar y, en fases posteriores, implementar y verificar. Las decisiones de producto y tecnología las valida la persona impulsora.
+Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con IA. La inteligencia artificial se utiliza como apoyo para analizar, diseñar, documentar, implementar y verificar. Las decisiones de producto y tecnología las valida la persona impulsora.
 
-> **Estado actual:** la demo local permite crear equipos, compartir el enlace, marcar y consultar disponibilidad, y crear consultas de texto o fechas con datos persistentes. El voto y la resolución de consultas siguen pendientes; no hay publicación pública.
+> **Estado actual:** la demo local permite crear equipos, compartir el enlace, marcar y consultar disponibilidad, y crear, votar y resolver consultas de texto o fechas con datos persistentes. La verificación formal de votos y resolución sigue en curso; no hay publicación pública.
 
 ---
 
@@ -52,7 +52,7 @@ El [alcance conceptual](pdi_doc/01_producto/04_alcance/alcance-conceptual.md) re
 |---|---|---|
 | [WEB](doc/architecture/web.md) | Angular 21, TypeScript y Node.js 24.21 | Navegación, presentación, preferencias locales y cliente HTTP. |
 | [API](doc/architecture/api.md) | PHP 8.5, Symfony 7.4 y API Platform 5 | Operaciones HTTP, casos de uso, reglas del dominio y persistencia ORM. |
-| Persistencia | PostgreSQL 18 y Doctrine ORM | Guarda equipos, participantes, disponibilidad, consultas y opciones de texto o fecha. |
+| Persistencia | PostgreSQL 18 y Doctrine ORM | Guarda equipos, participantes, disponibilidad, consultas, opciones de texto o fecha, votos y resoluciones. |
 
 WEB consume JSON de API y envía el valor de acceso como Bearer desde el fragmento del enlace. API responde con JSON o Problem Details y publica su contrato OpenAPI. La arquitectura separa presentación, casos de uso, dominio y adaptadores; los detalles están en las páginas de [WEB](doc/architecture/web.md) y [API](doc/architecture/api.md), los [principios de implementación](pdi_doc/07_desarrollo/01_principios-y-convenciones/arquitectura-limpia-y-ddd.md) y la [convención HTTP](pdi_doc/06_arquitectura/03_modulos/API/convencion-http.md).
 
@@ -152,7 +152,7 @@ GitHub Actions define el pipeline en [`.github/workflows/web.yml`](.github/workf
 
 Crea una conexión **PostgreSQL (TCP/IP)** con servidor `127.0.0.1`, puerto `5433`, base `synqo`, usuario `synqo` y contraseña `synqo-local`, si conservas los valores de `.env.example`. Si cambias `POSTGRES_*` o `POSTGRES_PORT`, introduce esos valores. `synqo_test` es exclusiva de pruebas; `db:reset:test` la borra y recrea.
 
-La demo también permite marcar disponibilidad y crear consultas de texto y fechas. Consulta la [arquitectura WEB](doc/architecture/web.md) y la [arquitectura API](doc/architecture/api.md); el estado de cada capacidad y sus pendientes se sigue en [REL-001 — Demo local operativa de Synqo](pdi_doc/01_producto/10_entregas/rel-001-demo-local-operativa.md).
+La demo también permite marcar disponibilidad y crear, votar y resolver consultas de texto y fechas. Consulta la [arquitectura WEB](doc/architecture/web.md) y la [arquitectura API](doc/architecture/api.md); el estado de cada capacidad y sus pendientes se sigue en [REL-001 — Demo local operativa de Synqo](pdi_doc/01_producto/10_entregas/rel-001-demo-local-operativa.md).
 
 ## Calidad y reglas de implementación
 
