@@ -120,7 +120,7 @@ Mailpit recibe el correo de desarrollo (SMTP solo dentro de la red de Compose) y
 | `npm --prefix apps/web run watch` | Compilación de desarrollo en modo observación. |
 | `npm --prefix apps/web test` | Pruebas unitarias y de componentes, sin modo watch. |
 | `npm --prefix apps/web run test:e2e` | Recorridos Playwright en Chromium; si falta el navegador, instala con `(cd apps/web && npx playwright install chromium)`. |
-| `RUN_SCREENSHOT_CHECK=1 npm --prefix apps/web run test:e2e -- screenshot-capability.spec.ts` | Diagnóstico optativo de capturas PNG de Chromium sobre HTML mínimo; falla con un timeout acotado si este entorno no puede capturar. |
+| `npm --prefix apps/web run test:e2e -- screenshot-capability.spec.ts` | Comprueba que Chromium pueda capturar una página como PNG; también se ejecuta en la suite e2e completa. |
 | `npm --prefix apps/web run lint` / `lint:fix` | ESLint; el segundo aplica correcciones. |
 | `npm --prefix apps/web run format:check` / `format:fix` | Comprobar o aplicar Prettier. |
 
