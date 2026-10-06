@@ -31,7 +31,7 @@ La persona está creando un equipo rápido y dispone de una dirección de correo
 
 ## Casos límite
 
-No se ha definido reenvío manual ni una lista de destinatarios. Si el único intento se considera erróneo, el error no deshace la creación del equipo. El mecanismo de envío y el momento en que puede conocerse su resultado siguen sin resolver; existe preferencia por no bloquear la creación mientras se envía. El criterio técnico con que cada integración confirma el éxito se decidirá en arquitectura.
+No se ha definido reenvío manual ni una lista de destinatarios. Si el único intento se considera erróneo, el error no deshace la creación del equipo. La creación no espera al envío: el resultado puede conocerse después y se comunica según los criterios anteriores. El mecanismo, con un evento transaccional y un único intento, es el aprobado en [ADR-EQU-002 — Registrar el envío opcional como evento transaccional](../../../05_investigacion-y-decisiones/05_adr/adr-equ-002-evento-transaccional-correo.md); el criterio técnico de éxito de cada integración se concreta en arquitectura.
 
 ## Relaciones
 

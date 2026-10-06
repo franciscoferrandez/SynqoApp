@@ -37,6 +37,6 @@ El equipo reúne disponibilidades, votos públicos por participante y la resoluc
 
 ## Errores y abandonos
 
-En la entrega posterior con correo real, si falla el envío opcional del enlace, el equipo sigue creado y se muestra el enlace con un aviso para que pueda copiarse o compartirse. No se ha definido qué sucede si una persona no llega a ver la invitación, no se incorpora o deja la consulta sin responder. Este recorrido no presupone otros avisos ni recordatorios.
+Si falla el envío opcional del enlace incorporado a [REL-001 — Demo local operativa de Synqo](../10_entregas/rel-001-demo-local-operativa.md), el equipo sigue creado y se muestra el enlace con un aviso para que pueda copiarse o compartirse. No se ha definido qué sucede si una persona no llega a ver la invitación, no se incorpora o deja la consulta sin responder. Este recorrido no presupone otros avisos ni recordatorios.
 
 **Origen:** flujo descrito por la persona que impulsa Synqo y [alcance conceptual](../04_alcance/alcance-conceptual.md).

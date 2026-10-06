@@ -33,7 +33,7 @@ Facilitar que varias personas encuentren una fecha y tomen decisiones compartida
 
 La primera entrega será una **demo operativa en un entorno local de desarrollo**. Permitirá crear equipos y participantes, abrir un equipo desde otro navegador mediante un enlace, indicar disponibilidad por día, consultar el calendario y crear, votar y resolver consultas de fechas o de opciones de texto. Los datos deberán persistir. El alcance y su seguimiento están en [REL-001 — Demo local operativa de Synqo](pdi_doc/01_producto/10_entregas/rel-001-demo-local-operativa.md).
 
-El envío real de correo, la publicación en Internet y una aplicación móvil instalable quedan para entregas posteriores. La web de esta demo sí se diseñará para navegadores móviles.
+El envío opcional del enlace del equipo por correo se prueba en local con Mailpit; la publicación en Internet, la entrega garantizada al buzón y una aplicación móvil instalable quedan para entregas posteriores. La web de esta demo sí se diseñará para navegadores móviles.
 
 ## Funcionamiento previsto
 
@@ -94,13 +94,16 @@ nvm use 24.21.0
 npm ci
 npm --prefix apps/web ci
 cp .env.example .env
-docker compose up -d --build database api
+echo "MAIL_EVENT_KEY=$(openssl rand -base64 32)" >> .env
+docker compose up -d --build database api mail-worker mailpit
 docker compose exec api composer install
 docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
 npm --prefix apps/web start
 ```
 
 WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el proxy Angular reenvía `/api` a esa dirección. Swagger/OpenAPI se sirve en `/api/docs`. La base publica el puerto `5433` del equipo y escucha en `5432` dentro de Docker.
+
+Mailpit recibe el correo de desarrollo (SMTP solo dentro de la red de Compose) y muestra los mensajes en <http://localhost:8025>; el servicio `mail-worker` procesa un único intento por envío pendiente. `MAIL_EVENT_KEY` (base64 de 32 bytes, no versionada) protege la dirección y el enlace mientras esperan; sin ella, crear un equipo con correo falla. Usa solo direcciones de prueba: Mailpit conserva copias visibles para quien acceda al entorno local. `MAIL_EVENT_TTL_SECONDS` (1800 por defecto) fija el plazo global de un envío.
 
 `.env.example` contiene valores locales de ejemplo. Ajusta `POSTGRES_DB`, `POSTGRES_TEST_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `API_PORT`, `APP_ENV`, `APP_SECRET`, `APP_PUBLIC_URL` o `TEAM_DELETION_RETENTION_DAYS` en `.env` si el entorno lo necesita; no uses estos valores locales en despliegues.
 
@@ -117,6 +120,7 @@ WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el pr
 | `npm --prefix apps/web run watch` | Compilación de desarrollo en modo observación. |
 | `npm --prefix apps/web test` | Pruebas unitarias y de componentes, sin modo watch. |
 | `npm --prefix apps/web run test:e2e` | Recorridos Playwright en Chromium; si falta el navegador, instala con `(cd apps/web && npx playwright install chromium)`. |
+| `RUN_SCREENSHOT_CHECK=1 npm --prefix apps/web run test:e2e -- screenshot-capability.spec.ts` | Diagnóstico optativo de capturas PNG de Chromium sobre HTML mínimo; falla con un timeout acotado si este entorno no puede capturar. |
 | `npm --prefix apps/web run lint` / `lint:fix` | ESLint; el segundo aplica correcciones. |
 | `npm --prefix apps/web run format:check` / `format:fix` | Comprobar o aplicar Prettier. |
 
@@ -132,6 +136,7 @@ WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el pr
 | `docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction` | Aplicar migraciones a la base configurada por `DATABASE_URL` (local de desarrollo). |
 | `docker compose exec api php bin/console doctrine:schema:validate` | Validar mapeo Doctrine frente al esquema conectado. |
 | `docker compose exec api php bin/console debug:router` | Listar rutas Symfony y API Platform. |
+| `docker compose exec api php bin/console app:mail:process --once` | Procesar a mano los envíos pendientes y cerrar los vencidos (el servicio `mail-worker` lo hace en continuo). |
 | `docker compose exec api php bin/console app:teams:cleanup` | Borrar de la base activa los equipos cuyo plazo de retención tras caducar ha vencido. Ejecutarlo manualmente; no hay programación automática. |
 
 **Docker Compose:** `docker compose ps` lista servicios; `docker compose logs -f api database` sigue sus logs; `docker compose stop` y `start` paran o reanudan los servicios; `docker compose down` los elimina y conserva el volumen de PostgreSQL. `docker compose down -v` elimina también ese volumen y todos los datos locales.
@@ -169,4 +174,4 @@ El método PDI, sus skills y plantillas se encuentran en [pdi/](pdi/README.md). 
 
 ## Evolución futura
 
-Después de la demo local se prevén un piloto publicado, el envío opcional del enlace por correo y una aplicación móvil instalable. También se ha registrado la necesidad de sustituir un enlace de acceso comprometido. Las posibilidades adicionales, como notas, etiquetas o consultas de respuesta única, permanecen fuera de la primera entrega y no están aprobadas como funciones inmediatas. Véase el [alcance conceptual](pdi_doc/01_producto/04_alcance/alcance-conceptual.md).
+Después de la demo local se prevén un piloto publicado con proveedor de correo real y una aplicación móvil instalable. También se ha registrado la necesidad de sustituir un enlace de acceso comprometido. Las posibilidades adicionales, como notas, etiquetas o consultas de respuesta única, permanecen fuera de la primera entrega y no están aprobadas como funciones inmediatas. Véase el [alcance conceptual](pdi_doc/01_producto/04_alcance/alcance-conceptual.md).

@@ -60,7 +60,7 @@ En resumen, se crea una llave **al crear el equipo** y se reutiliza en cada visi
 
 - El valor sigue visible para quien tenga acceso a la barra de direcciones, al historial o al JavaScript del origen; la web y la API deberán evitar registrarlo.
 - La carga inicial necesita JavaScript para transmitir el valor al servidor.
-- El envío opcional de correo posterior requerirá transportar el enlace de forma transitoria y protegida según [ADR-EQU-002 — Registrar el envío opcional como evento transaccional](adr-equ-002-evento-transaccional-correo.md).
+- El envío opcional de correo incorporado a la entrega local requiere transportar el enlace de forma transitoria y protegida según [ADR-EQU-002 — Registrar el envío opcional como evento transaccional](adr-equ-002-evento-transaccional-correo.md).
 
 ## Evidencia / Research
 
@@ -75,7 +75,7 @@ En resumen, se crea una llave **al crear el equipo** y se reutiliza en cada visi
 
 ## Pendiente
 
-Definir códigos y cuerpos exactos de respuesta en el contrato de API y controles de exposición antes de un piloto publicado. La sustitución del enlace, incluida su repercusión en navegadores que lo tengan abierto, permanece para otra entrega. La conservación transitoria del valor original para el futuro correo real se resolverá con esa capacidad.
+Definir códigos y cuerpos exactos de respuesta en el contrato de API y controles de exposición antes de un piloto publicado. La sustitución del enlace, incluida su repercusión en navegadores que lo tengan abierto, permanece para otra entrega. La conservación transitoria del valor original para el correo real se prepara en [SPEC-EQU-003 — Envío opcional del enlace del equipo por correo](../../08_especificaciones/99_archivadas/spec-equ-003-envio-opcional-enlace-correo.md).
 
 ## Sustituye
 

@@ -17,6 +17,7 @@ Presentar con Angular en navegador los recorridos de [REL-001 — Demo local ope
 - Tema recordado, identidad activa recordada por equipo y enlace completo disponible para copiar o compartir.
 - Cambios visuales inmediatos con restauración y reintento cuando falle una operación.
 - Interacciones de teclado, foco, anuncios y adaptación móvil.
+- Mostrar el estado del intento de correo solo al navegador creador, con aviso persistente y descartable si falla, conforme a [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md).
 
 La presentación separa interacción, estado visual y acceso a la API sin replicar el modelo autoritativo del servidor, conforme a [ADR-COO-002 — Separar el dominio con arquitectura limpia y DDD pragmático](../../../05_investigacion-y-decisiones/05_adr/adr-coo-002-arquitectura-limpia-y-ddd-pragmatico.md).
 
@@ -36,7 +37,7 @@ El cliente HTTP consumirá recursos JSON y errores Problem Details según [ADR-C
 
 ## Datos
 
-Estado transitorio de interfaz, selección de identidad y preferencia de tema en el navegador. Los votos, las disponibilidades y las consultas se leen de la API.
+Estado transitorio de interfaz, selección de identidad y preferencia de tema en el navegador. Puede recordar el identificador opaco de seguimiento del intento para el navegador creador, sin guardar la dirección ni el valor de acceso fuera del fragmento del enlace. Los votos, las disponibilidades, las consultas y el resultado del correo se leen de la API.
 
 ## Riesgos
 

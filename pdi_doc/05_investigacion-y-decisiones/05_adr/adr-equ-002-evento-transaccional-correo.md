@@ -1,6 +1,6 @@
 ---
 id: ADR-EQU-002
-estado: en_revision
+estado: aprobado
 ---
 
 # ADR-EQU-002 — Registrar el envío opcional como evento transaccional
@@ -22,11 +22,11 @@ Las [alternativas de envío del enlace](../03_alternativas/alternativas-envio-co
 
 ## Decisión
 
-**PROPUESTA para la entrega posterior con correo real, pendiente de revisión con la persona que impulsa Synqo.**
+**Aprobada por la persona que impulsa Synqo el 2026-10-06 para [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md).** La elección expresa fue registrar un evento transitorio junto con el equipo, procesarlo una sola vez y mostrar el resultado al navegador creador sin esperar al proveedor en la respuesta de creación.
 
 Cuando se solicita el correo, el sistema registrará la creación del equipo y un evento transitorio de envío en la misma transacción de persistencia. La respuesta de creación no esperará al proveedor de correo. Un proceso posterior tomará el evento de forma exclusiva, registrará de manera duradera el inicio del único intento **antes** de llamar al adaptador y no volverá a invocarlo para ese evento. La aplicación solo registrará éxito si el adaptador confirma el resultado satisfactorio; los demás resultados se tratarán como error. Al terminar el intento, o cuando un evento pendiente o iniciado supere el plazo máximo que se definirá, se eliminarán la dirección y el valor transitorio necesario para construir el enlace.
 
-El modo de ejecutar el proceso posterior, su periodicidad, los plazos, el proveedor y el contrato detallado del adaptador quedan para decisiones posteriores. Esta decisión no incorpora seguimiento de rebotes ni reintentos automáticos.
+El modo de ejecutar el proceso posterior, su periodicidad, los plazos, el proveedor y el contrato detallado del adaptador se concretan en [SPEC-EQU-003 — Envío opcional del enlace del equipo por correo](../../08_especificaciones/99_archivadas/spec-equ-003-envio-opcional-enlace-correo.md). Esta decisión no incorpora seguimiento de rebotes ni reintentos automáticos.
 
 ## Consecuencias positivas
 
@@ -46,9 +46,9 @@ El modo de ejecutar el proceso posterior, su periodicidad, los plazos, el provee
 - [Alternativas de envío del enlace](../03_alternativas/alternativas-envio-correo-equipo.md)
 - [ADR-EQU-001 — Separar el identificador del equipo de su valor de acceso](adr-equ-001-separar-identidad-y-acceso.md)
 
-## Pendiente
+## Detalles de realización pendientes
 
-Definir el plazo máximo y la limpieza de eventos que no lleguen a ejecutarse, el método de reclamación exclusiva, la protección del valor del enlace, la asociación privada del resultado al navegador creador y la integración técnica concreta.
+Concretar y verificar en [SPEC-EQU-003 — Envío opcional del enlace del equipo por correo](../../08_especificaciones/99_archivadas/spec-equ-003-envio-opcional-enlace-correo.md) el plazo máximo y la limpieza de eventos que no lleguen a ejecutarse, la reclamación exclusiva, la protección del valor del enlace, la asociación privada del resultado al navegador creador y la integración técnica local.
 
 ## Sustituye
 

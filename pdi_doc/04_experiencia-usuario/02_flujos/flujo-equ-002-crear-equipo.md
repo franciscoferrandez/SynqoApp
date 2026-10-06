@@ -20,18 +20,18 @@ Ninguna cuenta es necesaria.
 ## Pasos
 
 1. La persona escribe el nombre del equipo y el nombre obligatorio del primer participante en el formulario de creación directo.
-2. Opcionalmente, indica una dirección de correo. En [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md), junto al campo se explica que la demo no enviará el enlace y que descartará la dirección al crear el equipo. En la entrega posterior con envío real, se explicará que se usa solo para ese envío.
+2. Opcionalmente, indica una dirección de correo. En [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md), junto al campo se explica que se usa solo para enviar el enlace.
 3. Crea el equipo. Synqo crea un equipo vigente con su primer participante y un enlace de acceso.
 4. Synqo selecciona automáticamente la identidad del primer participante en el navegador creador y muestra por defecto una confirmación del equipo creado con su enlace, acciones para copiarlo o compartirlo mediante el diálogo del dispositivo si está disponible, y una acción para entrar al calendario.
 5. La persona entra al calendario bajo esa identidad y puede marcar su disponibilidad. Una configuración interna puede omitir la confirmación y llevarla directamente al calendario.
 
 ## Resultado
 
-Existe un equipo con nombre, al menos un participante y enlace compartible. La persona puede comenzar a coordinarse sin registro y conoce su fecha prevista de caducidad en la vista del equipo. En la demo local no se envía correo; cuando se incorpore el envío real, tampoco bloqueará el acceso al equipo.
+Existe un equipo con nombre, al menos un participante y enlace compartible. La persona puede comenzar a coordinarse sin registro y conoce su fecha prevista de caducidad en la vista del equipo. El envío opcional de correo no bloquea el acceso al equipo.
 
 ## Errores
 
-Los estados de fallo de envío siguientes corresponden a la entrega posterior con correo real; no aparecen en la demo local.
+Los estados de fallo de envío siguientes forman parte de la entrega ampliada.
 
 - Si falta el nombre del equipo o del primer participante, no se crea el equipo y se solicita completar el campo correspondiente.
 - Si falla la creación, no se presenta un enlace de equipo como válido; se informa del fallo y se permite reintentar.
