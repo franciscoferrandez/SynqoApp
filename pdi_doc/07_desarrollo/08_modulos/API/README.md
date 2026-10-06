@@ -1,6 +1,6 @@
 # API — reglas de implementación
 
-> Convenciones de base aceptadas por la persona impulsora; cada SPEC concreta sus operaciones y respuestas.
+> Convenciones de base aceptadas por la persona impulsora; cada SPEC concreta las operaciones y respuestas que implementa.
 
 ## Arquitectura normativa
 
@@ -28,7 +28,7 @@ Pruebas unitarias de reglas puras y pruebas de integración con PostgreSQL para 
 
 ## Comandos
 
-El proyecto Symfony expondrá comandos de desarrollo, migración y pruebas; sus nombres exactos se fijarán al crearlo.
+Los comandos disponibles están definidos en `apps/api/composer.json` y se resumen en el [README principal](../../../../README.md#desarrollo-local). Para E2E de WEB, API/PostgreSQL y `mail-worker` deben estar disponibles cuando la prueba ejercita el recorrido completo de inicio o el correo.
 
 ## Dependencias permitidas
 

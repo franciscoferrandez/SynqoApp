@@ -4,7 +4,7 @@ modulo: API
 
 # API
 
-> Contrato de responsabilidades del módulo API para la demo local. Los endpoints y esquemas de cada capacidad se concretan en sus SPEC.
+> Contrato de responsabilidades del módulo API para la demo local. Las operaciones actuales y sus esquemas se concretan en OpenAPI y en las SPEC de cada capacidad.
 
 ## Propósito
 

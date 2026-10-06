@@ -4,7 +4,7 @@ modulo: WEB
 
 # WEB
 
-> Contrato del módulo WEB para la demo local. Los contratos HTTP se concretarán antes de conectar operaciones reales con la API.
+> Contrato del módulo WEB para la demo local. Las operaciones HTTP actuales están conectadas a la API y sus contratos se describen en OpenAPI y las SPEC de cada capacidad.
 
 ## Propósito
 
@@ -20,6 +20,8 @@ Presentar con Angular en navegador los recorridos de [REL-001 — Demo local ope
 - Mostrar el estado del intento de correo solo al navegador creador, con aviso persistente y descartable si falla, conforme a [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md).
 
 La presentación separa interacción, estado visual y acceso a la API sin replicar el modelo autoritativo del servidor, conforme a [ADR-COO-002 — Separar el dominio con arquitectura limpia y DDD pragmático](../../../05_investigacion-y-decisiones/05_adr/adr-coo-002-arquitectura-limpia-y-ddd-pragmatico.md).
+
+La adaptación móvil usa viewports de hasta 768 CSS px inclusive; a partir de 769 CSS px se presenta la vista de escritorio, según [RNF-COO-003 — Uso adaptable en navegador móvil](../../../03_requisitos/04_no-funcionales/COO/rnf-coo-003-uso-en-navegador-movil.md). Los recorridos E2E de la matriz se ejecutan con viewports Chromium emulados. Para REL-001 se aceptó una excepción documentada basada en el smoke parcial de [SPEC-COO-002 — Smoke de accesibilidad responsive de REL-001](../../../08_especificaciones/99_archivadas/spec-coo-002-accesibilidad-wcag-rel-001.md); no se declara conformidad WCAG 2.2 AA. En adelante, las ejecuciones automatizadas de accesibilidad documentadas satisfacen el paso automatizado del proceso del proyecto, sin reemplazar la revisión manual ni demostrar conformidad.
 
 ## No responsabilidades
 

@@ -6,7 +6,7 @@ El uso básico está pensado para empezar en minutos: crear un equipo, compartir
 
 Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con IA. La inteligencia artificial se utiliza como apoyo para analizar, diseñar, documentar, implementar y verificar. Las decisiones de producto y tecnología las valida la persona impulsora.
 
-> **Estado actual:** la demo local permite crear equipos, compartir el enlace, marcar y consultar disponibilidad, y crear, votar y resolver consultas de texto o fechas con datos persistentes. La verificación formal de votos y resolución sigue en curso; no hay publicación pública.
+> **Estado actual:** la demo local permite crear equipos, compartir el enlace, marcar y consultar disponibilidad, y crear, votar y resolver consultas de texto o fechas con datos persistentes. El arranque completo y el uso adaptable están validados localmente. La accesibilidad de REL-001 se acepta con una excepción documentada basada en un smoke parcial y una revisión manual general; no se declara conformidad WCAG 2.2 AA. La entrega no está publicada.
 
 ---
 
@@ -33,7 +33,7 @@ Facilitar que varias personas encuentren una fecha y tomen decisiones compartida
 
 La primera entrega será una **demo operativa en un entorno local de desarrollo**. Permitirá crear equipos y participantes, abrir un equipo desde otro navegador mediante un enlace, indicar disponibilidad por día, consultar el calendario y crear, votar y resolver consultas de fechas o de opciones de texto. Los datos deberán persistir. El alcance y su seguimiento están en [REL-001 — Demo local operativa de Synqo](pdi_doc/01_producto/10_entregas/rel-001-demo-local-operativa.md).
 
-El envío opcional del enlace del equipo por correo se prueba en local con Mailpit; la publicación en Internet, la entrega garantizada al buzón y una aplicación móvil instalable quedan para entregas posteriores. La web de esta demo sí se diseñará para navegadores móviles.
+El envío opcional del enlace del equipo por correo se prueba en local con Mailpit; la publicación en Internet, la entrega garantizada al buzón y una aplicación móvil instalable quedan para entregas posteriores. La web de esta demo está adaptada para navegadores móviles: hasta 768 CSS px inclusive se usa la presentación móvil y desde 769 px la de escritorio. Los recorridos se verificaron con Chromium y viewports emulados; no se afirma cobertura de hardware móvil nativo. El detalle de delivery está en [REL-001 — Demo local operativa de Synqo](pdi_doc/01_producto/10_entregas/rel-001-demo-local-operativa.md).
 
 ## Funcionamiento previsto
 
@@ -120,6 +120,9 @@ Mailpit recibe el correo de desarrollo (SMTP solo dentro de la red de Compose) y
 | `npm --prefix apps/web run watch` | Compilación de desarrollo en modo observación. |
 | `npm --prefix apps/web test` | Pruebas unitarias y de componentes, sin modo watch. |
 | `npm --prefix apps/web run test:e2e` | Recorridos Playwright en Chromium; si falta el navegador, instala con `(cd apps/web && npx playwright install chromium)`. |
+| `CI=1 npm --prefix apps/web run test:e2e -- --workers=1` | Suite E2E completa en modo CI con un worker. Requiere API/PostgreSQL y los servicios locales de correo levantados según la sección de instalación. Genera `apps/web/playwright-report/`; GitHub Actions conserva el informe como artefacto incluso si una prueba falla. |
+| `CI=1 npm --prefix apps/web run test:e2e -- startup-benchmark.spec.ts --workers=1` | Ejecuta el recorrido completo de arranque con WEB/API/correo reales. Informa duración automatizada, semana evaluada y resultado del recibo; menos de 150 s satisface el criterio automático, sin afirmar que sea tiempo humano ni entrega al buzón. |
+| `CI=1 npm --prefix apps/web run test:e2e -- accessibility-smoke.spec.ts mobile-journey.spec.ts --workers=1` | Smoke parcial de accesibilidad y recorridos responsive. Cubre 390, 768, 769 y 1280 CSS px; no acredita conformidad WCAG 2.2 AA. Para cambios futuros, documentar además una ejecución de herramientas automatizadas con herramienta/versión, alcance y resultado; esto satisface el paso automatizado del proyecto, no demuestra conformidad ni reemplaza revisión manual. |
 | `npm --prefix apps/web run test:e2e -- screenshot-capability.spec.ts` | Comprueba que Chromium pueda capturar una página como PNG; también se ejecuta en la suite e2e completa. |
 | `npm --prefix apps/web run lint` / `lint:fix` | ESLint; el segundo aplica correcciones. |
 | `npm --prefix apps/web run format:check` / `format:fix` | Comprobar o aplicar Prettier. |
@@ -163,7 +166,7 @@ La demo también permite marcar disponibilidad y crear, votar y resolver consult
 
 - **Código y arquitectura:** mantener reglas y casos de uso separados de los adaptadores; introducir interfaces cuando protejan una frontera real. Reutilizar en Angular los layouts, temas y componentes que comparten comportamiento. Véanse las [reglas de API](pdi_doc/07_desarrollo/08_modulos/API/README.md) y [WEB](pdi_doc/07_desarrollo/08_modulos/WEB/README.md).
 - **Comprobaciones:** PHP CS Fixer, PHPStan y Rector para API; ESLint con `angular-eslint`, Prettier y compilación estricta para la web. El hook previo al commit comprueba cambios WEB y API sin aplicar correcciones automáticas. Los comandos de corrección son explícitos, según los [controles estáticos](pdi_doc/07_desarrollo/03_calidad/controles-estaticos-demo-local.md).
-- **Pruebas:** reglas puras, integración con PostgreSQL, recorridos entre navegadores y revisión de accesibilidad WCAG 2.2 AA en las superficies implementadas, según la [estrategia de pruebas](pdi_doc/07_desarrollo/02_testing/estrategia-demo-local.md).
+- **Pruebas:** reglas puras, integración con PostgreSQL y recorridos entre contextos de navegador. Los recorridos responsive están comprobados en Chromium; la accesibilidad de REL-001 se aceptó con una excepción documentada y no se declara conformidad WCAG 2.2 AA. El proceso automatizado futuro está definido en la [estrategia de pruebas](pdi_doc/07_desarrollo/02_testing/estrategia-demo-local.md).
 - **Cambios:** avanzar por especificaciones preparadas, comprobar cada incremento antes de cerrarlo y usar la [convención de commits](pdi_doc/07_desarrollo/04_git/convencion-commits.md) en todo el repositorio.
 
 ## Máster desarrollo IA

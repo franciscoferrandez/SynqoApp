@@ -1,6 +1,6 @@
 # WEB — reglas de implementación
 
-> Convenciones del módulo WEB para la demo local. Los comandos exactos se registrarán al crear el proyecto Angular.
+> Convenciones del módulo WEB para la demo local. Los comandos ejecutables están definidos en `apps/web/package.json` y resumidos en el [README principal](../../../../README.md#desarrollo-local).
 
 ## Arquitectura normativa
 
@@ -25,11 +25,11 @@ Aplican también los [principios de arquitectura limpia y DDD](../../01_principi
 
 ## Testing específico
 
-Comprobar primero las rutas, layouts y temas compartidos en las superficies que existan; al incorporar operaciones reales, añadir pruebas de componentes con su plantilla para selección, voto optimista y fallo con reintento, además de recorridos completos en navegador móvil y de escritorio. Usar las herramientas de prueba soportadas por la versión de Angular instalada; la [guía de pruebas de Angular](https://angular.dev/guide/testing/components-basics) explica las pruebas con DOM. La estrategia global está en [Estrategia de pruebas de la demo local](../../02_testing/estrategia-demo-local.md).
+Mantener pruebas unitarias/componentes y recorridos Playwright contra las operaciones WEB/API reales que cubra cada cambio. Para la matriz responsive, cubrir recorridos completos en 390×844, 768×1024 y 1280×800 CSS px y verificar la frontera 768/769 px; la evidencia aprobada de [SPEC-COO-003 — Uso móvil adaptable en REL-001](../../../08_especificaciones/99_archivadas/spec-coo-003-uso-movil-rel-001.md) usa viewports Chromium emulados. Para cada cambio, documentar la ejecución de herramientas automatizadas de accesibilidad (herramienta/versión, alcance, resultado e incidencias); este paso satisface la parte automatizada del proceso del proyecto, sin sustituir revisión manual ni demostrar conformidad. El smoke de [SPEC-COO-002 — Smoke de accesibilidad responsive de REL-001](../../../08_especificaciones/99_archivadas/spec-coo-002-accesibilidad-wcag-rel-001.md) es evidencia parcial y REL-001 se aceptó con una excepción documentada; no se declara conformidad WCAG 2.2 AA. El benchmark [SPEC-COO-004 — Arranque básico en menos de cinco minutos en REL-001](../../../08_especificaciones/99_archivadas/spec-coo-004-arranque-cinco-minutos-rel-001.md) recorre el flujo completo con correo real de prueba y solo acepta automáticamente si termina en menos de 150 segundos. La estrategia global está en [Estrategia de pruebas de la demo local](../../02_testing/estrategia-demo-local.md).
 
 ## Comandos
 
-El proyecto Angular expondrá comandos de desarrollo, compilación y pruebas; sus nombres exactos se fijarán al crearlo para evitar documentar comandos inexistentes.
+Los comandos actuales de test, Playwright, build, lint y formato están definidos en `apps/web/package.json`; los pasos reproducibles están en el [README principal](../../../../README.md#desarrollo-local). Los E2E requieren API y servicios auxiliares locales cuando el recorrido usa datos persistentes o correo.
 
 ## Dependencias permitidas
 

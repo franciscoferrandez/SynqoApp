@@ -1,7 +1,7 @@
 ---
 id: SPEC-COO-003
 nivel: N2
-estado: preparacion
+estado: cerrado
 release: REL-001
 ---
 # SPEC-COO-003 — Uso móvil adaptable en REL-001
@@ -91,8 +91,28 @@ La solución permanece dentro de WEB: adaptar presentación e interacciones resp
 
 ## Convergence
 
-Pendiente. Comparar al cierre esta SPEC, la evidencia obtenida, el módulo WEB y el delivery de REL-001; registrar cualquier discrepancia sin modificar el baseline fuera de `pdi:baseline-update`.
+La implementación, los tests y la evidencia registrada concuerdan con el corte aprobado: móvil hasta 768 CSS px inclusive y escritorio desde 769 px. La matriz cubrió recorridos funcionales completos en 390×844, 768×1024 y 1280×800, además de presentación/frontera en 769×1024. Chromium emuló los viewports; no se afirma validación en hardware móvil físico, conforme al diseño de verificación aprobado. La auditoría WCAG completa queda fuera de esta SPEC y continúa pendiente bajo [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md); no es drift del alcance móvil. No se requiere cambio de baseline ni arquitectura.
+
+El estado de delivery de [RNF-COO-003 — Uso adaptable en navegador móvil](../../03_requisitos/04_no-funcionales/COO/rnf-coo-003-uso-en-navegador-movil.md) puede pasar a `VALIDADO` para la web adaptable cubierta. [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) permanece pendiente de auditoría completa. **Gate de convergencia: READY_FOR_CHANGE_CLOSE.**
+
+## Verificación
+
+**Resultado: READY_FOR_CHANGE_CONVERGE.** Verificación automatizada ejecutada en Chromium de Playwright, sin pruebas en dispositivos físicos. La matriz acordada se cubrió así:
+
+| Criterio | Evidencia | Resultado |
+|---|---|---|
+| 1. Recorridos completos móviles y escritorio | `apps/web/e2e/mobile-journey.spec.ts` ejecuta el recorrido real de equipo, selección de identidad, disponibilidad en dos fechas, consulta de fechas, consulta de texto, voto de la segunda persona, resolución y rechazo en 390 × 844, 768 × 1024 y 1280 × 800 CSS px. La pasada integrada de `CI=1 npm --prefix apps/web run test:e2e -- --workers=1` terminó con 64/64 pruebas aprobadas. | PASS |
+| 2. Presentación adaptable y controles | El recorrido comprueba que el ancho del documento no supera el viewport en sus pasos relevantes. El test de frontera verifica calendario y detalle como móvil en 768 px y escritorio en 769 px. La prueba posterior a los últimos cambios ejecutó `accessibility-smoke.spec.ts`, `mobile-journey.spec.ts` y `startup-benchmark.spec.ts`: 23/23 aprobadas; incluye smoke responsive en 390, 768, 769 y 1280 px y casos de reflujo a texto ampliado. | PASS |
+| 3. Registro de matriz, recorridos, resultados y defectos | Esta sección registra matriz, recorridos y resultados. Los artefactos Playwright incluyen JSON `responsive-result` por recorrido y capturas; la configuración genera informe HTML con apertura desactivada y CI conserva el reporte como artefacto. Se corrigieron desbordamientos detectados durante la implementación antes de la suite final. | PASS |
+
+**Entorno:** Playwright 1.63.0; Chromium/Chrome for Testing 153.0.8010.12 (versión instalada para la revisión). Ejecución con viewport Chromium emulado; no se afirma cobertura de navegadores móviles nativos ni validación en hardware físico. No se observaron defectos pendientes de este Change en las pruebas registradas. La evidencia de conformidad WCAG global queda fuera de esta verificación y pertenece a [SPEC-COO-002 — Smoke de accesibilidad responsive de REL-001](spec-coo-002-accesibilidad-wcag-rel-001.md).
+
+**Checks complementarios registrados en la integración:** `npm --prefix apps/web test` (9/9), `npm --prefix apps/web run lint`, `npm --prefix apps/web run format:check` y `npm --prefix apps/web run build` aprobados. La ejecución E2E integrada completa usó servicios locales de API, base de datos y correo. No se repitió E2E en esta verificación aislada para no iniciar ni interferir con servicios compartidos; se toma como evidencia la ejecución integrada registrada en esta sesión.
+
+### Convergencia pendiente
+
+Comparar esta evidencia y el estado de implementación con la entrega [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md), resolver cualquier discrepancia documental de delivery y ejecutar el gate de cierre PDI.
 
 ## Resultado de cierre
 
-Pendiente.
+**DONE — Change cerrado y archivado el 2026-10-06.** Los tres criterios de aceptación constan en `PASS`, con cobertura E2E de los viewports y límites especificados y checks complementarios registrados en la sección de verificación. La evidencia usa Chromium con viewports emulados y no afirma cobertura de dispositivos móviles físicos. [RNF-COO-003 — Uso adaptable en navegador móvil](../../03_requisitos/04_no-funcionales/COO/rnf-coo-003-uso-en-navegador-movil.md) queda `VALIDADO` en [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). La auditoría completa de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) sigue pendiente. Integrado en `main` local; CI remoto no acreditado. No se modifica el baseline.

@@ -1,7 +1,7 @@
 ---
 id: SPEC-COO-002
 nivel: N2
-estado: preparacion
+estado: cerrado
 release: REL-001
 ---
 # SPEC-COO-002 — Smoke de accesibilidad responsive de REL-001
@@ -100,8 +100,28 @@ Para comprobación reproducible del frontend está disponible `npm --prefix apps
 
 ## Convergence
 
-Al converger, clasificar toda diferencia entre requisito, experiencia, SPEC y comportamiento WEB; resolver drift mediante el flujo PDI y mantener explícito que el smoke no satisface la auditoría completa ni permite afirmar conformidad.
+Comparación del baseline, esta SPEC, la implementación y la evidencia: los 16 casos del smoke cubren las comprobaciones priorizadas en los cuatro viewports y satisfacen los criterios de esta SPEC. El alcance sigue siendo parcial: no cubre todas las páginas/procesos ni satisface [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md). Esa limitación ya está prevista por la SPEC y no es drift que este Change pueda resolver. El uso de ampliación CSS al 200 % se declara como tal, no como zoom del navegador. No aparece nueva verdad normativa ni cambio de arquitectura; no procede `pdi:baseline-update`.
+
+El estado de delivery de RNF-COO-002 permanece `PLANIFICADO` hasta completar la auditoría global. El smoke sí se cierra como evidencia parcial dentro de su alcance. **Gate de convergencia: READY_FOR_CHANGE_CLOSE.**
+
+## Verificación técnica
+
+Verificación realizada el 2026-10-06 sobre la implementación integrada en `main` (`f4c00b5` y el ajuste posterior de reporte `4774eb6`). Evidencia de la suite integrada registrada durante esta sesión: 64 pruebas E2E aprobadas en la suite completa y 23 pruebas E2E aprobadas en la pasada enfocada posterior a los cambios finales, incluidos `accessibility-smoke.spec.ts`, `mobile-journey.spec.ts` y `startup-benchmark.spec.ts`. La suite de accesibilidad aporta 16 casos (cuatro comprobaciones por viewport). No se repitió E2E durante esta verificación independiente para evitar concurrencia con las otras verificaciones de Changes. El informe Playwright local contiene 16 capturas de viewport; el workflow conserva el informe como artefacto de CI. Esta evidencia acredita el smoke, no una auditoría WCAG.
+
+| Criterio de aceptación | Evidencia | Resultado |
+|---|---|---|
+| 1. Cuatro viewports acordados | `apps/web/e2e/accessibility-smoke.spec.ts` define casos en 390×844, 768×1024, 769×1024 y 1280×800; la pasada enfocada integrada terminó 23/23, incluida la suite smoke de 16 casos. | PASS |
+| 2. Reflujo y controles esenciales visibles y operables en los flujos priorizados | Los casos comprueban ausencia de desbordamiento horizontal, visibilidad/operabilidad de controles de creación, confirmación, calendario, consultas, errores y estados cerrados; las verificaciones integradas pasaron. El alcance es el conjunto de flujos codificado por el smoke, no todas las páginas/procesos del baseline. | PASS — alcance parcial declarado |
+| 3. Teclado/foco perceptible y ampliación pertinente | El smoke opera los controles con teclado, comprueba `:focus-visible` y outline, y aumenta al 200 % el tamaño de texto CSS en creación y editor de consultas. El propio test aclara que esto no es zoom del navegador. | PASS — para las comprobaciones implementadas |
+| 4. Defectos corregidos vueltos a probar y evidencia registrada | Los cambios responsive y de reflujo tienen regresiones E2E; suite completa y pasada enfocada integradas aprobadas. Cada caso adjunta metadatos de viewport/resultado y captura; el workflow publica el reporte en CI. | PASS |
+| 5. Límite de la evidencia y auditoría WCAG pendientes explícitos | La SPEC, los tests y los metadatos adjuntos indican que el smoke es parcial, que el texto ampliado no simula zoom, y que no se declara conformidad WCAG 2.2 AA. El RNF-COO-002 mantiene pendiente la auditoría de páginas y procesos completos. | PASS |
+
+**Resultado de verificación: READY_FOR_CHANGE_CONVERGE.** No se detectaron criterios fallidos dentro del alcance del smoke. Esta verificación no valida la conformidad completa con WCAG 2.2 AA ni permite cambiar el estado del requisito; la auditoría completa sigue siendo pendiente para REL-001. La convergencia debe integrar esta evidencia con los otros Changes y actualizar la trazabilidad/delivery de forma coordinada.
 
 ## Resultado de cierre
 
-**READY_FOR_CHANGE_APPLY.** La persona impulsora aprobó el smoke E2E acotado y su matriz. La SPEC deja claro que produce evidencia parcial y no cumple ni declara conformidad WCAG 2.2 AA; la auditoría completa continúa pendiente para REL-001.
+**DONE — Change cerrado y archivado el 2026-10-06.** Los cinco criterios del smoke constan en `PASS` según la verificación técnica registrada arriba; la pasada E2E completa (64/64) y la pasada enfocada posterior a los últimos cambios (23/23) aprobaron. La auditoría completa no se ejecutó y el smoke no acredita conformidad WCAG 2.2 AA. La persona impulsora aceptó posteriormente una excepción de delivery para REL-001; se registra el estado `VALIDADO CON EXCEPCIÓN` en [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). El objetivo normativo de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) permanece vigente para el producto. Los cambios están integrados en `main` local; la ejecución del CI remoto no se acredita. No se modifica el baseline.
+
+## Evidencia complementaria posterior al cierre
+
+El 2026-10-06 la persona impulsora comunicó una revisión manual general satisfactoria y aceptó que REL-001 se diera por buena con una excepción documentada. La revisión no comprobó todas las vistas, estados, procesos y criterios WCAG A/AA. La aceptación cambia el estado de delivery de REL-001 a `VALIDADO CON EXCEPCIÓN`, pero no eleva el resultado del smoke, no acredita conformidad WCAG 2.2 AA ni modifica el objetivo normativo de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md).

@@ -2,6 +2,8 @@
 
 **Estado:** en revisión. **Origen:** [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) y [especificación WCAG 2.2](https://www.w3.org/TR/WCAG22/).
 
+Para REL-001 se aceptó el 2026-10-06 una excepción de delivery documentada en [la ficha de entrega](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). Esta aceptación no demuestra conformidad; los criterios descritos aquí permanecen como objetivo normativo del producto.
+
 ## Criterio
 
 La experiencia web completa debe satisfacer los criterios de éxito A y AA aplicables de WCAG 2.2. Los puntos siguientes identifican riesgos concretos de Synqo; no reemplazan la especificación completa.
@@ -45,6 +47,10 @@ Estos cálculos cubren solo los pares indicados; no constituyen una declaración
 - Revisión manual con teclado y lector de pantalla de los recorridos completos.
 - Comprobación de contraste, ampliación y presentación adaptable en escritorio y móvil.
 - Registro de incidencias, correcciones y nueva evaluación antes de afirmar conformidad.
+
+El 2026-10-06 la persona impulsora aceptó para REL-001 una excepción de delivery, basada en el smoke automatizado de 16 casos en cuatro viewports y una revisión manual general satisfactoria. La revisión no cubrió todas las vistas, estados, procesos y criterios de esta guía ni dejó resultados por criterio. Esta excepción no declara conformidad WCAG; los criterios y el objetivo de conformidad siguen vigentes para el producto.
+
+En adelante, una ejecución documentada de herramientas automatizadas de accesibilidad satisface el paso automatizado del proceso de pruebas de este proyecto. El registro debe indicar herramienta y versión, alcance, resultado e incidencias. Este paso no garantiza conformidad ni reemplaza la evaluación manual necesaria para demostrarla.
 
 ## Elementos afectados
 

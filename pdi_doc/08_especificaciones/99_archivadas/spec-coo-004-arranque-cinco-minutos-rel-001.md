@@ -1,7 +1,7 @@
 ---
 id: SPEC-COO-004
 nivel: N2
-estado: preparacion
+estado: cerrado
 release: REL-001
 tipo: realizacion
 ---
@@ -135,13 +135,29 @@ La selección de fechas de disponibilidad y consulta debe usar la semana natural
 - Si se modifica WEB/API, evidencia de las verificaciones aplicables a requisitos funcionales afectados y nueva medición con el mismo protocolo.
 - El E2E mide tiempo de automatización. Por decisión normativa expresa, completar el recorrido en `< 150 s` lo acepta automáticamente; con un resultado de 150 s o más se necesita evidencia humana. La compilación u otras pruebas automatizadas no sustituyen el recorrido, conforme a [Estrategia de pruebas de la demo local](../../07_desarrollo/02_testing/estrategia-demo-local.md).
 
+## Resultado de verificación
+
+**READY_FOR_CHANGE_CONVERGE — 2026-10-06.** La ejecución integrada final del E2E de arranque completó el recorrido en **11 728 ms**, con recibo `succeeded`, semana objetivo del 12 al 18 de octubre de 2026 (verificación: 2026-10-06) y aceptación automática. Al quedar por debajo de 150 000 ms, no se requiere comprobación humana. Evidencia reportada desde la ejecución Playwright integrada final: `CI=1 npm --prefix apps/web run test:e2e -- accessibility-smoke.spec.ts mobile-journey.spec.ts startup-benchmark.spec.ts --workers=1`; 23/23 pruebas pasaron. El benchmark adjunta `startup-benchmark.json`; la integración reportó además persistencia del informe HTML y sus adjuntos.
+
+| Criterio | Resultado | Evidencia |
+|---|---|---|
+| 1. Umbral y distinción automatizada/humana | PASS | El informe etiqueta `evidence: automated`, compara contra 150 000 ms y activa `humanVerificationRequired` al alcanzar/superar el umbral; ejecución final 11 728 ms, sin requisito de medición humana. El reporte JSON queda adjunto. |
+| 2. Recorrido íntegro, ordenado, incluidas consultas, votos, resolución/rechazo y correo | PASS | El E2E contiene siete pasos ordenados, comprueba mutaciones HTTP confirmadas y termina al verificar el recibo real `succeeded`; la ejecución integrada final pasó. |
+| 3. Duración y comparación de umbrales | PASS | 11 728 ms frente a 150 000 ms; aceptación automática. La ruta alternativa registra la necesidad de prueba humana `<300 000 ms` sin convertir el umbral de automatización en fallo funcional. |
+| 4. Fricciones y repetición del protocolo | PASS | No se reportan bloqueos del recorrido en la ejecución completa. Se ejecutó la misma secuencia bajo el protocolo definido; no se requirió una iteración adicional por fricción del arranque. |
+| 5. Resultado de correo comprobable | PASS | Recibo final observado desde la respuesta real del navegador con estado `succeeded`; el test falla si no puede confirmarlo o si presenta error. |
+
+El resultado acredita el criterio automatizado que permite aceptar RNF-COO-001; el tiempo medido es automatizado y no se presenta como medición humana ni como confirmación de entrega al buzón.
+
 ## Convergence
 
-Pendiente. Al cierre se contrastarán esta SPEC, los requisitos, la evidencia del recorrido completo y los cambios realizados. Los hallazgos fuera de scope se registrarán como trabajo posterior.
+El recorrido E2E, el baseline y la evidencia concuerdan: los siete pasos se completaron en orden contra WEB/API reales; el intento de correo terminó con recibo `succeeded`, y el benchmark fue de 11 728 ms frente al umbral automático de 150 000 ms. Al superar el criterio automático aprobado, no hace falta medición humana. Se usó la semana natural siguiente a la verificación (2026-10-12 a 2026-10-18). El recibo acredita el resultado del intento y no se interpreta como entrega al buzón. No hay drift significativo de producto, implementación o contrato en este alcance; no se descubrió verdad normativa nueva y no procede `pdi:baseline-update`.
+
+[RNF-COO-001 — Arranque básico en menos de cinco minutos](../../03_requisitos/04_no-funcionales/COO/rnf-coo-001-arranque-basico.md) puede pasar a `VALIDADO` en delivery. Los requisitos de accesibilidad completa y uso adaptable siguen su propio estado y Changes. Los commits de implementación están en la rama local `main`; no se acredita ejecución del CI remoto. **Gate de convergencia: READY_FOR_CHANGE_CLOSE.**
 
 ## Resultado de cierre
 
-Pendiente.
+**DONE — Change cerrado y archivado el 2026-10-06.** Los cinco criterios constan en `PASS`. El E2E completó siete pasos en 11 728 ms, con recibo `succeeded` y aceptación automática por quedar debajo de 150 s; no fue necesaria prueba humana. [RNF-COO-001 — Arranque básico en menos de cinco minutos](../../03_requisitos/04_no-funcionales/COO/rnf-coo-001-arranque-basico.md) queda `VALIDADO` en [REL-001 — Demo local operativa de Synqo](../../01_producto/10_entregas/rel-001-demo-local-operativa.md). El tiempo corresponde a automatización, no a una persona, y el recibo no acredita entrega al buzón. Implementación integrada en `main` local; CI remoto no acreditado. No se modifica el baseline.
 
 ## Resultado de preparación
 
