@@ -26,11 +26,14 @@ final readonly class TeamController
         if (!is_string($body['name'] ?? null) || !is_string($body['firstParticipantName'] ?? null)) {
             return $this->problem(422, 'Revisa los nombres e inténtalo de nuevo.', ['name', 'firstParticipantName']);
         }
+        if (array_key_exists('email', $body) && $body['email'] !== null && !is_string($body['email'])) {
+            return $this->problem(422, 'Revisa el correo e inténtalo de nuevo.', ['email']);
+        }
         try {
-            $result = $this->teams->create($body['name'], $body['firstParticipantName'], is_string($body['timeZone'] ?? null) ? $body['timeZone'] : null);
+            $result = $this->teams->create($body['name'], $body['firstParticipantName'], is_string($body['timeZone'] ?? null) ? $body['timeZone'] : null, is_string($body['email'] ?? null) ? $body['email'] : null);
             return $this->success($result, 201);
         } catch (InvalidTeamInput $error) {
-            return $this->problem(422, 'Revisa los nombres e inténtalo de nuevo.', $error->fields);
+            return $this->problem(422, in_array('email', $error->fields, true) ? 'Revisa el correo e inténtalo de nuevo.' : 'Revisa los nombres e inténtalo de nuevo.', $error->fields);
         }
     }
 

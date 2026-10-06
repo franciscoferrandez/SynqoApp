@@ -15,6 +15,8 @@
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+        <env name="MAIL_EVENT_KEY" value="dGVzdC1vbmx5LW1haWwta2V5LTMyLWJ5dGVzLSEhISE=" force="true" />
+        <server name="MAIL_EVENT_KEY" value="dGVzdC1vbmx5LW1haWwta2V5LTMyLWJ5dGVzLSEhISE=" force="true" />
     </php>
 
     <testsuites>

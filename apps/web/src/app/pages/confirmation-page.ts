@@ -8,10 +8,11 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ArrivalIntro } from '../shared/arrival-intro';
+import { MailAttemptNotice } from '../shared/mail-attempt-notice';
 import { TeamApi } from '../shared/team-api';
 
 @Component({
-  imports: [RouterLink, ArrivalIntro],
+  imports: [RouterLink, ArrivalIntro, MailAttemptNotice],
   template: `
     <div
       class="grid flex-1 items-center gap-9 py-10 md:grid-cols-[minmax(0,.9fr)_minmax(340px,1fr)] md:gap-14 md:py-16"
@@ -26,13 +27,16 @@ import { TeamApi } from '../shared/team-api';
           <p class="confirmation-person">
             Primer participante: {{ team.firstParticipant.name }}. Ya podéis empezar a coordinaros.
           </p>
-          @if (hadEmail) {
-            <p class="confirmation-mail-note" role="status">
-              No se ha enviado ningún correo. Guarda el enlace que aparece abajo para volver al
-              equipo.
-            </p>
+          @if (team.mailAttempt) {
+            <app-mail-attempt-notice
+              [teamId]="team.id"
+              [accessUrl]="team.accessUrl"
+              context="confirmation"
+              [progress]="true"
+              (failedVisibleChange)="noticeVisible = $event"
+            />
           }
-          <div class="confirmation-link-field">
+          <div class="confirmation-link-field" [hidden]="noticeVisible">
             <p id="team-link-label">Enlace de acceso</p>
             <div
               class="confirmation-link"
@@ -67,7 +71,7 @@ export class ConfirmationPage implements AfterViewInit {
   private readonly api = inject(TeamApi);
   private readonly changeDetector = inject(ChangeDetectorRef);
   protected readonly team = this.api.recentCreation;
-  protected readonly hadEmail = this.api.recentCreationHadEmail;
+  protected noticeVisible = false;
   protected readonly canShare = typeof navigator.share === 'function';
   protected linkStatus = '';
   @ViewChild('confirmationTitle') private confirmationTitle?: ElementRef<HTMLElement>;

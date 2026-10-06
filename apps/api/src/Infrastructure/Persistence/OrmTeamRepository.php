@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence;
 
 use App\Application\Exception\DuplicateParticipant;
 use App\Application\Team\TeamRepository;
+use App\Infrastructure\Persistence\Entity\MailAttemptRecord;
 use App\Infrastructure\Persistence\Entity\ParticipantRecord;
 use App\Infrastructure\Persistence\Entity\TeamRecord;
 use DateTimeImmutable;
@@ -21,8 +22,9 @@ final readonly class OrmTeamRepository implements TeamRepository
     /**
      * @param array{id: string, name: string, access_verifier: string, time_zone: string, created_at: string, last_activity_at: string} $team
      * @param array{id: string, name: string, name_normalized: string, created_at: string} $participant
+     * @param array{id: string, receipt_verifier: string, payload: string, created_at: string, expires_at: string}|null $mailAttempt
      */
-    public function create(array $team, array $participant): void
+    public function create(array $team, array $participant, ?array $mailAttempt = null): void
     {
         $manager = $this->manager();
         $teamRecord = new TeamRecord($team['id'], $team['name'], $team['access_verifier'], $team['time_zone'], new DateTimeImmutable($team['created_at']), new DateTimeImmutable($team['last_activity_at']));
@@ -31,6 +33,9 @@ final readonly class OrmTeamRepository implements TeamRepository
         try {
             $manager->persist($teamRecord);
             $manager->persist($participantRecord);
+            if ($mailAttempt !== null) {
+                $manager->persist(new MailAttemptRecord($mailAttempt['id'], $teamRecord, $mailAttempt['receipt_verifier'], 'pending', $mailAttempt['payload'], new DateTimeImmutable($mailAttempt['created_at']), new DateTimeImmutable($mailAttempt['expires_at'])));
+            }
             $manager->flush();
         } catch (\Throwable $error) {
             $this->managers->resetManager();

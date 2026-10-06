@@ -880,6 +880,36 @@ html[data-theme='dark'] {
   font-size: inherit;
   color: var(--blue-strong);
 }
+.mail-status {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--rose);
+  border-radius: 14px;
+  background: var(--rose-soft);
+  color: var(--ink);
+}
+.mail-status p {
+  margin: 0.3rem 0;
+  line-height: 1.45;
+}
+.mail-status strong {
+  display: block;
+}
+.mail-status .access-link {
+  display: block;
+  margin-top: 0.4rem;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.mail-status .dismiss {
+  margin-top: 0.7rem;
+  border: 1px solid var(--rose);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.45rem 0.7rem;
+  font-weight: 700;
+}
 .save-error {
   display: flex;
   align-items: center;

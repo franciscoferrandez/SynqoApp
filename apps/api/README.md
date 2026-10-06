@@ -7,6 +7,7 @@ Desde la raíz del repositorio:
 ```sh
 cp .env.example .env
 docker compose up -d --build
+# MAIL_EVENT_KEY=$(openssl rand -base64 32) debe estar en el entorno o en el .env raíz
 docker compose exec api composer install
 docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction
 docker compose run --rm api composer db:reset:test

@@ -9,8 +9,9 @@ interface TeamRepository
     /**
      * @param array{id: string, name: string, access_verifier: string, time_zone: string, created_at: string, last_activity_at: string} $team
      * @param array{id: string, name: string, name_normalized: string, created_at: string} $participant
+     * @param array{id: string, receipt_verifier: string, payload: string, created_at: string, expires_at: string}|null $mailAttempt persisted in the same transaction
      */
-    public function create(array $team, array $participant): void;
+    public function create(array $team, array $participant, ?array $mailAttempt = null): void;
 
     /** @return array<string, mixed>|null */
     public function findByAccessVerifier(string $verifier): ?array;

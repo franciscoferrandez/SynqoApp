@@ -3,9 +3,10 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { HttpErrorResponse } from '@angular/common/http';
 import { TeamApi, TeamData } from '../shared/team-api';
 import { LinkMessagePage } from './link-message-page';
+import { MailAttemptNotice } from '../shared/mail-attempt-notice';
 
 @Component({
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, LinkMessagePage],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, LinkMessagePage, MailAttemptNotice],
   template: `
     @if (error) {
       <app-link-message [kind]="error" />
@@ -17,6 +18,7 @@ import { LinkMessagePage } from './link-message-page';
       </section>
     } @else if (team) {
       <div class="pt-5 sm:pt-7">
+        <app-mail-attempt-notice [teamId]="team.id" [accessUrl]="accessUrl()" context="team" />
         @if (participantId) {
           <section class="team-header" aria-label="Equipo">
             <div class="min-w-0">
@@ -287,7 +289,7 @@ export class TeamLayout implements OnInit {
       new Date(new Date(expiresAt).getTime() - 1),
     );
   }
-  private accessUrl(): string {
+  protected accessUrl(): string {
     return new URL(`/e${location.hash}`, location.origin).href;
   }
   protected async copy(): Promise<void> {

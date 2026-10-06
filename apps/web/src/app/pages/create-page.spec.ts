@@ -11,7 +11,7 @@ afterEach(() => {
   localStorage.clear();
 });
 
-it('enters directly when confirmation is disabled and remembers the creator identity', () => {
+it('enters directly when confirmation is disabled and remembers the creator identity and mail receipt', () => {
   const assign = vi.fn();
   vi.stubGlobal('window', {
     navigator: window.navigator,
@@ -25,11 +25,11 @@ it('enters directly when confirmation is disabled and remembers the creator iden
     expiresAt: '2027-01-01T00:00:00Z',
     firstParticipant: { id: 'ana', name: 'Ana' },
     accessUrl: 'http://localhost/e#t=full-link',
+    mailAttempt: { status: 'pending', receipt: 'private-receipt' },
   };
   const api = {
     create: vi.fn(() => of(created)),
     recentCreation: undefined,
-    recentCreationHadEmail: false,
   };
   const navigateByUrl = vi.fn();
   TestBed.configureTestingModule({
@@ -43,9 +43,13 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   const component = fixture.componentInstance;
   Reflect.set(component, 'teamName', 'Equipo');
   Reflect.set(component, 'participantName', 'Ana');
-  Reflect.set(component, 'email', 'ignored@example.invalid');
+  Reflect.set(component, 'email', ' persona@example.invalid ');
   Reflect.get(component, 'create').call(component, new Event('submit'));
-  expect(api.create).toHaveBeenCalledWith('Equipo', 'Ana');
+  expect(api.create).toHaveBeenCalledWith('Equipo', 'Ana', 'persona@example.invalid');
+  expect(JSON.parse(localStorage.getItem('synqo-mail-attempt-team-id') ?? '')).toEqual({
+    receipt: 'private-receipt',
+    dismissed: false,
+  });
   expect(localStorage.getItem('synqo-participant-team-id')).toBe('ana');
   expect(assign).toHaveBeenCalledWith(created.accessUrl);
   expect(navigateByUrl).not.toHaveBeenCalled();

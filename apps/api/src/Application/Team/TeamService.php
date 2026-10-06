@@ -8,6 +8,8 @@ use App\Application\Exception\InvalidTeamInput;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
+use App\Application\Mail\PayloadCipher;
+use App\Domain\Mail\RecipientAddress;
 use App\Domain\Team\ExpiryCalculator;
 use App\Domain\Team\ParticipantName;
 use App\Domain\Team\TeamTimeZone;
@@ -23,11 +25,13 @@ final readonly class TeamService
         private ExpiryCalculator $expiry,
         private IdentifierGenerator $identifiers,
         private AccessTokenGenerator $accessTokens,
+        private PayloadCipher $cipher,
         private string $publicUrl,
+        private int $mailAttemptTtlSeconds,
     ) {}
 
     /** @return array<string, mixed> */
-    public function create(string $name, string $firstParticipantName, ?string $timeZone): array
+    public function create(string $name, string $firstParticipantName, ?string $timeZone, ?string $email = null): array
     {
         $invalidFields = [];
         if (!ParticipantName::isValid($name)) {
@@ -35,6 +39,10 @@ final readonly class TeamService
         }
         if (!ParticipantName::isValid($firstParticipantName)) {
             $invalidFields[] = 'firstParticipantName';
+        }
+        $email = $email === null || trim($email) === '' ? null : trim($email);
+        if ($email !== null && !RecipientAddress::isValid($email)) {
+            $invalidFields[] = 'email';
         }
         if ($invalidFields !== []) {
             throw new InvalidTeamInput($invalidFields);
@@ -47,12 +55,25 @@ final readonly class TeamService
         $id = $this->identifiers->generate();
         $participantId = $this->identifiers->generate();
         $accessToken = $this->accessTokens->generate();
+        $mailAttempt = null;
+        $receipt = null;
+        if ($email !== null) {
+            $receipt = $this->accessTokens->generate();
+            $mailAttempt = [
+                'id' => $this->identifiers->generate(),
+                'receipt_verifier' => hash('sha256', $receipt),
+                'payload' => $this->cipher->encrypt(json_encode(['email' => $email, 'token' => $accessToken], JSON_THROW_ON_ERROR)),
+                'created_at' => $now->format('Y-m-d H:i:sP'),
+                'expires_at' => $now->modify(sprintf('+%d seconds', $this->mailAttemptTtlSeconds))->format('Y-m-d H:i:sP'),
+            ];
+        }
         $this->teams->create(
             ['id' => $id, 'name' => $name, 'access_verifier' => hash('sha256', $accessToken), 'time_zone' => $zone, 'created_at' => $now->format('Y-m-d H:i:sP'), 'last_activity_at' => $now->format('Y-m-d H:i:sP')],
             ['id' => $participantId, 'name' => $firstParticipantName, 'name_normalized' => ParticipantName::normalize($firstParticipantName), 'created_at' => $now->format('Y-m-d H:i:sP')],
+            $mailAttempt,
         );
 
-        return [
+        $created = [
             'id' => $id,
             'name' => $name,
             'timeZone' => $zone,
@@ -60,6 +81,11 @@ final readonly class TeamService
             'firstParticipant' => ['id' => $participantId, 'name' => $firstParticipantName],
             'accessUrl' => rtrim($this->publicUrl, '/') . '/e#t=' . $accessToken,
         ];
+        if ($receipt !== null) {
+            $created['mailAttempt'] = ['status' => 'pending', 'receipt' => $receipt];
+        }
+
+        return $created;
     }
 
     /** @return array<string, mixed> */

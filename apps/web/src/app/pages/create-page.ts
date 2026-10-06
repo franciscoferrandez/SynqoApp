@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { TEAM_CREATION_CONFIRMATION } from '../shared/team-flow-config';
 import { TeamApi } from '../shared/team-api';
 import { ArrivalIntro } from '../shared/arrival-intro';
+import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
 
 @Component({
   imports: [FormsModule, ArrivalIntro],
@@ -72,12 +73,20 @@ import { ArrivalIntro } from '../shared/arrival-intro';
               [placeholder]="emailPlaceholder"
               (focus)="pauseExamples()"
               (blur)="resumeExamples()"
-              aria-describedby="email-help"
+              autocomplete="email"
+              inputmode="email"
+              maxlength="254"
+              [attr.aria-invalid]="fieldErrors['email'] ? true : null"
+              [attr.aria-describedby]="
+                fieldErrors['email'] ? 'email-help email-error' : 'email-help'
+              "
             />
             <p class="mt-2 text-xs leading-relaxed text-muted" id="email-help">
-              Demo local: todavía no se enviará ningún correo. Si escribes una dirección, se
-              descartará.
+              Solo se usará para enviarte el enlace de acceso al equipo.
             </p>
+            @if (fieldErrors['email']) {
+              <p id="email-error" class="identity-error">{{ fieldErrors['email'] }}</p>
+            }
           </div>
           <button class="primary w-full bg-action" type="submit" [disabled]="busy">
             {{ busy ? 'Creando…' : 'Crear equipo' }}
@@ -93,6 +102,7 @@ import { ArrivalIntro } from '../shared/arrival-intro';
 export class CreatePage implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly api = inject(TeamApi);
+  private readonly mailAttempts = inject(MailAttemptTracker);
   private readonly showConfirmation = inject(TEAM_CREATION_CONFIRMATION);
   private readonly changeDetector = inject(ChangeDetectorRef);
   protected teamPlaceholder = '';
@@ -370,23 +380,34 @@ export class CreatePage implements AfterViewInit, OnDestroy {
     this.busy = true;
     this.error = '';
     this.fieldErrors = {};
-    this.api.create(this.teamName, this.participantName).subscribe({
+    this.api.create(this.teamName, this.participantName, this.email.trim()).subscribe({
       next: (created) => {
         this.api.recentCreation = created;
-        this.api.recentCreationHadEmail = this.email.trim().length > 0;
+        if (created.mailAttempt)
+          this.mailAttempts.remember(created.id, created.mailAttempt.receipt);
         localStorage.setItem(`synqo-participant-${created.id}`, created.firstParticipant.id);
         if (this.showConfirmation) void this.router.navigateByUrl('/confirmacion');
         else window.location.assign(created.accessUrl);
       },
       error: (err: HttpErrorResponse) => {
+        const violations: { propertyPath: string; message: string }[] = Array.isArray(
+          err.error?.violations,
+        )
+          ? err.error.violations
+          : [];
+        const onlyEmail =
+          violations.length > 0 &&
+          violations.every((violation) => violation.propertyPath === 'email');
         this.error =
           err.status === 422
-            ? 'Revisa los nombres e inténtalo de nuevo.'
+            ? onlyEmail
+              ? 'Revisa el correo e inténtalo de nuevo.'
+              : 'Revisa los nombres e inténtalo de nuevo.'
             : 'No se pudo crear el equipo. Inténtalo otra vez.';
         if (err.status === 422 && Array.isArray(err.error?.violations)) {
           for (const violation of err.error.violations) {
             const field = violation.propertyPath;
-            if (field === 'name' || field === 'firstParticipantName') {
+            if (field === 'name' || field === 'firstParticipantName' || field === 'email') {
               this.fieldErrors[field] = [this.fieldErrors[field], violation.message]
                 .filter(Boolean)
                 .join(' ');
@@ -396,7 +417,9 @@ export class CreatePage implements AfterViewInit, OnDestroy {
             ? 'team-name'
             : this.fieldErrors['firstParticipantName']
               ? 'participant-name'
-              : '';
+              : this.fieldErrors['email']
+                ? 'email'
+                : '';
           if (firstField) document.getElementById(firstField)?.focus();
         }
         this.busy = false;

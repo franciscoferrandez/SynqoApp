@@ -30,6 +30,9 @@ services:
       APP_SECRET: ${APP_SECRET:-local-only-synqo-secret}
       TEAM_DELETION_RETENTION_DAYS: ${TEAM_DELETION_RETENTION_DAYS-90}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
+      MAIL_EVENT_KEY:
+      MAIL_EVENT_TTL_SECONDS: ${MAIL_EVENT_TTL_SECONDS:-1800}
+      MAILER_DSN: smtp://mailpit:1025
       DATABASE_URL: postgresql://${POSTGRES_USER:-synqo}:${POSTGRES_PASSWORD:-synqo-local}@database:5432/${POSTGRES_DB:-synqo}?serverVersion=18&charset=utf8
       DATABASE_URL_TEST: postgresql://${POSTGRES_USER:-synqo}:${POSTGRES_PASSWORD:-synqo-local}@database:5432/${POSTGRES_TEST_DB:-synqo_test}?serverVersion=18&charset=utf8
     ports:
@@ -38,6 +41,35 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mail-worker:
+    build:
+      context: apps/api
+    working_dir: /app
+    volumes:
+      - ./apps/api:/app
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_SECRET: ${APP_SECRET:-local-only-synqo-secret}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
+      MAIL_EVENT_KEY:
+      MAIL_EVENT_TTL_SECONDS: ${MAIL_EVENT_TTL_SECONDS:-1800}
+      MAILER_DSN: smtp://mailpit:1025
+      DATABASE_URL: postgresql://${POSTGRES_USER:-synqo}:${POSTGRES_PASSWORD:-synqo-local}@database:5432/${POSTGRES_DB:-synqo}?serverVersion=18&charset=utf8
+    command: php bin/console app:mail:process
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
 volumes:
   postgres-data:

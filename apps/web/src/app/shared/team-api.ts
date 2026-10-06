@@ -47,7 +47,9 @@ export interface TeamCreated {
   expiresAt: string;
   firstParticipant: Participant;
   accessUrl: string;
+  mailAttempt?: { status: 'pending'; receipt: string };
 }
+export type MailAttemptStatus = 'pending' | 'succeeded' | 'failed';
 export interface TeamData {
   id: string;
   name: string;
@@ -69,12 +71,17 @@ export const accessTokenInterceptor: HttpInterceptorFn = (request, next) => {
 export class TeamApi {
   private readonly http = inject(HttpClient);
   recentCreation?: TeamCreated;
-  recentCreationHadEmail = false;
-  create(name: string, firstParticipantName: string): Observable<TeamCreated> {
+  create(name: string, firstParticipantName: string, email?: string): Observable<TeamCreated> {
     return this.http.post<TeamCreated>('/api/teams', {
       name,
       firstParticipantName,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      ...(email ? { email } : {}),
+    });
+  }
+  mailAttemptStatus(receipt: string): Observable<{ status: MailAttemptStatus }> {
+    return this.http.get<{ status: MailAttemptStatus }>('/api/mail-attempts/current', {
+      headers: { 'X-Mail-Receipt': receipt },
     });
   }
   availability(from: string, to: string): Observable<{ days: AvailabilityDay[] }> {

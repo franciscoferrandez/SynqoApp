@@ -35,13 +35,25 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                         'name' => $this->schema('string', maxLength: 50),
                         'firstParticipantName' => $this->schema('string', maxLength: 50),
                         'timeZone' => $this->schema('string'),
+                        'email' => $this->schema('string', format: 'email', maxLength: 254),
                     ], ['name', 'firstParticipantName'])),
                 ]),
                 required: true,
             ),
             responses: [
-                '201' => $this->response('Created', ['id' => $this->schema('string', format: 'uuid'), 'name' => $this->schema('string'), 'timeZone' => $this->schema('string'), 'expiresAt' => $this->schema('string', format: 'date-time'), 'firstParticipant' => $this->participant(), 'accessUrl' => $this->schema('string', format: 'uri')]),
-                '400' => $this->problem('Malformed JSON'), '422' => $this->problem('Invalid names', withViolations: true), '500' => $this->problem('Unexpected internal error'),
+                '201' => $this->response('Created', ['id' => $this->schema('string', format: 'uuid'), 'name' => $this->schema('string'), 'timeZone' => $this->schema('string'), 'expiresAt' => $this->schema('string', format: 'date-time'), 'firstParticipant' => $this->participant(), 'accessUrl' => $this->schema('string', format: 'uri'), 'mailAttempt' => $this->mailAttempt()], optional: ['mailAttempt']),
+                '400' => $this->problem('Malformed JSON'), '422' => $this->problem('Invalid names or email', withViolations: true), '500' => $this->problem('Unexpected internal error'),
+            ],
+        )));
+        $paths->addPath('/api/mail-attempts/current', new PathItem(get: new Operation(
+            operationId: 'getCurrentMailAttempt',
+            tags: ['Teams'],
+            summary: 'Read the outcome of the optional link email sent when the team was created',
+            security: [['mailReceipt' => []]],
+            responses: [
+                '200' => $this->response('Attempt status; never includes the address, the link or team data', ['status' => $this->enumSchema(['pending', 'succeeded', 'failed'])]),
+                '401' => $this->problem('Mail receipt required')->withHeaders(new \ArrayObject(['WWW-Authenticate' => new Header(description: 'Challenge scheme for authentication.', required: true, schema: ['type' => 'string'])])),
+                '404' => $this->problem('Receipt not found or attempt already deleted'), '500' => $this->problem('Unexpected internal error'),
             ],
         )));
         $security = [['teamBearer' => []]];
@@ -142,7 +154,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'status' => $this->enumSchema(['resolved', 'rejected']), 'acceptedOptionIds' => $accepted], ['participantId', 'status', 'acceptedOptionIds']))]), required: true),
             responses: ['200' => $this->response('Confirmed resolution and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Different resolution already recorded', 'urn:synqo:problem:consultation-closed'), '422' => $this->problem('Invalid resolution', withViolations: true)] + $decisionErrors,
         )));
-        $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer')]));
+        $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer'), 'mailReceipt' => new SecurityScheme(type: 'apiKey', description: 'Opaque receipt returned when the team was created with an email', name: 'X-Mail-Receipt', in: 'header')]));
         return $openApi->withPaths($paths)->withComponents($components);
     }
 
@@ -265,10 +277,18 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         return $schema;
     }
 
-    /** @param array<string, Schema> $properties */
-    private function response(string $description, array $properties): Response
+    private function mailAttempt(): Schema
     {
-        return new Response(description: $description, content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', $properties, array_keys($properties)))]));
+        return $this->schema('object', ['status' => $this->enumSchema(['pending']), 'receipt' => $this->schema('string')], ['status', 'receipt']);
+    }
+
+    /**
+     * @param array<string, Schema> $properties
+     * @param list<string> $optional
+     */
+    private function response(string $description, array $properties, array $optional = []): Response
+    {
+        return new Response(description: $description, content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', $properties, array_values(array_diff(array_keys($properties), $optional))))]));
     }
 
     private function unauthorizedProblem(): Response

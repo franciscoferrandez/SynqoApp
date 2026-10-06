@@ -31,11 +31,13 @@ test('creates a team, opens its link in another browser and remembers a local id
   await expect(
     page.getByText('Primer participante: Ana. Ya podéis empezar a coordinaros.'),
   ).toBeVisible();
-  await expect(page.getByText('No se ha enviado ningún correo.')).toBeVisible();
+  await expect(
+    page.getByText(/Estamos enviando el enlace por correo|El correo con el enlace se ha enviado/),
+  ).toBeVisible();
   await expect(page.getByText('Enlace de acceso')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Compartir' })).toBeDisabled();
   expect(sentBody).toBeDefined();
-  expect(sentBody).not.toHaveProperty('email');
+  expect(sentBody).toHaveProperty('email', 'no-enviado@example.invalid');
 
   const accessUrl = (await page.locator('[data-access-url]').textContent())!.trim();
   expect(accessUrl).toContain('/e#t=');
@@ -49,7 +51,10 @@ test('creates a team, opens its link in another browser and remembers a local id
   await expect(page.getByRole('heading', { name: 'Disponibilidad del equipo' })).toBeVisible();
   await page.locator('.calendar-day.today').press('Enter');
   await expect(page.getByRole('dialog').getByText('Detalle del día')).toBeVisible();
-  await page.getByRole('dialog').getByRole('button', { name: 'Cerrar detalle del día' }).press('Enter');
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Cerrar detalle del día' })
+    .press('Enter');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await expect(page.getByRole('button', { name: 'Copiar enlace' })).toHaveCSS('cursor', 'pointer');
   await expect(page.getByRole('button', { name: 'Compartir enlace' })).toBeDisabled();

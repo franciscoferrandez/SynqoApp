@@ -101,7 +101,7 @@ final class TeamApiTest extends WebTestCase
         $consultationResponse = $consultationCreate['responses']['201']['content']['application/json']['schema']['properties']['consultation'];
         self::assertSame(['text', 'date'], $consultationResponse['properties']['type']['enum']);
         self::assertCount(2, $consultationResponse['properties']['options']['items']['oneOf']);
-        self::assertCount(9, $spec['paths']);
+        self::assertCount(10, $spec['paths']);
         $operations = $spec['paths']['/api/teams/current/participants']['post'];
         self::assertSame(['urn:synqo:problem:duplicate-participant'], $operations['responses']['409']['content']['application/problem+json']['schema']['properties']['type']['enum']);
         self::assertArrayHasKey('WWW-Authenticate', $operations['responses']['401']['headers']);
