@@ -11,7 +11,7 @@ La aplicación web de la primera entrega debe permitir usar desde un navegador m
 
 ## Contexto
 
-Aplica a la creación y acceso a equipos, identidad de participante, calendario y disponibilidad, y creación, voto y resolución de consultas. La primera entrega no requiere una aplicación móvil instalable.
+Aplica a la creación y acceso a equipos, identidad de participante, calendario y disponibilidad, y creación, voto y resolución de consultas. Para la verificación de esta entrega, los viewports de hasta 768 CSS px inclusive se consideran vista móvil y los de más de 768 CSS px, vista de escritorio. La tablet en orientación vertical de 768 CSS px se considera móvil; no hay una tercera categoría de presentación para tablet. La primera entrega no requiere una aplicación móvil instalable.
 
 ## Métrica / umbral
 

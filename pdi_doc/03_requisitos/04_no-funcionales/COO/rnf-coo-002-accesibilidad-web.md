@@ -11,7 +11,7 @@ La aplicación web de la primera entrega, tanto en pantallas de escritorio como 
 
 ## Contexto
 
-Aplica a todas las vistas y estados de la experiencia web de la primera entrega, incluidos la creación y entrada al equipo, la selección de identidad, el calendario y su detalle diario, la creación y respuesta de consultas, su resolución y confirmación, los errores y la pantalla de equipo caducado. También se aplica al uso de la web en navegador móvil según [RNF-COO-003 — Uso adaptable en navegador móvil](rnf-coo-003-uso-en-navegador-movil.md). La tecnología de la aplicación instalable prevista para una entrega posterior sigue sin decidirse.
+Aplica a todas las vistas y estados de la experiencia web de la primera entrega, incluidos la creación y entrada al equipo, la selección de identidad, el calendario y su detalle diario, la creación y respuesta de consultas, su resolución y confirmación, los errores y la pantalla de equipo caducado. También se aplica al uso de la web en navegador móvil según [RNF-COO-003 — Uso adaptable en navegador móvil](rnf-coo-003-uso-en-navegador-movil.md). Para la evaluación de esta entrega, los viewports de hasta 768 CSS px inclusive cuentan como vista móvil; los de más de 768 CSS px cuentan como vista de escritorio. Así, una tablet en orientación vertical de 768 CSS px se considera móvil. La tecnología de la aplicación instalable prevista para una entrega posterior sigue sin decidirse.
 
 ## Métrica / umbral
 
