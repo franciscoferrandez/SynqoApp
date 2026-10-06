@@ -48,6 +48,13 @@ jobs:
         run: docker compose exec -T api php bin/console doctrine:migrations:migrate --no-interaction
       - name: Probar recorrido con dos navegadores
         run: npm --prefix apps/web run test:e2e
+      - name: Conservar informe y evidencias E2E
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          if-no-files-found: ignore
       - name: Comprobar mensajes de commit
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
