@@ -578,7 +578,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     }
     this.selected = date;
     this.focusReturn = event.currentTarget as HTMLElement;
-    if (matchMedia('(max-width: 700px)').matches) this.dialog?.nativeElement.showModal();
+    if (matchMedia('(max-width: 768px)').matches) this.dialog?.nativeElement.showModal();
   }
   close(event?: Event): void {
     event?.preventDefault();

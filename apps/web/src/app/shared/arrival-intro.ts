@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 @Component({
   selector: 'app-arrival-intro',
   template: `
-    <section aria-labelledby="intro-title">
+    <section class="min-w-0 wrap-anywhere" aria-labelledby="intro-title">
       <p class="eyebrow">Un espacio para vuestro equipo</p>
       <h1
         class="mt-3 max-w-xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl"

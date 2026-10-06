@@ -593,7 +593,7 @@ a {
   color: var(--muted);
   line-height: 1.55;
 }
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .team-header {
     grid-template-columns: 1fr;
     padding: 1rem;
@@ -949,7 +949,7 @@ html[data-theme='dark'] {
 .availability-dialog::backdrop {
   background: #051029a8;
 }
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .calendar-detail {
     display: none;
   }
@@ -1313,7 +1313,7 @@ html[data-theme='dark'] {
 .consultation-resolve-actions .danger {
   color: var(--rose);
 }
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .consultation-card {
     align-items: flex-start;
   }

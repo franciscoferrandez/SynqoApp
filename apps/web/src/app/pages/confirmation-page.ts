@@ -15,7 +15,7 @@ import { TeamApi } from '../shared/team-api';
   imports: [RouterLink, ArrivalIntro, MailAttemptNotice],
   template: `
     <div
-      class="grid flex-1 items-center gap-9 py-10 md:grid-cols-[minmax(0,.9fr)_minmax(340px,1fr)] md:gap-14 md:py-16"
+      class="grid grid-cols-[minmax(0,1fr)] flex-1 items-center gap-9 py-10 min-[769px]:grid-cols-[minmax(0,.9fr)_minmax(340px,1fr)] min-[769px]:gap-14 min-[769px]:py-16"
     >
       <app-arrival-intro />
       @if (team) {
