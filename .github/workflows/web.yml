@@ -33,7 +33,7 @@ jobs:
       - name: Construir imagen PHP
         run: docker compose build api
       - name: Preparar el entorno Dotenv para Symfony
-        run: touch apps/api/.env
+        run: printf 'DEFAULT_URI=http://localhost\n' > apps/api/.env
       - name: Instalar dependencias PHP bloqueadas
         run: docker compose run --rm --no-deps api composer install --no-interaction
       - name: Revisiones estáticas PHP
