@@ -40,8 +40,10 @@ jobs:
         run: docker compose run --rm api composer db:reset:test
       - name: Probar API
         run: docker compose run --rm api composer test
-      - name: Iniciar API para prueba de navegador
-        run: docker compose up -d api
+      - name: Preparar clave efímera para el correo E2E
+        run: python3 -c 'import base64, os; print("MAIL_EVENT_KEY=" + base64.b64encode(os.urandom(32)).decode())' >> "$GITHUB_ENV"
+      - name: Iniciar API y correo para prueba de navegador
+        run: docker compose up -d api mailpit mail-worker
       - name: Migrar la base local de E2E
         run: docker compose exec -T api php bin/console doctrine:migrations:migrate --no-interaction
       - name: Probar recorrido con dos navegadores
