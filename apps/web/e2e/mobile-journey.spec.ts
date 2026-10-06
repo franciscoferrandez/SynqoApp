@@ -212,3 +212,50 @@ test('keeps the arrival form usable with enlarged text on mobile', async ({ page
   await page.locator('#participant-name').fill('Ana');
   await expect(page.getByRole('button', { name: 'Crear equipo', exact: true })).toBeEnabled();
 });
+
+test('keeps team navigation and the consultation editor within an enlarged mobile viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem('synqo-participant-zoom-team', 'ana'));
+  await page.route('**/api/teams/current', (route) =>
+    route.fulfill({
+      json: {
+        id: 'zoom-team',
+        name: 'Equipo de accesibilidad responsive',
+        timeZone: 'Europe/Madrid',
+        expiresAt: '2099-01-01T00:00:00Z',
+        participants: [{ id: 'ana', name: 'Ana' }],
+      },
+    }),
+  );
+  await page.route('**/api/teams/current/consultations', (route) =>
+    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+  );
+  await page.goto('/e/consultas#t=zoom-token');
+  await expect(page.getByRole('heading', { name: 'Aún no hay consultas' })).toBeVisible();
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await fitsViewport(page);
+  for (const label of ['Calendario', 'Consultas']) {
+    const link = page.getByRole('link', { name: label, exact: true });
+    await link.scrollIntoViewIfNeeded();
+    const bounds = await link.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  }
+  await page
+    .locator('.section-heading')
+    .getByRole('button', { name: /Crear consulta/ })
+    .click();
+  const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
+  await editor.getByRole('textbox', { name: 'Título breve' }).fill('Texto ampliado');
+  await editor.getByRole('textbox', { name: 'Texto de la opción 1' }).fill('Paseo');
+  await fitsViewport(page);
+  await editor.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await page
+    .getByRole('dialog', { name: '¿Cancelar esta consulta?' })
+    .getByRole('button', { name: 'Abandonar edición' })
+    .click();
+  await expect(editor).toBeHidden();
+  await fitsViewport(page);
+});
