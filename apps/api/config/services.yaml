@@ -12,6 +12,9 @@ parameters:
     env(MAIL_EVENT_TTL_SECONDS): '1800'
     env(MAIL_FROM): 'Synqo <no-reply@synqo.local>'
     env(TEAM_CREATION_EMAIL_ENABLED): 'false'
+    env(SYNQO_DEPLOYMENT_ENV): 'development'
+    env(TEAM_CREATION_LIMIT): ''
+    env(TEAM_CREATION_WINDOW_MINUTES): ''
 
 services:
     # default configuration for services in *this* file
@@ -36,6 +39,13 @@ services:
             $publicUrl: '%env(APP_PUBLIC_URL)%'
             $mailAttemptTtlSeconds: '%env(int:MAIL_EVENT_TTL_SECONDS)%'
             $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
+            $creationOriginHashSecret: '%env(APP_SECRET)%'
+
+    App\Application\Team\CreationLimitPolicy:
+        arguments:
+            $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
+            $maxTeamsOverride: '%env(TEAM_CREATION_LIMIT)%'
+            $windowMinutesOverride: '%env(TEAM_CREATION_WINDOW_MINUTES)%'
 
     App\Controller\PublicConfigurationController:
         public: true

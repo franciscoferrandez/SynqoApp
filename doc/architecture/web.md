@@ -1,6 +1,6 @@
 # Arquitectura del módulo WEB
 
-WEB es una aplicación Angular 21 que se ejecuta en el navegador; Node.js 24 se usa para desarrollo y compilación. Conserva tema e identidad seleccionada en el navegador y consume la API por HTTP. No accede directamente a PostgreSQL.
+WEB es una aplicación Angular 21 que se ejecuta en el navegador; Node.js 24 se usa para desarrollo y compilación. Conserva tema, identidad seleccionada y una clave aleatoria de origen para el límite de creación en el navegador y consume la API por HTTP. No accede directamente a PostgreSQL.
 
 ```mermaid
 flowchart LR
@@ -18,6 +18,7 @@ flowchart LR
     Team --> Client
     Client -->|Bearer desde #t=...| API[API Symfony · /api]
     Team --> Identity[(Identidad por equipo en localStorage)]
+    Create --> DeviceKey[(Clave aleatoria de dispositivo en localStorage)]
     Routes --> Theme[ThemePicker / ThemeService]
     Theme --> Preference[(Tema en localStorage)]
 ```
@@ -25,13 +26,13 @@ flowchart LR
 ## Componentes
 
 - **App y rutas:** `app.ts`, `app.routes.ts` y `app.config.ts` configuran navegación, tema y el interceptor HTTP. Hay páginas de creación, confirmación, equipo y estados de enlace.
-- **CreatePage y ConfirmationPage:** permiten crear el equipo y copiar o compartir su enlace. El correo opcional se envía a la API; el recibo devuelto se recuerda por equipo en `localStorage` (`synqo-mail-attempt-<id>`, separado del enlace) y el resultado reciente se conserva en memoria durante la navegación.
+- **CreatePage y ConfirmationPage:** permiten crear el equipo y copiar o compartir su enlace. CreatePage consulta `/api/configuration` para mostrar el máximo y la ventana de creación aplicables, y no habilita el envío hasta conocer esa configuración. Si la API rechaza una creación por superar el límite, muestra un aviso genérico para intentarlo más tarde. El campo de correo solo se presenta si la configuración pública lo habilita; ante error de consulta queda oculto. Cuando se usa, el recibo devuelto se recuerda por equipo en `localStorage` (`synqo-mail-attempt-<id>`, separado del enlace) y el resultado reciente se conserva en memoria durante la navegación.
 - **MailAttemptNotice y MailAttemptTracker:** consultan `GET /api/mail-attempts/current` con el recibo mientras esté pendiente. Un fallo muestra el aviso con el enlace en la confirmación y en el equipo hasta que se descarte; el descarte se guarda con el recibo.
 - **TeamLayout:** carga el equipo y presenta cabecera, selector de identidad, enlace y pestañas. La identidad activa se recuerda por equipo en `localStorage`; el secreto de acceso permanece en el fragmento URL.
 - **AvailabilityCalendar:** lee las marcas y los recuentos por día, permite marcar o cambiar la disponibilidad propia y consultar el detalle. Desde el calendario se crea una consulta de fechas seleccionando entre una y diez fechas; el panel de edición se adapta a escritorio y móvil.
 - **ConsultationsPage:** lista consultas de texto y fecha por estado, permite crear consultas con opciones de texto y abre el detalle de una consulta.
 - **ConsultationDetailPage:** muestra opciones, recuentos y votantes; permite cambiar el voto propio en consultas abiertas. Presenta el diálogo de resolución y la lectura de resultados o rechazo cuando la consulta se cierra. Si falla una mutación, restaura el estado confirmado y ofrece reintento.
-- **TeamApi e interceptor:** agrupan las peticiones JSON de equipo, disponibilidad y consultas. El interceptor lee `t` del fragmento y lo envía como Bearer en las llamadas `/api/`.
+- **TeamApi e interceptor:** agrupan las peticiones JSON de configuración, equipo, disponibilidad y consultas. El interceptor lee `t` del fragmento y lo envía como Bearer en las llamadas `/api/`, salvo la configuración pública. Al crear equipo, `TeamApi` envía opcionalmente `X-Creation-Device`: una clave aleatoria de 256 bits generada con Web Crypto y persistida en `localStorage`, no una huella digital. Si el almacenamiento o Web Crypto no está disponible, omite esa cabecera y la API puede aplicar el límite por una IP confiable.
 - **ThemePicker, ThemeService y LinkMessagePage:** gestionan el tema automático, claro u oscuro, y los mensajes de equipo caducado o enlace no encontrado.
 
 ## Recorrido HTTP

@@ -30,13 +30,14 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             tags: ['Configuration'],
             summary: 'Read public, environment-specific capabilities',
             responses: [
-                '200' => $this->response('Effective public configuration', ['teamCreationEmailEnabled' => $this->schema('boolean')]),
+                '200' => $this->response('Effective public configuration', ['teamCreationEmailEnabled' => $this->schema('boolean'), 'teamCreationMaxTeams' => $this->schema('integer'), 'teamCreationWindowMinutes' => $this->schema('integer')]),
             ],
         )));
         $paths->addPath('/api/teams', new PathItem(post: new Operation(
             operationId: 'createTeam',
             tags: ['Teams'],
             summary: 'Create a team and its first participant',
+            parameters: [new Parameter(name: 'X-Creation-Device', in: 'header', required: false, description: 'Opaque first-party browser key; not a fingerprint. The server stores only a keyed digest.', schema: ['type' => 'string', 'pattern' => '^[A-Za-z0-9_-]{43}$'])],
             requestBody: new RequestBody(
                 content: new \ArrayObject([
                     'application/json' => new MediaType(schema: $this->schema('object', [
@@ -50,7 +51,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             ),
             responses: [
                 '201' => $this->response('Created', ['id' => $this->schema('string', format: 'uuid'), 'name' => $this->schema('string'), 'timeZone' => $this->schema('string'), 'expiresAt' => $this->schema('string', format: 'date-time'), 'firstParticipant' => $this->participant(), 'accessUrl' => $this->schema('string', format: 'uri'), 'mailAttempt' => $this->mailAttempt()], optional: ['mailAttempt']),
-                '400' => $this->problem('Malformed JSON'), '422' => $this->problem('Invalid names or email', withViolations: true), '500' => $this->problem('Unexpected internal error'),
+                '400' => $this->problem('Malformed JSON'), '422' => $this->problem('Invalid names or email', withViolations: true), '429' => $this->problem('Creation limit exceeded', 'urn:synqo:problem:creation-limit-exceeded'), '500' => $this->problem('Unexpected internal error'),
             ],
         )));
         $paths->addPath('/api/mail-attempts/current', new PathItem(get: new Operation(

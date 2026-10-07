@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\Exception\DuplicateParticipant;
+use App\Application\Exception\CreationLimitExceeded;
 use App\Application\Exception\InvalidTeamInput;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
@@ -12,10 +13,11 @@ use App\Application\Exception\TeamNotFound;
 use App\Application\Team\TeamService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 final readonly class TeamController
 {
-    public function __construct(private TeamService $teams) {}
+    public function __construct(private TeamService $teams, private KernelInterface $kernel) {}
 
     public function create(Request $request): JsonResponse
     {
@@ -30,8 +32,17 @@ final readonly class TeamController
             return $this->problem(422, 'Revisa el correo e inténtalo de nuevo.', ['email']);
         }
         try {
-            $result = $this->teams->create($body['name'], $body['firstParticipantName'], is_string($body['timeZone'] ?? null) ? $body['timeZone'] : null, is_string($body['email'] ?? null) ? $body['email'] : null);
+            $result = $this->teams->create(
+                $body['name'],
+                $body['firstParticipantName'],
+                is_string($body['timeZone'] ?? null) ? $body['timeZone'] : null,
+                is_string($body['email'] ?? null) ? $body['email'] : null,
+                $this->clientIpSignal($request),
+                $request->headers->get('X-Creation-Device'),
+            );
             return $this->success($result, 201);
+        } catch (CreationLimitExceeded) {
+            return $this->problem(429, 'Has alcanzado el límite de creación de equipos. Inténtalo de nuevo más tarde.', type: 'urn:synqo:problem:creation-limit-exceeded');
         } catch (InvalidTeamInput $error) {
             return $this->problem(422, in_array('email', $error->fields, true) ? 'Revisa el correo e inténtalo de nuevo.' : 'Revisa los nombres e inténtalo de nuevo.', $error->fields);
         }
@@ -101,6 +112,17 @@ final readonly class TeamController
         return $header !== null && str_starts_with($header, 'Bearer ') ? substr($header, 7) : null;
     }
 
+    private function clientIpSignal(Request $request): ?string
+    {
+        // In production, an untrusted peer may be an edge proxy. Only consume
+        // forwarded client IPs when Symfony has an explicitly trusted proxy.
+        if ($this->kernel->getEnvironment() === 'prod' && !$request->isFromTrustedProxy()) {
+            return null;
+        }
+
+        return $request->getClientIp();
+    }
+
     /** @param array<string, mixed> $body */
     private function success(array $body, int $status = 200): JsonResponse
     {
@@ -119,7 +141,7 @@ final readonly class TeamController
     /** @param list<string> $fields */
     private function problem(int $status, string $detail, array $fields = [], string $type = 'about:blank'): JsonResponse
     {
-        $titles = [400 => 'Solicitud incorrecta', 401 => 'Autenticación requerida', 404 => 'No encontrado', 409 => 'Conflicto', 410 => 'Equipo caducado', 422 => 'Datos inválidos'];
+        $titles = [400 => 'Solicitud incorrecta', 401 => 'Autenticación requerida', 404 => 'No encontrado', 409 => 'Conflicto', 410 => 'Equipo caducado', 422 => 'Datos inválidos', 429 => 'Límite de creación alcanzado'];
         $data = ['type' => $type, 'title' => $titles[$status] ?? 'Error', 'status' => $status, 'detail' => $detail];
         if ($fields !== []) {
             $data['violations'] = array_map(fn(string $field): array => ['propertyPath' => $field, 'message' => 'Este valor no es válido.'], $fields);

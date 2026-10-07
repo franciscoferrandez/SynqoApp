@@ -31,6 +31,18 @@ import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
             Crea un espacio compartido para organizarte.
           }
         </p>
+        @if (creationLimit) {
+          <p class="mt-3 text-sm text-muted" id="creation-limit-info">
+            Límite de creación: {{ creationLimit.maxTeams }} equipos por origen cada
+            {{ creationLimit.windowMinutes }} minutos.
+          </p>
+        } @else if (creationLimitLoadFailed) {
+          <p class="mt-3 text-sm text-red-700" role="alert">
+            No se pudo comprobar el límite de creación. Recarga la página para intentarlo de nuevo.
+          </p>
+        } @else {
+          <p class="mt-3 text-sm text-muted" role="status">Cargando el límite de creación…</p>
+        }
         <form class="mt-6 space-y-5" (submit)="create($event)" autocomplete="off">
           <div class="field">
             <label for="team-name">Nombre del equipo o grupo</label
@@ -101,7 +113,11 @@ import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
               }
             </div>
           }
-          <button class="primary w-full bg-action" type="submit" [disabled]="busy">
+          <button
+            class="primary w-full bg-action"
+            type="submit"
+            [disabled]="busy || !creationLimit"
+          >
             {{ busy ? 'Creando…' : 'Crear equipo' }}
           </button>
         </form>
@@ -122,6 +138,8 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
   protected participantPlaceholder = '';
   protected emailPlaceholder = '';
   protected emailEnabled = false;
+  protected creationLimit?: { maxTeams: number; windowMinutes: number };
+  protected creationLimitLoadFailed = false;
   private readonly reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   private exampleTimeout?: ReturnType<typeof setTimeout>;
   private blinkInterval?: ReturnType<typeof setInterval>;
@@ -204,10 +222,24 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
     this.api.publicConfiguration().subscribe({
       next: (configuration) => {
         this.emailEnabled = configuration.teamCreationEmailEnabled === true;
+        if (
+          Number.isInteger(configuration.teamCreationMaxTeams) &&
+          configuration.teamCreationMaxTeams > 0 &&
+          Number.isInteger(configuration.teamCreationWindowMinutes) &&
+          configuration.teamCreationWindowMinutes > 0
+        ) {
+          this.creationLimit = {
+            maxTeams: configuration.teamCreationMaxTeams,
+            windowMinutes: configuration.teamCreationWindowMinutes,
+          };
+        } else {
+          this.creationLimitLoadFailed = true;
+        }
         this.changeDetector.markForCheck();
       },
       error: () => {
         this.emailEnabled = false;
+        this.creationLimitLoadFailed = true;
         this.changeDetector.markForCheck();
       },
     });
@@ -403,6 +435,13 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
   protected create(event: Event): void {
     event.preventDefault();
     if (this.busy) return;
+    if (!this.creationLimit) {
+      this.creationLimitLoadFailed = true;
+      this.error =
+        'No se pudo comprobar el límite de creación. Recarga la página para intentarlo de nuevo.';
+      this.changeDetector.markForCheck();
+      return;
+    }
     this.busy = true;
     this.error = '';
     this.fieldErrors = {};
@@ -431,11 +470,13 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
             violations.length > 0 &&
             violations.every((violation) => violation.propertyPath === 'email');
           this.error =
-            err.status === 422
-              ? onlyEmail
-                ? 'Revisa el correo e inténtalo de nuevo.'
-                : 'Revisa los nombres e inténtalo de nuevo.'
-              : 'No se pudo crear el equipo. Inténtalo otra vez.';
+            err.status === 429 && err.error?.type === 'urn:synqo:problem:creation-limit-exceeded'
+              ? 'Has alcanzado el límite de creación de equipos. Inténtalo de nuevo más tarde.'
+              : err.status === 422
+                ? onlyEmail
+                  ? 'Revisa el correo e inténtalo de nuevo.'
+                  : 'Revisa los nombres e inténtalo de nuevo.'
+                : 'No se pudo crear el equipo. Inténtalo otra vez.';
           if (err.status === 422 && Array.isArray(err.error?.violations)) {
             for (const violation of err.error.violations) {
               const field = violation.propertyPath;

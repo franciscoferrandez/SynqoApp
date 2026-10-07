@@ -21,6 +21,7 @@ final class TeamApiTest extends WebTestCase
     {
         $this->client = static::createClient(server: [], options: ['environment' => 'test']);
         $db = static::getContainer()->get(Connection::class);
+        $db->executeStatement('DELETE FROM team_creation_origin_event');
         $db->executeStatement('DELETE FROM participant');
         $db->executeStatement('DELETE FROM team');
     }
@@ -84,6 +85,9 @@ final class TeamApiTest extends WebTestCase
         self::assertArrayHasKey('/api/teams', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current', $spec['paths']);
         self::assertArrayHasKey('/api/configuration', $spec['paths']);
+        self::assertArrayHasKey('429', $spec['paths']['/api/teams']['post']['responses']);
+        self::assertSame('urn:synqo:problem:creation-limit-exceeded', $spec['paths']['/api/teams']['post']['responses']['429']['content']['application/problem+json']['schema']['properties']['type']['enum'][0]);
+        self::assertSame('X-Creation-Device', $spec['paths']['/api/teams']['post']['parameters'][0]['name']);
         self::assertArrayHasKey('/api/teams/current/participants', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current/availability', $spec['paths']);
         self::assertArrayHasKey('/api/teams/current/availability/{date}/participants/{participantId}', $spec['paths']);

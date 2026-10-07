@@ -29,6 +29,7 @@ final class TeamMailAttemptTest extends WebTestCase
         $this->client = static::createClient(server: [], options: ['environment' => 'test']);
         $this->client->disableReboot();
         $this->db = static::getContainer()->get(Connection::class);
+        $this->db->executeStatement('DELETE FROM team_creation_origin_event');
         $this->db->executeStatement('DELETE FROM participant');
         $this->db->executeStatement('DELETE FROM team');
         $this->clock = new MockClock('now');
@@ -51,7 +52,11 @@ final class TeamMailAttemptTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('no-store', $this->client->getResponse()->headers->get('Cache-Control'));
         self::assertSame(
-            ['teamCreationEmailEnabled' => filter_var($_SERVER['TEAM_CREATION_EMAIL_ENABLED'] ?? 'false', FILTER_VALIDATE_BOOL)],
+            [
+                'teamCreationEmailEnabled' => filter_var($_SERVER['TEAM_CREATION_EMAIL_ENABLED'] ?? 'false', FILTER_VALIDATE_BOOL),
+                'teamCreationMaxTeams' => 10000,
+                'teamCreationWindowMinutes' => 60,
+            ],
             json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR),
         );
     }
@@ -124,6 +129,8 @@ final class TeamMailAttemptTest extends WebTestCase
             'http://localhost:4200',
             1800,
             true,
+            new \App\Application\Team\CreationLimitPolicy('test', '10000', '60'),
+            'local-test-secret',
         );
         try {
             $service->create('Equipo', 'Ana', 'UTC', 'persona@example.com');
@@ -145,6 +152,8 @@ final class TeamMailAttemptTest extends WebTestCase
             'http://localhost:4200',
             1800,
             false,
+            new \App\Application\Team\CreationLimitPolicy('test', '10000', '60'),
+            'local-test-secret',
         );
         static::getContainer()->set(\App\Application\Team\TeamService::class, $service);
         $this->client->jsonRequest('POST', '/api/teams', [

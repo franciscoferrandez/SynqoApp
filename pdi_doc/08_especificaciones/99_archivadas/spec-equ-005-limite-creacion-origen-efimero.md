@@ -1,7 +1,7 @@
 ---
 id: SPEC-EQU-005
 nivel: N3
-estado: ready
+estado: cerrado
 release: REL-002
 ---
 # SPEC-EQU-005 — Limitar la creación de equipos por origen efímero
@@ -23,7 +23,7 @@ Materializar para REL-002 el límite configurable de creación de equipos por IP
 
 - Autenticación o identificación persistente de personas, fingerprinting, geolocalización o prevención de abuso que supere el control básico de las claves disponibles.
 - Cambiar la política de límites definida para cada entorno.
-- El reset/carga local y la publicación/reset programado del juego demo, salvo asegurar que su proceso no borra entradas del pool; esos comportamientos están en [SPEC-EQU-004 — Carga manual del juego demo en desarrollo local](spec-equ-004-juego-demo-reset-horario.md) y [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](spec-equ-006-juego-demo-preproduccion.md).
+- El reset/carga local y la publicación/reset programado del juego demo, salvo asegurar que su proceso no borra entradas del pool; esos comportamientos están en [SPEC-EQU-004 — Carga manual del juego demo en desarrollo local](spec-equ-004-juego-demo-reset-horario.md) y [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../01_activas/spec-equ-006-juego-demo-preproduccion.md).
 - Soporte de una aplicación móvil nativa.
 
 ## Baseline relacionado
@@ -35,8 +35,8 @@ Materializar para REL-002 el límite configurable de creación de equipos por IP
 - [ADR-COO-004 — Desplegar la preproducción de Synqo en Railway con IaC](../../05_investigacion-y-decisiones/05_adr/adr-coo-004-preproduccion-railway-iac.md)
 - [RESR-COO-003 — ¿Cómo modelar y operar la preproducción de Synqo en Railway?](../../05_investigacion-y-decisiones/01_research/resr-coo-003-railway-iac-preproduccion.md)
 - [SPEC-EQU-004 — Carga manual del juego demo en desarrollo local](spec-equ-004-juego-demo-reset-horario.md)
-- [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](spec-equ-006-juego-demo-preproduccion.md)
-- [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md)
+- [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../01_activas/spec-equ-006-juego-demo-preproduccion.md)
+- [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md)
 
 ## Módulos afectados
 
@@ -62,7 +62,7 @@ Ningún cambio normativo: materializa [RF-EQU-009 — Limitar la creación de eq
 
 - La señal first-party del navegador puede perderse por borrado del almacenamiento o restricciones del cliente; no se asumirá identidad estable ni se intentará reconstruirla mediante fingerprinting.
 - Solo se tratará como señal IP la dirección que el servidor obtenga directamente en una conexión no proxificada o mediante un proxy configurado y verificado como confiable. Una cabecera de cliente (`X-Forwarded-For`, `X-Real-IP` u otra) no se aceptará directamente. Si la topología no permite verificarla, la IP se considera no disponible y se evalúa la clave first-party; esto no impide el control en web si esa clave está disponible.
-- La topología elegida para Railway publica WEB y API bajo el mismo origen con FrankenPHP/Caddy conforme a [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md); por tanto, la clave de navegador viaja same-origin sobre HTTPS sin CORS. Esta topología no vuelve confiables las cabeceras reenviadas por el edge. Solo se usa IP tras validar qué peer/cabeceras recibe Symfony y configurar explícitamente los proxies confiables; hasta entonces, IP se considera ausente y se aplica la clave first-party disponible. La validación de despliegue corresponde a [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md).
+- La topología elegida para Railway publica WEB y API bajo el mismo origen con FrankenPHP/Caddy conforme a [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md); por tanto, la clave de navegador viaja same-origin sobre HTTPS sin CORS. Esta topología no vuelve confiables las cabeceras reenviadas por el edge. Solo se usa IP tras validar qué peer/cabeceras recibe Symfony y configurar explícitamente los proxies confiables; hasta entonces, IP se considera ausente y se aplica la clave first-party disponible. La validación de despliegue corresponde a [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md).
 - El texto de rechazo es el mensaje genérico fijado en el baseline y no incluirá el tiempo restante ni información de IP/dispositivo.
 - Si falla la generación o persistencia browser-side, WEB omite esa señal y la creación se evalúa con la IP fiable disponible; si no queda ninguna se rechaza por seguridad.
 
@@ -83,7 +83,7 @@ Ningún cambio normativo: materializa [RF-EQU-009 — Limitar la creación de eq
 - **API — configuración:** opciones `TEAM_CREATION_LIMIT` y `TEAM_CREATION_WINDOW_MINUTES`, independientes por entorno, con defaults requeridos por RF; parsear y validar valores positivos al arrancar para evitar una política silenciosamente inválida.
 - **WEB:** en la primera creación, leer una sola clave de 32 bytes vía `crypto.getRandomValues`, codificar Base64URL y guardar en `localStorage` por origen. Capturar excepción de crypto/storage y continuar sin clave. Reutilizar el valor en `X-Creation-Device` solo para POST de creación y mantener su transmisión same-origin/HTTPS según [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). Obtener del API máximo/período de cada entorno y presentarlos antes de submit. Ante el tipo estable 429 mostrar exactamente el texto acordado, sin `detail` con causa interna.
 - **Operación / reset:** ejecutar limpieza al inicio de intentos y una purga programada separada cada cinco minutos en Railway. El comando `app:creation-limits:purge` es propiedad funcional de esta SPEC; COO-006 solo configura su Cron `*/5 * * * *` UTC. El reset local pertenece a SPEC-EQU-004 y el reset de preproducción a SPEC-EQU-006; ambos preservan la tabla del pool completa. La cadencia de purga implementa eliminación física eventual; el control lógico deja de contar filas vencidas exactamente al terminar su ventana.
-- **Topología:** servicio HTTP combinado y rutas same-origin `/api` aprobados por [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). La verificación de IP/proxy, cabecera confiable y URL HTTPS pública se coordina con [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md); hasta superar esa prueba la señal IP se trata como no disponible.
+- **Topología:** servicio HTTP combinado y rutas same-origin `/api` aprobados por [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). La verificación de IP/proxy, cabecera confiable y URL HTTPS pública se coordina con [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md); hasta superar esa prueba la señal IP se trata como no disponible.
 
 ## Plan por slices
 
@@ -98,8 +98,41 @@ DoR comprobado con la plantilla global de PDI: objetivo, baseline, RF, criterios
 
 ## Convergence
 
-Requiere verificación de implementación conjunta con [SPEC-EQU-004 — Carga manual del juego demo en desarrollo local](spec-equ-004-juego-demo-reset-horario.md) y [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](spec-equ-006-juego-demo-preproduccion.md) para demostrar que ambos resets preservan la tabla independiente, y con [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md) para routing/IP confiable y ejecución del contrato `app:creation-limits:purge` cada cinco minutos. Queda la validación runtime.
+La convergencia de este Change verifica el comportamiento local del control de creación, su purga y la preservación del pool durante el reset local de [SPEC-EQU-004 — Carga manual del juego demo en desarrollo local](spec-equ-004-juego-demo-reset-horario.md). La integración de preproducción —preservación durante el reset remoto, routing/IP tras validar el proxy y ejecución programada de `app:creation-limits:purge`— se verifica después del despliegue como parte de [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../01_activas/spec-equ-006-juego-demo-preproduccion.md), con la infraestructura de [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md). Esa evidencia runtime no bloquea el cierre del control funcional local de esta SPEC.
 
 ## Resultado de cierre
 
-Pendiente.
+**DONE — SPEC-EQU-005 cerrada el 2026-10-07.** Los siete criterios tienen `PASS`; la suite API/WEB, los análisis estáticos y la validación del esquema pasan. La convergencia funcional local queda completa, incluida la preservación de entradas activas durante el reset local. El routing/IP efectivo y la purga recurrente en Railway quedan como evidencia runtime de [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../01_activas/spec-equ-006-juego-demo-preproduccion.md), tras desplegar la infraestructura. Esta SPEC no declara el runtime validado. El commit de implementación/documentación queda pendiente.
+
+## Verificación — 2026-10-07
+
+La verificación se ejecutó contra la implementación integrada, sin alterar la base local de desarrollo. PHPUnit se ejecutó dentro del contenedor API con `DATABASE_URL` explícita apuntando a `synqo_test`; la suite terminó con **87 tests y 682 assertions**. WEB se verificó con Node 24.21.0.
+
+| Criterio | Evidencia | Resultado |
+|---|---|---|
+| 1. Valores iniciales por entorno y configuración independiente | `CreationLimitPolicyTest::testEnvironmentDefaults`, `testMaxAndWindowCanBeOverriddenIndependently`, `testInvalidOverridesAreRejected` y `testUnknownEnvironmentIsRejected`; la suite API completa pasa. | PASS |
+| 2. Solo las creaciones satisfactorias consumen contadores | `TeamCreationLimitTest::testDeviceSignalIsAlsoIndependentlyEnforcedAndInvalidRequestsDoNotConsumeLimit` prueba que un 422 no registra señal; `testFailedTeamPersistenceRollsBackTheSignalEvents` prueba rollback del equipo y el pool. | PASS |
+| 3. Cualquier clave disponible que alcance el límite bloquea; sin claves se falla de forma segura | `testAnySignalAtItsLimitBlocksAndStoresOnlyKeyedDigests` alcanza el límite de IP con claves de dispositivo diferentes; `testDeviceSignalIsAlsoIndependentlyEnforcedAndInvalidRequestsDoNotConsumeLimit` alcanza el límite de dispositivo desde IP diferentes; `testCreationFailsClosedWhenNoOriginSignalIsAvailable` comprueba el rechazo sin señales; la prueba concurrente ejercita la ruta con una sola clave de dispositivo. | PASS |
+| 4. Clave first-party criptográfica, opaca y reutilizable, sin fingerprinting | `TeamApi` prueba generación de 32 bytes con `crypto.getRandomValues`, transmisión como `X-Creation-Device`, persistencia y reutilización; otra prueba comprueba que si falla la generación se omite esa señal. El código no deriva una huella del navegador. | PASS |
+| 5. Pool desvinculado, expiración y preservación durante reset demo | `testAnySignalAtItsLimitBlocksAndStoresOnlyKeyedDigests` comprueba digests HMAC y ausencia de columnas de equipo; migración y entidad no declaran FK a equipo. `testPurgerDeletesExpiredRowsAndRetainsActiveRows` prueba borrado selectivo; `DemoResetTest` comprueba que el reset conserva una fila activa. El reset no incluye la tabla del pool entre sus deletes. | PASS |
+| 6. Límite visible antes de enviar y mensaje 429 exacto, sin revelar la señal | `create-page.spec.ts` verifica máximo y período, y el mensaje literal ante 429; el template deshabilita el submit hasta cargar la política. `TeamCreationLimitTest` verifica respuesta Problem Details con texto y tipo estables. | PASS |
+| 7. La concurrencia no excede el máximo | `TeamCreationLimitTest::testConcurrentRequestsCannotExceedConfiguredLimit` inicia dos procesos/Kernel independientes contra PostgreSQL con la misma clave y máximo uno; resulta una creación y un rechazo. | PASS |
+
+**Checks:** `docker compose exec -T api sh -c "DATABASE_URL='postgresql://synqo:synqo-local@database:5432/synqo_test?serverVersion=18&charset=utf8' vendor/bin/phpunit"` (87/682); `composer cs:check`, `composer stan`, `composer rector:check`; `npm test` (14), `npm run lint`, `npm run format:check` y `npm run build`. Todos pasan. La migración está aplicada en la base de test usada por PHPUnit. No se usó la base `synqo` de desarrollo.
+
+**Gate de verificación: READY_FOR_CHANGE_CONVERGE.** No se observó discrepancia de comportamiento contra los criterios del Change. Esta evidencia no afirma despliegue ni ejecución en Railway.
+
+## Convergencia — revisión del 2026-10-07
+
+La comparación de [RF-EQU-009 — Limitar la creación de equipos por origen efímero](../../03_requisitos/01_funcionales/EQU/rf-equ-009-limitar-creacion-por-origen-efimero.md), [ADR-COO-004 — Desplegar la preproducción de Synqo en Railway con IaC](../../05_investigacion-y-decisiones/05_adr/adr-coo-004-preproduccion-railway-iac.md), esta SPEC y la implementación no muestra drift funcional: las claves se procesan como señales independientes, se almacenan solo como digests en un pool sin equipo asociado, el API falla cerrado sin señal y WEB muestra el límite/mensaje acordados. El IP reenviado no se da por confiable en Railway; el código lo omite en producción hasta configuración explícita de proxy, y la clave first-party sigue permitiendo el control previsto.
+
+| Clase | Resultado |
+|---|---|
+| A — Código | Sin drift funcional detectado dentro de los siete criterios; migración, persistencia transaccional, purga, interfaz y pruebas concuerdan con la SPEC. |
+| B — SPEC | Se conservan sin cambios los siete criterios funcionales y su evidencia local. La dependencia de runtime que se había añadido a la sección de convergencia mezclaba este control con la futura operación de preproducción; con la decisión de la persona impulsora, la verificación integrada de pool, proxy/IP y Cron pasa a [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../01_activas/spec-equ-006-juego-demo-preproduccion.md). No se altera el comportamiento normativo del límite ni se declara probado Railway. |
+| C — Nueva información | Sin nueva verdad normativa. La validación de preproducción queda situada en el Change que configura el reset horario y los metadatos demo, después del despliegue. |
+| D — Arquitectura | Se conserva el tratamiento fail-closed del proxy: una IP no verificada se considera ausente; no se interpreta una cabecera reenviada directamente. |
+| E — Baseline incorrecto | No detectado; no procede `pdi:baseline-update`. |
+| F — Integración de preproducción fuera de este Change | No se dispone aún de runtime Railway. Esa validación se traslada a [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../01_activas/spec-equ-006-juego-demo-preproduccion.md), que comprobará reset, pool, purga programada y routing/IP después del despliegue de [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md). La preservación del pool durante el reset local ya está probada por `DemoResetTest`; esta dependencia futura no bloquea el cierre funcional local. |
+
+**Gate de convergencia: READY_FOR_CHANGE_CLOSE (2026-10-07).** La verificación local de la creación, la expiración/purga y la conservación de entradas vigentes durante el reset local pasa. La anterior dependencia de runtime Railway se reasigna formalmente a SPEC-EQU-006; no se declara verificado el entorno remoto.

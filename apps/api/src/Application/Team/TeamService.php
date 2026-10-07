@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Team;
 
 use App\Application\Exception\InvalidTeamInput;
+use App\Application\Exception\CreationLimitExceeded;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
@@ -29,11 +30,19 @@ final readonly class TeamService
         private string $publicUrl,
         private int $mailAttemptTtlSeconds,
         private bool $teamCreationEmailEnabled,
+        private CreationLimitPolicy $creationLimitPolicy,
+        private string $creationOriginHashSecret,
     ) {}
 
     /** @return array<string, mixed> */
-    public function create(string $name, string $firstParticipantName, ?string $timeZone, ?string $email = null): array
-    {
+    public function create(
+        string $name,
+        string $firstParticipantName,
+        ?string $timeZone,
+        ?string $email = null,
+        ?string $clientIp = null,
+        ?string $deviceKey = null,
+    ): array {
         $invalidFields = [];
         if (!ParticipantName::isValid($name)) {
             $invalidFields[] = 'name';
@@ -56,6 +65,10 @@ final readonly class TeamService
         $firstParticipantName = trim($firstParticipantName);
         $zone = TeamTimeZone::orDefault($timeZone);
         $now = $this->now();
+        $origins = $this->creationOrigins($clientIp, $deviceKey);
+        if ($origins === []) {
+            throw new CreationLimitExceeded();
+        }
         $id = $this->identifiers->generate();
         $participantId = $this->identifiers->generate();
         $accessToken = $this->accessTokens->generate();
@@ -71,10 +84,13 @@ final readonly class TeamService
                 'expires_at' => $now->modify(sprintf('+%d seconds', $this->mailAttemptTtlSeconds))->format('Y-m-d H:i:sP'),
             ];
         }
-        $this->teams->create(
+        $this->teams->createWithOriginLimit(
             ['id' => $id, 'name' => $name, 'access_verifier' => hash('sha256', $accessToken), 'time_zone' => $zone, 'created_at' => $now->format('Y-m-d H:i:sP'), 'last_activity_at' => $now->format('Y-m-d H:i:sP')],
             ['id' => $participantId, 'name' => $firstParticipantName, 'name_normalized' => ParticipantName::normalize($firstParticipantName), 'created_at' => $now->format('Y-m-d H:i:sP')],
             $mailAttempt,
+            $origins,
+            $this->creationLimitPolicy->maxTeams,
+            $this->creationLimitPolicy->windowSeconds(),
         );
 
         $created = [
@@ -90,6 +106,24 @@ final readonly class TeamService
         }
 
         return $created;
+    }
+
+    /** @return list<array{type: 'ip'|'device', digest: string}> */
+    private function creationOrigins(?string $clientIp, ?string $deviceKey): array
+    {
+        $origins = [];
+        if ($clientIp !== null && filter_var($clientIp, FILTER_VALIDATE_IP) !== false) {
+            $packedIp = inet_pton($clientIp);
+            if ($packedIp !== false) {
+                $origins[] = ['type' => 'ip', 'digest' => hash_hmac('sha256', 'ip:' . bin2hex($packedIp), $this->creationOriginHashSecret)];
+            }
+        }
+
+        if ($deviceKey !== null && preg_match('/^[A-Za-z0-9_-]{43}$/D', $deviceKey) === 1) {
+            $origins[] = ['type' => 'device', 'digest' => hash_hmac('sha256', 'device:' . $deviceKey, $this->creationOriginHashSecret)];
+        }
+
+        return $origins;
     }
 
     /** @return array<string, mixed> */

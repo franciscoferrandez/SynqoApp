@@ -51,6 +51,8 @@ export interface TeamCreated {
 }
 export interface PublicConfiguration {
   teamCreationEmailEnabled: boolean;
+  teamCreationMaxTeams: number;
+  teamCreationWindowMinutes: number;
 }
 export type MailAttemptStatus = 'pending' | 'succeeded' | 'failed';
 export interface TeamData {
@@ -79,12 +81,17 @@ export class TeamApi {
     return this.http.get<PublicConfiguration>('/api/configuration');
   }
   create(name: string, firstParticipantName: string, email?: string): Observable<TeamCreated> {
-    return this.http.post<TeamCreated>('/api/teams', {
-      name,
-      firstParticipantName,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      ...(email ? { email } : {}),
-    });
+    const deviceKey = getCreationDeviceKey();
+    return this.http.post<TeamCreated>(
+      '/api/teams',
+      {
+        name,
+        firstParticipantName,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        ...(email ? { email } : {}),
+      },
+      { headers: deviceKey ? { 'X-Creation-Device': deviceKey } : {} },
+    );
   }
   mailAttemptStatus(receipt: string): Observable<{ status: MailAttemptStatus }> {
     return this.http.get<{ status: MailAttemptStatus }>('/api/mail-attempts/current', {
@@ -164,5 +171,27 @@ export class TeamApi {
       '/api/teams/current/participants',
       { name },
     );
+  }
+}
+
+const CREATION_DEVICE_STORAGE_KEY = 'synqo-creation-origin-v1';
+const CREATION_DEVICE_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+export function getCreationDeviceKey(): string | undefined {
+  try {
+    const storage = globalThis.localStorage;
+    const existing = storage.getItem(CREATION_DEVICE_STORAGE_KEY);
+    if (existing && CREATION_DEVICE_KEY_PATTERN.test(existing)) return existing;
+
+    const bytes = new Uint8Array(32);
+    globalThis.crypto.getRandomValues(bytes);
+    let binary = '';
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    const key = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    storage.setItem(CREATION_DEVICE_STORAGE_KEY, key);
+    return key;
+  } catch {
+    // Storage/crypto restrictions fall back to an IP when one is trustworthy.
+    return undefined;
   }
 }

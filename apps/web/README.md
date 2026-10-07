@@ -1,6 +1,6 @@
 # Synqo WEB
 
-Aplicación Angular de Synqo. La creación de equipos y el acceso compartido de [SPEC-EQU-001](../../pdi_doc/08_especificaciones/99_archivadas/spec-equ-001-arranque-equipo-local.md) utilizan la API local; los paneles de calendario y consultas aún muestran contenido ilustrativo.
+Aplicación Angular de Synqo. La creación de equipos, el acceso compartido, el calendario de disponibilidad y las consultas utilizan la API local.
 
 ## Preparación desde un clon limpio
 
@@ -27,6 +27,8 @@ npm --prefix apps/web run test:e2e
 ```
 
 El servidor abre en `http://localhost:4200/` y envía `/api` a `http://localhost:8000/` mediante el proxy local.
+
+La pantalla de creación obtiene de `/api/configuration` el límite de equipos y su ventana vigentes, muestra esa información antes del envío y presenta el aviso genérico si la API responde que se alcanzó el límite. La clave first-party de origen se genera con Web Crypto y se conserva en `localStorage`; si no está disponible, la solicitud continúa sin esa señal y la API evalúa cualquier otra señal confiable.
 
 Para aplicar correcciones explícitas:
 

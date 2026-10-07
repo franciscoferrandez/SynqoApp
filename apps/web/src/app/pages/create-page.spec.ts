@@ -28,7 +28,13 @@ it('enters directly when confirmation is disabled and remembers the creator iden
     mailAttempt: { status: 'pending', receipt: 'private-receipt' },
   };
   const api = {
-    publicConfiguration: vi.fn(() => of({ teamCreationEmailEnabled: true })),
+    publicConfiguration: vi.fn(() =>
+      of({
+        teamCreationEmailEnabled: true,
+        teamCreationMaxTeams: 2,
+        teamCreationWindowMinutes: 60,
+      }),
+    ),
     create: vi.fn(() => of(created)),
     recentCreation: undefined,
   };
@@ -44,6 +50,12 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
   fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('#email')).not.toBeNull();
+  expect(fixture.nativeElement.querySelector('#creation-limit-info')?.textContent).toContain(
+    '2 equipos',
+  );
+  expect(fixture.nativeElement.querySelector('#creation-limit-info')?.textContent).toContain(
+    '60 minutos',
+  );
   const component = fixture.componentInstance;
   Reflect.set(component, 'teamName', 'Equipo');
   Reflect.set(component, 'participantName', 'Ana');
@@ -60,6 +72,48 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   fixture.destroy();
 });
 
+it('shows the generic configured-limit message when creation is rate limited', () => {
+  vi.stubGlobal('window', {
+    navigator: window.navigator,
+    location: window.location,
+    matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+  });
+  const api = {
+    publicConfiguration: vi.fn(() =>
+      of({
+        teamCreationEmailEnabled: false,
+        teamCreationMaxTeams: 2,
+        teamCreationWindowMinutes: 60,
+      }),
+    ),
+    create: vi.fn(() =>
+      throwError(() => ({
+        status: 429,
+        error: { type: 'urn:synqo:problem:creation-limit-exceeded' },
+      })),
+    ),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: TeamApi, useValue: api },
+      { provide: Router, useValue: { navigateByUrl: vi.fn() } },
+      { provide: TEAM_CREATION_CONFIRMATION, useValue: true },
+    ],
+  });
+  const fixture = TestBed.createComponent(CreatePage);
+  Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
+  fixture.detectChanges();
+  const component = fixture.componentInstance;
+  Reflect.set(component, 'teamName', 'Equipo');
+  Reflect.set(component, 'participantName', 'Ana');
+  Reflect.get(component, 'create').call(component, new Event('submit'));
+  fixture.detectChanges();
+  expect(fixture.nativeElement.textContent).toContain(
+    'Has alcanzado el límite de creación de equipos. Inténtalo de nuevo más tarde.',
+  );
+  fixture.destroy();
+});
+
 it('hides email when the public configuration disables it', () => {
   vi.stubGlobal('window', {
     navigator: window.navigator,
@@ -67,7 +121,13 @@ it('hides email when the public configuration disables it', () => {
     matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
   });
   const api = {
-    publicConfiguration: vi.fn(() => of({ teamCreationEmailEnabled: false })),
+    publicConfiguration: vi.fn(() =>
+      of({
+        teamCreationEmailEnabled: false,
+        teamCreationMaxTeams: 2,
+        teamCreationWindowMinutes: 60,
+      }),
+    ),
     create: vi.fn(),
   };
   TestBed.configureTestingModule({
