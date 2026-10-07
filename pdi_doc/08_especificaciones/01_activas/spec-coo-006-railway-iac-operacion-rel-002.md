@@ -126,33 +126,45 @@ Flujo autorizado: IaC se inspecciona con CLI config plan, aplica con config appl
 
 ## Plan por slices
 
-1. **Runtime combinado aprobado:** concretar la imagen FrankenPHP/Caddy, build multietapa y routing same-origin definidos en ADR-COO-005; diseñar pruebas locales de WEB, `/api`, `PORT`, healthcheck y fallback SPA sin enviar código a Railway.
-2. **Coordinación de procesos:** verificar el runtime y configurar los recursos Cron para `app:demo:reset` y `app:creation-limits:purge` conforme a SPEC-EQU-004/005/006. El Cron horario se deja desactivado hasta que el servicio de preproducción esté desplegado y su primera ejecución sea comprobada.
-3. Definir IaC y validaciones locales que no contacten ni modifiquen un proyecto Railway remoto; mantener secretos fuera de git y ajustar los recursos al límite de gasto y backup ya acordados.
-4. Completar instrucciones locales, despliegue manual, preflight, postflight y recuperación; actualizar README con referencias a guías operativas.
-5. Validar IaC y recorrido documental. La revisión del plan real, conexión GitHub y primer deploy quedan bloqueados hasta cerrar el gate de licencia de SPEC-COO-005 y requieren acción manual de la persona impulsora.
+1. **PASS local — Runtime combinado:** imagen FrankenPHP/Caddy multietapa y routing same-origin probados localmente con WEB, `/api`, `PORT`, healthcheck y fallback SPA, sin enviar código a Railway.
+2. **PASS en configuración; runtime pendiente — Coordinación de procesos:** IaC declara los dos Cron con sus comandos/schedules solo por opt-in. El horario de reset permanece desactivado hasta que el servicio esté desplegado y verificado según SPEC-EQU-006.
+3. **PASS local — IaC:** proyecto/entorno, PostgreSQL, variables y referencias se modelan localmente; tests y typecheck no contactan Railway. No se ejecutó un plan remoto.
+4. **PASS — Operación/documentación:** README, pasos manuales, preflight, postflight, recuperación y ejecución local quedan escritos en los artefactos afectados.
+5. **PASS local; gate remoto pendiente:** checks IaC, imagen y documentación pasan. Plan real, conexión GitHub y primer deploy siguen bloqueados por licencia, source y límite de gasto; requieren acción manual de la persona impulsora.
 
 ## Evidencia / Validation
 
-Preparación documental e investigación oficial realizadas el 2026-10-07. La decisión humana de servicio combinado se registra en [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md); la comparación y sus límites están en [RESR-COO-003 — ¿Cómo modelar y operar la preproducción de Synqo en Railway?](../../05_investigacion-y-decisiones/01_research/resr-coo-003-railway-iac-preproduccion.md). No se ha creado, conectado ni activado ningún recurso Railway ni enviado código fuente. `validate_structure.py` devolvió `VALIDATION OK` y `git diff --check` pasó.
+Preparación documental e investigación oficial realizadas el 2026-10-07. La decisión humana de servicio combinado se registra en [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md); la comparación y sus límites están en [RESR-COO-003 — ¿Cómo modelar y operar la preproducción de Synqo en Railway?](../../05_investigacion-y-decisiones/01_research/resr-coo-003-railway-iac-preproduccion.md).
+
+### Implementación local (2026-10-07)
+
+- `.railway/railway.ts` define únicamente el entorno `preproduction`, PostgreSQL 18 y el HTTP combinado. No declara fuente GitHub. Los Cron quedan fuera del grafo por defecto y solo se añaden con `SYNQO_ENABLE_PREPRODUCTION_CRONS=1`.
+- `Dockerfile.railway`, `.dockerignore` y `apps/api/Caddyfile.railway` construyen una imagen de producción multietapa; enrutan la API bajo `/api`, la SPA con fallback, y publican `/healthz` y avisos legales. Se añadieron avisos del runtime FrankenPHP, Caddy y PHP.
+- `scripts/railway-iac.test.mjs`, `scripts/smoke-railway-image.sh` y el job existente de CI comprueban localmente el grafo, tipos TypeScript, construcción y arranque de la imagen con PostgreSQL efímero.
+- README y guías de API/WEB se actualizaron para las instrucciones cotidianas y el runtime combinado. El procedimiento Railway está en [Operación manual de Railway para REL-002](../../09_operacion/01_despliegue/railway-rel-002.md).
+- Verificaciones locales: `npm run railway:iac:check` (3 tests y TypeScript), `npm run railway:image:smoke` (migraciones, healthcheck, SPA, API, ruta desconocida y 8 avisos), `php vendor/bin/phpunit tests/ApiUnknownRouteTest.php` (1 test, 8 assertions), `python3 pdi/scripts/validate_structure.py` y `git diff --check`.
+- No se inició sesión, vinculó proyecto, conectó GitHub, ejecutó plan/apply, creó recursos, activó gasto ni subió código a Railway. La imagen construida localmente no se transfiere.
+
+**Pendientes antes del cierre/verificación completa:** la verificación manual de URL pública y despliegue no es posible sin resolver la clasificación de source de SPEC-COO-005; el hard limit documentado parte de 10 USD, incompatible con el máximo aprobado de 5 USD, así que cualquier recurso con coste potencial permanece apagado. No se probaron cuenta, plan, coste real, conexión inicial, backups ni Cron en Railway. La auditoría de licencias transitivas del runtime debe completarse antes de transferencia externa.
 
 ## Convergence
 
-**DoR: READY para implementación local. La conexión, transferencia de source y cualquier operación en Railway siguen bloqueadas por sus preflight independientes; READY no autoriza provisionar recursos ni desplegar.**
+**Implementación local completada; pendiente de `change-verify`.** La conexión, transferencia de source y cualquier operación en Railway siguen bloqueadas por sus preflight independientes; READY no autoriza provisionar recursos ni desplegar. Los tests locales no declaran verificados los criterios que requieren cuenta/infraestructura real.
 
 | Comprobación | Estado | Evidencia / gate |
 |---|---|---|
 | Objetivo, scope, AC y baseline enlazados | PASS | Alcance y 16 AC definidos; REL-002, ADR, research y SPEC relacionadas enlazadas. |
 | Investigación de runtime, límites operativos y fuentes | PASS | Hallazgos oficiales incluidos con enlaces; estado local contrastado con Docker Compose, API, WEB y README. |
-| Decisión de servidor HTTP y topología API/WEB | PASS | Selección humana registrada en ADR-COO-005; diseño de rutas y validación de proxy siguen como trabajo de implementación/coordinación. |
-| Contrato de Cron para reset y purga | PASS | Contratos armonizados con EQU-004/005; la implementación y pruebas locales siguen en el plan por slices. |
-| Límite mensual y reacción al alcanzarlo | PASS | Free primero; Hobby si hace falta, tope total 5 USD/mes, hard limit y aceptación de interrupción. |
+| Decisión de servidor HTTP y topología API/WEB | PASS local | Selección humana registrada en ADR-COO-005; imagen y rutas se probaron localmente. |
+| Contrato de Cron para reset y purga | PASS local | IaC modela schedules opt-in y tests inspeccionan comandos/schedules; ejecución real corresponde a EQU-006 tras autorización/despliegue. |
+| Límite mensual y reacción al alcanzarlo | BLOCKED — operación | El hard limit actual tiene mínimo documentado de 10 USD; no activar servicios con coste potencial bajo el máximo vigente de 5 USD. |
 | Política de backup dentro del tope y retención | PASS | Copia diaria solo si cabe bajo 5 USD/mes; si no, desactivada. Se acepta que restaurar reintroduzca filas expiradas. |
 | Gate de clasificación, conexión y envío del código fuente | BLOCKED — operación | No impide escribir/verificar localmente IaC y runbooks; antes de conectar/subir/desplegar se requiere evidencia de clasificación compatible según SPEC-COO-005. |
 | Recursos/proyecto real de Railway | OUT OF SCOPE | Ningún recurso se crea durante preparación; conexión y despliegue requieren acción manual posterior. |
-| Validación final de esta SPEC | PASS | `validate_structure.py` devolvió `VALIDATION OK`; `git diff --check` pasó; enlaces locales de las cuatro SPEC comprobados. |
+| Verificación de imagen e IaC local | PASS local | `railway:iac:check`, smoke Docker, test API desconocida, estructura PDI y diff check; falta change-verify independiente. |
+| Verificación pública, conexión y Cron reales | BLOCKED — operación | Requiere resolver licencia/source y el tope de gasto; ningún recurso remoto fue creado. |
 
-La respuesta de Q2 en SPEC-COO-005 separó DoR local y gate operativo. Por ello el Change puede entrar en implementación local, pero no puede conectar GitHub, enviar source, crear recursos reales ni desplegar hasta cerrar el gate de clasificación y completar la intervención manual de la persona impulsora.
+La respuesta de Q2 en SPEC-COO-005 separó DoR local y gate operativo. La implementación local puede pasar a verificación PDI independiente, pero no puede conectar GitHub, enviar source, crear recursos reales ni desplegar hasta cerrar el gate de clasificación y confirmar un límite de gasto compatible con el máximo aprobado.
 
 ## Resultado de cierre
 

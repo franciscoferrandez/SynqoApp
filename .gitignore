@@ -13,3 +13,5 @@ apps/web/playwright-report/
 .env.*
 !.env.example
 !apps/api/.env.test
+.railway/*
+!.railway/railway.ts

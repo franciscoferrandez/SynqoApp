@@ -1,0 +1,70 @@
+# Combined production image for Railway. The Angular and Symfony modules remain
+# separate in source; Caddy serves the SPA and routes /api to Symfony.
+FROM node:24.21.0-bookworm-slim AS web-build
+WORKDIR /workspace
+
+COPY LICENSE ./LICENSE
+COPY scripts/build-web.mjs scripts/distribution-notices.mjs ./scripts/
+COPY doc/legal/third_party/angular-schematics-LICENSE.txt doc/legal/third_party/
+COPY apps/web/package.json apps/web/package-lock.json ./apps/web/
+RUN npm ci --prefix apps/web
+COPY apps/web/ ./apps/web/
+RUN npm --prefix apps/web run build
+
+FROM dunglas/frankenphp:1-php8.5-bookworm@sha256:667ddd39a3ed826cd4b5fb8dcbb3af480533931a9f0a53977c2d8557d81f7d99 AS php-runtime
+RUN install-php-extensions intl pdo_pgsql zip
+
+FROM php-runtime AS api-dependencies
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+WORKDIR /app
+COPY apps/api/composer.json apps/api/composer.lock apps/api/symfony.lock apps/api/LICENSE ./
+COPY apps/api/bin/ ./bin/
+COPY apps/api/config/ ./config/
+COPY apps/api/migrations/ ./migrations/
+COPY apps/api/public/ ./public/
+COPY apps/api/src/ ./src/
+RUN touch .env
+RUN APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-value APP_PUBLIC_URL=http://localhost DEFAULT_URI=http://localhost \
+    DATABASE_URL='postgresql://synqo:synqo@127.0.0.1:5432/synqo?serverVersion=18&charset=utf8' \
+    MAILER_DSN=null://null TEAM_CREATION_EMAIL_ENABLED=false \
+    composer install --no-dev --prefer-dist --classmap-authoritative --optimize-autoloader \
+      --no-interaction --no-progress
+
+FROM node:24.21.0-bookworm-slim AS notices
+WORKDIR /workspace
+COPY LICENSE ./LICENSE
+COPY scripts/distribution-notices.mjs ./scripts/
+COPY doc/legal/third_party/symfony-recipes-LICENSE.txt \
+     doc/legal/third_party/api-platform-jsonld-LICENSE.txt ./doc/legal/third_party/
+COPY apps/api/composer.json apps/api/composer.lock apps/api/LICENSE ./apps/api/
+COPY --from=api-dependencies /app/vendor ./apps/api/vendor
+RUN node scripts/distribution-notices.mjs api apps/api --production
+
+FROM php-runtime AS final
+ENV APP_ENV=prod APP_DEBUG=0
+WORKDIR /app
+
+COPY --from=api-dependencies /app/vendor ./vendor
+COPY --from=api-dependencies /app/bin ./bin
+COPY --from=api-dependencies /app/config ./config
+COPY --from=api-dependencies /app/migrations ./migrations
+COPY --from=api-dependencies /app/public ./public
+COPY --from=api-dependencies /app/src ./src
+COPY --from=api-dependencies /app/composer.json /app/composer.lock /app/symfony.lock ./
+COPY --from=api-dependencies /app/LICENSE ./LICENSE
+COPY --from=api-dependencies /app/.env ./.env
+COPY --from=notices /workspace/apps/api/SYNQO-LICENSE.txt ./SYNQO-LICENSE.txt
+COPY --from=notices /workspace/apps/api/THIRD_PARTY_NOTICES.txt ./THIRD_PARTY_NOTICES.txt
+COPY --from=web-build /workspace/apps/web/dist/web/browser/ ./public/
+COPY doc/legal/third_party/frankenphp-LICENSE.txt \
+     doc/legal/third_party/caddy-LICENSE.txt \
+     doc/legal/third_party/php-LICENSE.txt ./public/
+COPY doc/legal/third_party/railway-runtime-notices.txt ./public/SERVER-THIRD-PARTY-NOTICES.txt
+COPY apps/api/Caddyfile.railway /etc/frankenphp/Caddyfile
+
+RUN mkdir -p var/cache var/log /data/caddy /config/caddy \
+    && chown -R www-data:www-data var /data/caddy /config/caddy
+
+USER www-data
+EXPOSE 8080
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]

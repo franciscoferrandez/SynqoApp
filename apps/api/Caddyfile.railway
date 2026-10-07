@@ -1,0 +1,25 @@
+{
+	frankenphp
+	auto_https off
+	admin off
+}
+
+:{$PORT:8080} {
+	root * /app/public
+	encode zstd gzip
+
+	@api path /api /api/*
+	handle @api {
+		php_server
+	}
+
+	@health path /healthz
+	handle @health {
+		respond "ok" 200
+	}
+
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+}

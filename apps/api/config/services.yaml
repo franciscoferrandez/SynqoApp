@@ -71,6 +71,9 @@ services:
     App\Controller\MailAttemptController:
         public: true
         tags: ['controller.service_arguments']
+    App\Controller\ApiNotFoundController:
+        public: true
+        tags: ['controller.service_arguments']
 
     App\Application\Team\TeamRepository: '@App\Infrastructure\Persistence\OrmTeamRepository'
     App\Application\Team\IdentifierGenerator: '@App\Infrastructure\Identity\UuidGenerator'

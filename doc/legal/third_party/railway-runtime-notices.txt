@@ -1,0 +1,16 @@
+Runtime notices for the combined Railway image
+
+The image contains the following runtime components and their complete upstream
+license texts, served beside this notice:
+
+- FrankenPHP v1.13.0, MIT: frankenphp-LICENSE.txt
+  https://github.com/dunglas/frankenphp/tree/v1.13.0
+- Caddy v2.11.7, Apache-2.0: caddy-LICENSE.txt
+  https://github.com/caddyserver/caddy/tree/v2.11.7
+- PHP 8.5.11, PHP License: php-LICENSE.txt
+  https://github.com/php/php-src/tree/php-8.5.11
+
+Debian Bookworm package copyright and license notices remain in
+/usr/share/doc/<package>/copyright in the image. This list does not claim to be
+a complete audit of every module statically linked into FrankenPHP/Caddy; inspect
+the exact image's software inventory before transferring it outside this repo.

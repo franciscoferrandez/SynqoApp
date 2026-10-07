@@ -76,6 +76,14 @@ Las migraciones en `apps/api/migrations/` crean diez tablas: equipo, participant
 
 El reset manual se ejecuta con `php bin/console app:demo:reset` desde el servicio API de desarrollo. El comando requiere `APP_ENV=dev`, `SYNQO_DEPLOYMENT_ENV=development` y una base PostgreSQL local; en modo no interactivo requiere `--force`. En modo interactivo imprime los enlaces de acceso del fixture. El reset no modifica la tabla independiente de señales de creación ni configura una tarea programada. El README de API describe el procedimiento reproducible.
 
+## Runtime de preproducción Railway
+
+En REL-002, Symfony se ejecuta en FrankenPHP/Caddy junto a los assets de WEB, en la misma imagen y dominio público. Caddy pasa `/api` y `/api/...` al front controller PHP; las rutas API desconocidas deben conservar el error Symfony/API y no responder con el fallback Angular. El runtime normal de peticiones de FrankenPHP se usa sin worker mode. `PORT` controla el listener y `/healthz` es un healthcheck HTTP básico, no una prueba de conectividad PostgreSQL.
+
+El servicio Railway referencia `DATABASE_URL` del PostgreSQL gestionado y ejecuta `doctrine:migrations:migrate --no-interaction` como paso pre-deploy de cada publicación manual. Antes de publicar, se revisan las migraciones pendientes y sus efectos; volver a una imagen anterior no revierte una migración ni restaura datos. El correo se configura apagado en preproducción (`TEAM_CREATION_EMAIL_ENABLED=false`, `MAILER_DSN=null://null`) hasta que exista un proveedor seguro. El procedimiento operativo está en el runbook de despliegue de REL-002.
+
+Las rutas `/api/*` permanecen bajo Symfony/API Platform y no reciben el fallback SPA. Las rutas desconocidas devuelven Problem Details JSON con `404`; `/api` se reserva para el endpoint de documentación de API Platform.
+
 ## Desarrollo
 
 El paquete Composer se identifica como `synqo/api` con metadato `proprietary` para las aportaciones propias. `apps/api/LICENSE` conserva el aviso MIT de Symfony Skeleton; no licencia toda Synqo. El staging de producción preserva el vendor íntegro y añade los avisos propios y agregados de terceros mediante el [procedimiento de distribución](../legal/procedencia-y-avisos.md).

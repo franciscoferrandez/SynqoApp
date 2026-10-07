@@ -52,6 +52,12 @@ Los avisos de terceros se conservaron íntegros, sin reformular sus textos. Huel
 | API Platform JSON-LD | `0f6a8869658d87f1b04e3c7be4ce9648fe4a16b0c62f954511b564ab52178b59` |
 | Angular schematics | `15e77c4692114f87c2020353626c868472c23954a4ed37ecc4c1522d14be1eb7` |
 
+## Runtime combinado Railway
+
+La imagen Docker multietapa de REL-002 fija el manifest de FrankenPHP `1-php8.5-bookworm` por digest (`sha256:667ddd39a3ed826cd4b5fb8dcbb3af480533931a9f0a53977c2d8557d81f7d99`), que al preparar la imagen contenía FrankenPHP 1.13.0, PHP 8.5.11 y Caddy 2.11.7. Se incorporan los textos íntegros upstream [FrankenPHP MIT](third_party/frankenphp-LICENSE.txt), [Caddy Apache-2.0](third_party/caddy-LICENSE.txt) y [PHP License](third_party/php-LICENSE.txt), además de un índice en [avisos del runtime Railway](third_party/railway-runtime-notices.txt). Los avisos de copyright de paquetes Debian permanecen en `/usr/share/doc/<package>/copyright` dentro de la imagen.
+
+Esto conserva los avisos directos conocidos, pero no cierra la revisión legal completa del runtime: aún debe inventariarse el software Go enlazado en FrankenPHP/Caddy y los paquetes/avisos exactos del sistema. La imagen no se transferirá a Railway antes de resolver ese gate de procedencia.
+
 ## Generación y comprobación de los artefactos
 
 Desde la raíz, con las dependencias WEB instaladas:

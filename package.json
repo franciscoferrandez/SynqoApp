@@ -3,9 +3,12 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "railway:iac:check": "node --import tsx --test scripts/railway-iac.test.mjs && apps/web/node_modules/.bin/tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck --strict .railway/railway.ts",
+    "railway:image:smoke": "bash scripts/smoke-railway-image.sh"
   },
   "devDependencies": {
-    "lefthook": "2.0.14"
+    "lefthook": "2.0.14",
+    "railway": "3.13.0"
   }
 }

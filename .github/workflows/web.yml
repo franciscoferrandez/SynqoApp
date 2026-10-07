@@ -25,6 +25,10 @@ jobs:
             apps/web/package-lock.json
       - run: npm ci
       - run: npm --prefix apps/web ci
+      - name: Validar definición IaC local sin contactar Railway
+        run: npm run railway:iac:check
+      - name: Construir y probar la imagen de preproducción sin desplegar
+        run: npm run railway:image:smoke
       - name: Comprobar conservación de avisos de distribución
         run: node --test scripts/distribution-notices.test.mjs
       - name: Instalar Chromium para pruebas de navegador
