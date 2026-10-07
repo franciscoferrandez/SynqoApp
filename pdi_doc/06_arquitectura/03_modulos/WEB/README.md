@@ -18,6 +18,7 @@ Presentar con Angular en navegador los recorridos de [REL-001 — Demo local ope
 - Cambios visuales inmediatos con restauración y reintento cuando falle una operación.
 - Interacciones de teclado, foco, anuncios y adaptación móvil.
 - Mostrar el estado del intento de correo solo al navegador creador, con aviso persistente y descartable si falla, conforme a [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md).
+- Mostrar el campo opcional de correo solo cuando la configuración pública de API indique que está habilitado; si no se puede consultar, mantenerlo oculto, según [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md).
 
 La presentación separa interacción, estado visual y acceso a la API sin replicar el modelo autoritativo del servidor, conforme a [ADR-COO-002 — Separar el dominio con arquitectura limpia y DDD pragmático](../../../05_investigacion-y-decisiones/05_adr/adr-coo-002-arquitectura-limpia-y-ddd-pragmatico.md).
 
@@ -37,6 +38,8 @@ El navegador presentará el valor de acceso separado del UUID conforme a [ADR-EQ
 
 El cliente HTTP consumirá recursos JSON y errores Problem Details según [ADR-COO-003 — Usar JSON y Problem Details como contrato de la API](../../../05_investigacion-y-decisiones/05_adr/adr-coo-003-json-y-problem-details-como-contrato-api.md). La [convención HTTP común](../API/convencion-http.md) fija cómo interpretar los códigos; las SPEC y OpenAPI concretan las respuestas de cada operación.
 
+Para la preproducción Railway de REL-002, el build de Angular se empaqueta junto con API en el servicio HTTP combinado descrito en [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). El cliente conserva sus rutas `/api/...`; localmente, Angular y API siguen siendo procesos que pueden arrancarse por separado. Esta topología de despliegue no fusiona los límites lógicos de los módulos.
+
 ## Datos
 
 Estado transitorio de interfaz, selección de identidad y preferencia de tema en el navegador. Puede recordar el identificador opaco de seguimiento del intento para el navegador creador, sin guardar la dirección ni el valor de acceso fuera del fragmento del enlace. Los votos, las disponibilidades, las consultas y el resultado del correo se leen de la API.
@@ -47,7 +50,7 @@ Perder el valor del enlace durante navegación o recarga; mostrar estado optimis
 
 ## ADR aplicables
 
-[ADR-COO-001 — Separar interfaz web y API para la demo local](../../../05_investigacion-y-decisiones/05_adr/adr-coo-001-estructura-demo-local.md), [ADR-COO-002 — Separar el dominio con arquitectura limpia y DDD pragmático](../../../05_investigacion-y-decisiones/05_adr/adr-coo-002-arquitectura-limpia-y-ddd-pragmatico.md) y [ADR-EQU-003 — Verificar el valor del enlace en cada operación de la API](../../../05_investigacion-y-decisiones/05_adr/adr-equ-003-verificar-enlace-en-api.md).
+[ADR-COO-001 — Separar interfaz web y API para la demo local](../../../05_investigacion-y-decisiones/05_adr/adr-coo-001-estructura-demo-local.md), [ADR-COO-002 — Separar el dominio con arquitectura limpia y DDD pragmático](../../../05_investigacion-y-decisiones/05_adr/adr-coo-002-arquitectura-limpia-y-ddd-pragmatico.md), [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md) y [ADR-EQU-003 — Verificar el valor del enlace en cada operación de la API](../../../05_investigacion-y-decisiones/05_adr/adr-equ-003-verificar-enlace-en-api.md).
 
 ## Reglas de desarrollo
 

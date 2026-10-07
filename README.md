@@ -17,6 +17,7 @@ Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con I
 - [Funcionamiento previsto](#funcionamiento-previsto)
 - [Tecnologías y arquitectura](#tecnologías-y-arquitectura)
 - [Documentación de los módulos](#documentación-de-los-módulos)
+- [Proceso de desarrollo](#proceso-de-desarrollo)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Desarrollo local](#desarrollo-local)
 - [Calidad y reglas de implementación](#calidad-y-reglas-de-implementación)
@@ -61,6 +62,10 @@ WEB consume JSON de API y envía el valor de acceso como Bearer desde el fragmen
 - [Arquitectura y componentes de API](doc/architecture/api.md): operaciones HTTP, reglas, persistencia y limpieza de equipos.
 - [Arquitectura y componentes de WEB](doc/architecture/web.md): rutas, calendario, consultas y cliente HTTP.
 - [Documentación PDI del producto](pdi_doc/README.md): requisitos, experiencia, decisiones y especificaciones.
+
+## Proceso de desarrollo
+
+El proyecto usa el flujo PDI para definir el producto, preparar entregas y gestionar los Changes hasta su verificación y cierre. La guía del proyecto explica sus etapas, skills, artefactos, gates y diagramas: [Flujo de producto y cambios](doc/flujo-producto-y-cambios.md). La [documentación PDI](pdi_doc/README.md) conserva la baseline y los artefactos normativos del producto.
 
 ## Estructura del proyecto
 

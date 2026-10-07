@@ -19,6 +19,9 @@ La persona está creando un equipo rápido y dispone de una dirección de correo
 
 ## Criterios de aceptación
 
+- La capacidad de enviar el enlace puede habilitarse o deshabilitarse por entorno. Cuando está deshabilitada, el formulario no presenta el campo de correo y la API no admite solicitudes que intenten usarlo.
+- Si la capacidad está deshabilitada, la API no registra eventos de notificación y el proceso de envío no envía mensajes, incluidos los eventos que ya estuvieran pendientes.
+- Si la capacidad está habilitada, se mantienen los siguientes criterios:
 - El campo de correo es opcional y no impide crear el equipo cuando queda vacío.
 - Si se informa, Synqo lo utiliza únicamente para enviar una notificación con el enlace de acceso al equipo creado.
 - Solo se considera satisfactorio el intento cuando el componente encargado del envío confirma que terminó correctamente. Cualquier otro resultado, incluida la ausencia de confirmación, se trata como envío erróneo.

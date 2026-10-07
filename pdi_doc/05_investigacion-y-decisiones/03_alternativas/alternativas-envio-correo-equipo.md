@@ -60,3 +60,11 @@ Esta candidata permite **como máximo una invocación iniciada por la aplicació
 ## Estado
 
 El registro transaccional del evento se propone en [ADR-EQU-002 — Registrar el envío opcional como evento transaccional](../05_adr/adr-equ-002-evento-transaccional-correo.md). Siguen abiertas las alternativas para el procesador, la protección de datos temporales, la consulta del resultado y el proveedor.
+
+## Decisión pendiente para preproducción
+
+La persona impulsora desea correo real en la preproducción alojada en Railway, pero actualmente no dispone de SMTP ni credenciales. Railway ofrece salida SMTP únicamente en planes Pro o superiores; en Free, Trial y Hobby documenta el uso de APIs HTTPS de proveedores transaccionales. Esta conectividad no equivale a que Railway proporcione cuenta, proveedor o credenciales. Falta elegir una alternativa segura y, si se activa, un remitente verificado y la gestión de sus secretos. No se deben usar Mailpit ni credenciales de desarrollo como evidencia del requisito de envío real.
+
+**Opciones conocidas:** usar un proveedor SMTP compatible con el adaptador actual si el plan de Railway permite salida SMTP; integrar una API HTTPS de correo mediante un adaptador nuevo; o realizar una comparación antes de seleccionar. No hay proveedor ni dominio aprobados. Cuando se disponga de datos de Railway se comprobará el plan y se valorarán alternativas externas seguras.
+
+**Gate afectado:** configurar y verificar el envío externo requiere proveedor y credenciales. La persona impulsora ha decidido que si no se identifica una alternativa segura disponible, el correo real no bloqueará la entrega de preproducción; la omisión se documentará y no se acreditará el envío real. El gate de hosting Railway no depende de esta elección.
