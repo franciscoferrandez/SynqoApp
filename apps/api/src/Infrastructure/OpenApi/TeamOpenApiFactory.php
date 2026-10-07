@@ -25,6 +25,14 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
     {
         $openApi = ($this->decorated)($context);
         $paths = new Paths();
+        $paths->addPath('/api/configuration', new PathItem(get: new Operation(
+            operationId: 'getPublicConfiguration',
+            tags: ['Configuration'],
+            summary: 'Read public, environment-specific capabilities',
+            responses: [
+                '200' => $this->response('Effective public configuration', ['teamCreationEmailEnabled' => $this->schema('boolean')]),
+            ],
+        )));
         $paths->addPath('/api/teams', new PathItem(post: new Operation(
             operationId: 'createTeam',
             tags: ['Teams'],

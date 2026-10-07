@@ -49,6 +49,9 @@ export interface TeamCreated {
   accessUrl: string;
   mailAttempt?: { status: 'pending'; receipt: string };
 }
+export interface PublicConfiguration {
+  teamCreationEmailEnabled: boolean;
+}
 export type MailAttemptStatus = 'pending' | 'succeeded' | 'failed';
 export interface TeamData {
   id: string;
@@ -60,8 +63,9 @@ export interface TeamData {
 
 export const accessTokenInterceptor: HttpInterceptorFn = (request, next) => {
   const token = new URLSearchParams(location.hash.slice(1)).get('t');
+  const isPublicConfiguration = request.url === '/api/configuration';
   return next(
-    token && request.url.includes('/api/')
+    token && request.url.includes('/api/') && !isPublicConfiguration
       ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
       : request,
   );
@@ -71,6 +75,9 @@ export const accessTokenInterceptor: HttpInterceptorFn = (request, next) => {
 export class TeamApi {
   private readonly http = inject(HttpClient);
   recentCreation?: TeamCreated;
+  publicConfiguration(): Observable<PublicConfiguration> {
+    return this.http.get<PublicConfiguration>('/api/configuration');
+  }
   create(name: string, firstParticipantName: string, email?: string): Observable<TeamCreated> {
     return this.http.post<TeamCreated>('/api/teams', {
       name,

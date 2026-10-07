@@ -28,6 +28,7 @@ final readonly class TeamService
         private PayloadCipher $cipher,
         private string $publicUrl,
         private int $mailAttemptTtlSeconds,
+        private bool $teamCreationEmailEnabled,
     ) {}
 
     /** @return array<string, mixed> */
@@ -41,6 +42,9 @@ final readonly class TeamService
             $invalidFields[] = 'firstParticipantName';
         }
         $email = $email === null || trim($email) === '' ? null : trim($email);
+        if ($email !== null && !$this->teamCreationEmailEnabled) {
+            $invalidFields[] = 'email';
+        }
         if ($email !== null && !RecipientAddress::isValid($email)) {
             $invalidFields[] = 'email';
         }

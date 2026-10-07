@@ -30,6 +30,7 @@ services:
       APP_SECRET: ${APP_SECRET:-local-only-synqo-secret}
       TEAM_DELETION_RETENTION_DAYS: ${TEAM_DELETION_RETENTION_DAYS-90}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
+      TEAM_CREATION_EMAIL_ENABLED: ${TEAM_CREATION_EMAIL_ENABLED:-true}
       MAIL_EVENT_KEY:
       MAIL_EVENT_TTL_SECONDS: ${MAIL_EVENT_TTL_SECONDS:-1800}
       MAILER_DSN: smtp://mailpit:1025
@@ -54,6 +55,7 @@ services:
       APP_ENV: ${APP_ENV:-dev}
       APP_SECRET: ${APP_SECRET:-local-only-synqo-secret}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4200}
+      TEAM_CREATION_EMAIL_ENABLED: ${TEAM_CREATION_EMAIL_ENABLED:-true}
       MAIL_EVENT_KEY:
       MAIL_EVENT_TTL_SECONDS: ${MAIL_EVENT_TTL_SECONDS:-1800}
       MAILER_DSN: smtp://mailpit:1025

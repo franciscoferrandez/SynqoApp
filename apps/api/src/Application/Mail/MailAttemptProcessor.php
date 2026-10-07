@@ -16,6 +16,7 @@ final readonly class MailAttemptProcessor
         private TeamLinkMailer $mailer,
         private ClockInterface $clock,
         private string $publicUrl,
+        private bool $teamCreationEmailEnabled,
     ) {}
 
     public function expireOverdue(): int
@@ -29,6 +30,11 @@ final readonly class MailAttemptProcessor
         $claimed = $this->attempts->claimNext($this->now());
         if ($claimed === null) {
             return false;
+        }
+        if (!$this->teamCreationEmailEnabled) {
+            $this->attempts->finish($claimed['id'], MailAttemptStatus::Failed, $this->now());
+
+            return true;
         }
         $outcome = MailAttemptStatus::Failed;
         try {

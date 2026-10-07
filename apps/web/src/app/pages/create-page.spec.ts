@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { afterEach, expect, it, vi } from 'vitest';
 import { CreatePage } from './create-page';
 import { TeamApi, TeamCreated } from '../shared/team-api';
@@ -16,7 +16,7 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   vi.stubGlobal('window', {
     navigator: window.navigator,
     location: { assign },
-    matchMedia: () => ({ addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+    matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
   });
   const created: TeamCreated = {
     id: 'team-id',
@@ -28,6 +28,7 @@ it('enters directly when confirmation is disabled and remembers the creator iden
     mailAttempt: { status: 'pending', receipt: 'private-receipt' },
   };
   const api = {
+    publicConfiguration: vi.fn(() => of({ teamCreationEmailEnabled: true })),
     create: vi.fn(() => of(created)),
     recentCreation: undefined,
   };
@@ -40,6 +41,9 @@ it('enters directly when confirmation is disabled and remembers the creator iden
     ],
   });
   const fixture = TestBed.createComponent(CreatePage);
+  Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('#email')).not.toBeNull();
   const component = fixture.componentInstance;
   Reflect.set(component, 'teamName', 'Equipo');
   Reflect.set(component, 'participantName', 'Ana');
@@ -53,5 +57,58 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   expect(localStorage.getItem('synqo-participant-team-id')).toBe('ana');
   expect(assign).toHaveBeenCalledWith(created.accessUrl);
   expect(navigateByUrl).not.toHaveBeenCalled();
+  fixture.destroy();
+});
+
+it('hides email when the public configuration disables it', () => {
+  vi.stubGlobal('window', {
+    navigator: window.navigator,
+    location: window.location,
+    matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+  });
+  const api = {
+    publicConfiguration: vi.fn(() => of({ teamCreationEmailEnabled: false })),
+    create: vi.fn(),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: TeamApi, useValue: api },
+      { provide: Router, useValue: { navigateByUrl: vi.fn() } },
+      { provide: TEAM_CREATION_CONFIRMATION, useValue: true },
+    ],
+  });
+  const fixture = TestBed.createComponent(CreatePage);
+  Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
+  expect(fixture.nativeElement.querySelector('#email')).toBeNull();
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('#email')).toBeNull();
+  expect(fixture.nativeElement.querySelector('#team-name')).not.toBeNull();
+  expect(fixture.nativeElement.querySelector('#participant-name')).not.toBeNull();
+  expect(fixture.nativeElement.textContent).not.toContain('Solo se usará para enviarte el enlace');
+  fixture.destroy();
+});
+
+it('keeps email hidden when public configuration cannot be loaded', () => {
+  vi.stubGlobal('window', {
+    navigator: window.navigator,
+    location: window.location,
+    matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+  });
+  const api = {
+    publicConfiguration: vi.fn(() => throwError(() => new Error('offline'))),
+    create: vi.fn(),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: TeamApi, useValue: api },
+      { provide: Router, useValue: { navigateByUrl: vi.fn() } },
+      { provide: TEAM_CREATION_CONFIRMATION, useValue: true },
+    ],
+  });
+  const fixture = TestBed.createComponent(CreatePage);
+  Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('#email')).toBeNull();
+  expect(fixture.nativeElement.querySelector('#team-name')).not.toBeNull();
   fixture.destroy();
 });

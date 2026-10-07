@@ -12,6 +12,25 @@ describe('TeamApi', () => {
     window.location.hash = '';
   });
 
+  it('reads public configuration before deciding which optional fields to show', () => {
+    TestBed.configureTestingModule({
+      providers: [
+        TeamApi,
+        provideHttpClient(withInterceptors([accessTokenInterceptor])),
+        provideHttpClientTesting(),
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    api = TestBed.inject(TeamApi);
+    api.publicConfiguration().subscribe((configuration) => {
+      expect(configuration.teamCreationEmailEnabled).toBe(false);
+    });
+    const request = http.expectOne('/api/configuration');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.has('Authorization')).toBe(false);
+    request.flush({ teamCreationEmailEnabled: false });
+  });
+
   it('envía solo nombres y zona al crear un equipo (nunca el correo opcional)', () => {
     TestBed.configureTestingModule({
       providers: [

@@ -1,4 +1,11 @@
-import { AfterViewInit, ChangeDetectorRef, Component, inject, OnDestroy } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  inject,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,7 +25,11 @@ import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
         <p class="eyebrow">Empezar</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight" id="create-title">Crea tu equipo</h2>
         <p class="mt-2 text-sm leading-relaxed text-muted">
-          Crea un espacio compartido y envía el enlace a tu equipo.
+          @if (emailEnabled) {
+            Crea un espacio compartido y envía el enlace a tu equipo.
+          } @else {
+            Crea un espacio compartido para organizarte.
+          }
         </p>
         <form class="mt-6 space-y-5" (submit)="create($event)" autocomplete="off">
           <div class="field">
@@ -61,33 +72,35 @@ import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
               </p>
             }
           </div>
-          <div class="field">
-            <label for="email"
-              >Correo para recibir el enlace
-              <span class="font-normal text-muted">(opcional)</span></label
-            ><input
-              id="email"
-              name="email"
-              type="email"
-              [(ngModel)]="email"
-              [placeholder]="emailPlaceholder"
-              (focus)="pauseExamples()"
-              (blur)="resumeExamples()"
-              autocomplete="email"
-              inputmode="email"
-              maxlength="254"
-              [attr.aria-invalid]="fieldErrors['email'] ? true : null"
-              [attr.aria-describedby]="
-                fieldErrors['email'] ? 'email-help email-error' : 'email-help'
-              "
-            />
-            <p class="mt-2 text-xs leading-relaxed text-muted" id="email-help">
-              Solo se usará para enviarte el enlace de acceso al equipo.
-            </p>
-            @if (fieldErrors['email']) {
-              <p id="email-error" class="identity-error">{{ fieldErrors['email'] }}</p>
-            }
-          </div>
+          @if (emailEnabled) {
+            <div class="field">
+              <label for="email"
+                >Correo para recibir el enlace
+                <span class="font-normal text-muted">(opcional)</span></label
+              ><input
+                id="email"
+                name="email"
+                type="email"
+                [(ngModel)]="email"
+                [placeholder]="emailPlaceholder"
+                (focus)="pauseExamples()"
+                (blur)="resumeExamples()"
+                autocomplete="email"
+                inputmode="email"
+                maxlength="254"
+                [attr.aria-invalid]="fieldErrors['email'] ? true : null"
+                [attr.aria-describedby]="
+                  fieldErrors['email'] ? 'email-help email-error' : 'email-help'
+                "
+              />
+              <p class="mt-2 text-xs leading-relaxed text-muted" id="email-help">
+                Solo se usará para enviarte el enlace de acceso al equipo.
+              </p>
+              @if (fieldErrors['email']) {
+                <p id="email-error" class="identity-error">{{ fieldErrors['email'] }}</p>
+              }
+            </div>
+          }
           <button class="primary w-full bg-action" type="submit" [disabled]="busy">
             {{ busy ? 'Creando…' : 'Crear equipo' }}
           </button>
@@ -99,7 +112,7 @@ import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
     </div>
   `,
 })
-export class CreatePage implements AfterViewInit, OnDestroy {
+export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly api = inject(TeamApi);
   private readonly mailAttempts = inject(MailAttemptTracker);
@@ -108,6 +121,7 @@ export class CreatePage implements AfterViewInit, OnDestroy {
   protected teamPlaceholder = '';
   protected participantPlaceholder = '';
   protected emailPlaceholder = '';
+  protected emailEnabled = false;
   private readonly reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   private exampleTimeout?: ReturnType<typeof setTimeout>;
   private blinkInterval?: ReturnType<typeof setInterval>;
@@ -186,6 +200,18 @@ export class CreatePage implements AfterViewInit, OnDestroy {
   protected busy = false;
   protected error = '';
   protected fieldErrors: Record<string, string> = {};
+  ngOnInit(): void {
+    this.api.publicConfiguration().subscribe({
+      next: (configuration) => {
+        this.emailEnabled = configuration.teamCreationEmailEnabled === true;
+        this.changeDetector.markForCheck();
+      },
+      error: () => {
+        this.emailEnabled = false;
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
   ngAfterViewInit(): void {
     this.reducedMotion.addEventListener('change', this.onMotionPreferenceChange);
     if (this.reducedMotion.matches) this.showStaticExamples();
@@ -380,51 +406,57 @@ export class CreatePage implements AfterViewInit, OnDestroy {
     this.busy = true;
     this.error = '';
     this.fieldErrors = {};
-    this.api.create(this.teamName, this.participantName, this.email.trim()).subscribe({
-      next: (created) => {
-        this.api.recentCreation = created;
-        if (created.mailAttempt)
-          this.mailAttempts.remember(created.id, created.mailAttempt.receipt);
-        localStorage.setItem(`synqo-participant-${created.id}`, created.firstParticipant.id);
-        if (this.showConfirmation) void this.router.navigateByUrl('/confirmacion');
-        else window.location.assign(created.accessUrl);
-      },
-      error: (err: HttpErrorResponse) => {
-        const violations: { propertyPath: string; message: string }[] = Array.isArray(
-          err.error?.violations,
-        )
-          ? err.error.violations
-          : [];
-        const onlyEmail =
-          violations.length > 0 &&
-          violations.every((violation) => violation.propertyPath === 'email');
-        this.error =
-          err.status === 422
-            ? onlyEmail
-              ? 'Revisa el correo e inténtalo de nuevo.'
-              : 'Revisa los nombres e inténtalo de nuevo.'
-            : 'No se pudo crear el equipo. Inténtalo otra vez.';
-        if (err.status === 422 && Array.isArray(err.error?.violations)) {
-          for (const violation of err.error.violations) {
-            const field = violation.propertyPath;
-            if (field === 'name' || field === 'firstParticipantName' || field === 'email') {
-              this.fieldErrors[field] = [this.fieldErrors[field], violation.message]
-                .filter(Boolean)
-                .join(' ');
+    this.api
+      .create(
+        this.teamName,
+        this.participantName,
+        this.emailEnabled ? this.email.trim() : undefined,
+      )
+      .subscribe({
+        next: (created) => {
+          this.api.recentCreation = created;
+          if (created.mailAttempt)
+            this.mailAttempts.remember(created.id, created.mailAttempt.receipt);
+          localStorage.setItem(`synqo-participant-${created.id}`, created.firstParticipant.id);
+          if (this.showConfirmation) void this.router.navigateByUrl('/confirmacion');
+          else window.location.assign(created.accessUrl);
+        },
+        error: (err: HttpErrorResponse) => {
+          const violations: { propertyPath: string; message: string }[] = Array.isArray(
+            err.error?.violations,
+          )
+            ? err.error.violations
+            : [];
+          const onlyEmail =
+            violations.length > 0 &&
+            violations.every((violation) => violation.propertyPath === 'email');
+          this.error =
+            err.status === 422
+              ? onlyEmail
+                ? 'Revisa el correo e inténtalo de nuevo.'
+                : 'Revisa los nombres e inténtalo de nuevo.'
+              : 'No se pudo crear el equipo. Inténtalo otra vez.';
+          if (err.status === 422 && Array.isArray(err.error?.violations)) {
+            for (const violation of err.error.violations) {
+              const field = violation.propertyPath;
+              if (field === 'name' || field === 'firstParticipantName' || field === 'email') {
+                this.fieldErrors[field] = [this.fieldErrors[field], violation.message]
+                  .filter(Boolean)
+                  .join(' ');
+              }
             }
+            const firstField = this.fieldErrors['name']
+              ? 'team-name'
+              : this.fieldErrors['firstParticipantName']
+                ? 'participant-name'
+                : this.fieldErrors['email']
+                  ? 'email'
+                  : '';
+            if (firstField) document.getElementById(firstField)?.focus();
           }
-          const firstField = this.fieldErrors['name']
-            ? 'team-name'
-            : this.fieldErrors['firstParticipantName']
-              ? 'participant-name'
-              : this.fieldErrors['email']
-                ? 'email'
-                : '';
-          if (firstField) document.getElementById(firstField)?.focus();
-        }
-        this.busy = false;
-        this.changeDetector.markForCheck();
-      },
-    });
+          this.busy = false;
+          this.changeDetector.markForCheck();
+        },
+      });
   }
 }

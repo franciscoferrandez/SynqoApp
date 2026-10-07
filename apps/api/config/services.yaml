@@ -11,6 +11,7 @@ parameters:
     env(MAIL_EVENT_KEY): ''
     env(MAIL_EVENT_TTL_SECONDS): '1800'
     env(MAIL_FROM): 'Synqo <no-reply@synqo.local>'
+    env(TEAM_CREATION_EMAIL_ENABLED): 'false'
 
 services:
     # default configuration for services in *this* file
@@ -34,6 +35,13 @@ services:
         arguments:
             $publicUrl: '%env(APP_PUBLIC_URL)%'
             $mailAttemptTtlSeconds: '%env(int:MAIL_EVENT_TTL_SECONDS)%'
+            $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
+
+    App\Controller\PublicConfigurationController:
+        public: true
+        tags: ['controller.service_arguments']
+        arguments:
+            $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
 
     App\Infrastructure\Mail\SodiumPayloadCipher:
         arguments:
@@ -48,6 +56,7 @@ services:
     App\Application\Mail\MailAttemptProcessor:
         arguments:
             $publicUrl: '%env(APP_PUBLIC_URL)%'
+            $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
     App\Application\Mail\MailAttemptRepository: '@App\Infrastructure\Persistence\OrmMailAttemptRepository'
     App\Controller\MailAttemptController:
         public: true

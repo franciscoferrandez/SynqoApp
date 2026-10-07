@@ -44,6 +44,18 @@ final class TeamMailAttemptTest extends WebTestCase
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM team_mail_attempt'));
     }
 
+    public function testPublicConfigurationIsNoStoreAndReflectsEnvironmentCapability(): void
+    {
+        $this->client->jsonRequest('GET', '/api/configuration');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('no-store', $this->client->getResponse()->headers->get('Cache-Control'));
+        self::assertSame(
+            ['teamCreationEmailEnabled' => filter_var($_SERVER['TEAM_CREATION_EMAIL_ENABLED'] ?? 'false', FILTER_VALIDATE_BOOL)],
+            json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR),
+        );
+    }
+
     public function testInvalidEmailIsRejectedBeforeAnythingIsStored(): void
     {
         foreach (['no-es-un-correo', 'a@b', str_repeat('a', 250) . '@example.com', "x@example.com\r\nBcc: y@example.com"] as $email) {
@@ -111,6 +123,7 @@ final class TeamMailAttemptTest extends WebTestCase
             new SodiumPayloadCipher(''),
             'http://localhost:4200',
             1800,
+            true,
         );
         try {
             $service->create('Equipo', 'Ana', 'UTC', 'persona@example.com');
@@ -118,6 +131,48 @@ final class TeamMailAttemptTest extends WebTestCase
         } catch (\RuntimeException) {
         }
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM team'));
+    }
+
+    public function testDisabledEmailRejectsBeforeCreatingTeamOrAttempt(): void
+    {
+        $service = new \App\Application\Team\TeamService(
+            static::getContainer()->get(\App\Application\Team\TeamRepository::class),
+            $this->clock,
+            new \App\Domain\Team\ExpiryCalculator(),
+            new \App\Infrastructure\Identity\UuidGenerator(),
+            new \App\Infrastructure\Identity\CryptographicAccessTokenGenerator(),
+            new SodiumPayloadCipher($_SERVER['MAIL_EVENT_KEY']),
+            'http://localhost:4200',
+            1800,
+            false,
+        );
+        static::getContainer()->set(\App\Application\Team\TeamService::class, $service);
+        $this->client->jsonRequest('POST', '/api/teams', [
+            'name' => 'Equipo',
+            'firstParticipantName' => 'Ana',
+            'email' => 'persona@example.com',
+        ]);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('email', json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['violations'][0]['propertyPath']);
+        self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM team'));
+        self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM team_mail_attempt'));
+    }
+
+    public function testDisabledWorkerClosesPendingAttemptWithoutCallingMailer(): void
+    {
+        $created = $this->create(['email' => 'persona@example.com']);
+        $mailer = new class implements TeamLinkMailer {
+            public int $calls = 0;
+            public function send(string $recipient, string $teamName, string $accessUrl): void
+            {
+                ++$this->calls;
+            }
+        };
+
+        self::assertTrue($this->processor($mailer, false)->processNext());
+        self::assertSame(0, $mailer->calls);
+        $this->assertClosed($created, 'failed');
     }
 
     public function testStatusEndpointIsPrivateAndOnlyReturnsStatus(): void
@@ -337,7 +392,7 @@ final class TeamMailAttemptTest extends WebTestCase
         return substr($created['accessUrl'], strpos($created['accessUrl'], '#t=') + 3);
     }
 
-    private function processor(TeamLinkMailer $mailer): MailAttemptProcessor
+    private function processor(TeamLinkMailer $mailer, bool $enabled = true): MailAttemptProcessor
     {
         return new MailAttemptProcessor(
             new OrmMailAttemptRepository(static::getContainer()->get('doctrine')),
@@ -345,6 +400,7 @@ final class TeamMailAttemptTest extends WebTestCase
             $mailer,
             $this->clock,
             'http://localhost:4200',
+            $enabled,
         );
     }
 
