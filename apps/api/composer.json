@@ -66,7 +66,7 @@
         "post-update-cmd": [
             "@auto-scripts"
         ],
-        "test": "if [ -n \"$DATABASE_URL_TEST\" ]; then DATABASE_URL=\"$DATABASE_URL_TEST\" phpunit; else phpunit; fi",
+        "test": "export APP_ENV=test SYNQO_DEPLOYMENT_ENV=test TEAM_CREATION_LIMIT=10000 TEAM_CREATION_WINDOW_MINUTES=60 && if [ -n \"$DATABASE_URL_TEST\" ]; then export DATABASE_URL=\"$DATABASE_URL_TEST\"; fi && phpunit",
         "cs:check": "php-cs-fixer fix --dry-run --diff",
         "cs:fix": "php-cs-fixer fix",
         "stan": "phpstan analyse --configuration=phpstan.neon",

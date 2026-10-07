@@ -24,7 +24,7 @@ Aplican también los [principios de arquitectura limpia y DDD](../../01_principi
 
 ## Testing específico
 
-Pruebas unitarias de reglas puras y pruebas de integración con PostgreSQL para acceso, persistencia, concurrencia y borrado. Usar las herramientas de prueba compatibles con Symfony según su [guía oficial](https://symfony.com/doc/current/testing.html); la estrategia global está en [Estrategia de pruebas de la demo local](../../02_testing/estrategia-demo-local.md).
+Pruebas unitarias de reglas puras y pruebas de integración con PostgreSQL para acceso, persistencia, concurrencia y borrado. El script `composer test` fija el perfil de despliegue `test` y los límites de prueba para que las variables de Compose del entorno de desarrollo no alteren los resultados. Usar las herramientas de prueba compatibles con Symfony según su [guía oficial](https://symfony.com/doc/current/testing.html); la estrategia global está en [Estrategia de pruebas de la demo local](../../02_testing/estrategia-demo-local.md).
 
 ## Comandos
 

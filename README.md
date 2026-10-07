@@ -144,7 +144,7 @@ Mailpit recibe el correo de desarrollo (SMTP solo dentro de la red de Compose) y
 | `docker compose exec api composer cs:check` / `cs:fix` | Comprobar o aplicar PHP CS Fixer. |
 | `docker compose exec api composer stan` | Análisis estático PHPStan. |
 | `docker compose exec api composer rector:check` | Comprobar Rector en modo dry-run. |
-| `docker compose exec api composer test` | PHPUnit. |
+| `docker compose exec api composer test` | PHPUnit con `APP_ENV=test`, los límites de creación de prueba y la base `synqo_test`; no hereda los límites del servicio API de desarrollo. |
 | `docker compose exec api composer db:reset:test` | Borrar y reconstruir `synqo_test`, aplicar migraciones. Ejecuta este comando antes de PHPUnit si la base de prueba está vacía; elimina los datos de esa base. |
 | `docker compose exec api php bin/console doctrine:migrations:migrate --no-interaction` | Aplicar migraciones a la base configurada por `DATABASE_URL` (local de desarrollo). |
 | `docker compose exec api php bin/console doctrine:schema:validate` | Validar mapeo Doctrine frente al esquema conectado. |
