@@ -59,6 +59,7 @@ test('selecting and changing identity is local and expiry uses the browser zone'
   });
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.goto('/e#t=test');
+  await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-identity-trigger]')).toContainText('Ana');
   await expect(page.locator('[data-identity-trigger]')).toBeFocused();
