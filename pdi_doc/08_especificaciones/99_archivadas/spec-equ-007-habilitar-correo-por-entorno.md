@@ -1,7 +1,7 @@
 ---
 id: SPEC-EQU-007
 nivel: N2
-estado: ready
+estado: cerrado
 release: REL-002
 ---
 # SPEC-EQU-007 — Habilitar u ocultar el correo de creación por entorno
@@ -76,7 +76,7 @@ La API expone un recurso público de configuración con la capacidad efectiva y 
 
 ## Evidencia técnica disponible
 
-La implementación ya existente aporta la siguiente evidencia. Se registra para no perderla; no sustituye los gates formales de `change-verify` y `change-close`.
+Verificación ejecutada el 2026-10-07 sobre la implementación. El commit funcional es `4cb91be`; el commit documental de preparación fue `e249944`. La evidencia registra los criterios del gate `change-verify`.
 
 | Criterio | Evidencia | Resultado |
 |---|---|---|
@@ -89,12 +89,16 @@ La implementación ya existente aporta la siguiente evidencia. Se registra para 
 | 7. Configuración pública sin secretos y sin caché | `testPublicConfigurationIsNoStoreAndReflectsEnvironmentCapability` comprueba respuesta con solo el booleano y `Cache-Control: no-store`. | PASS |
 | 8. Cobertura habilitada, deshabilitada, rechazo y worker | API: `composer test` (61 tests, 536 aserciones); WEB: `npm test` (12 tests). | PASS |
 
-Checks adicionales: WEB `lint`, `format:check` y `build`; API PHPStan, PHP CS Fixer y Rector; `validate_structure.py`.
+Comandos y resultado: `docker compose exec -T api composer test` (61 tests, 536 aserciones); `npm test` con Node 24.21.0 (12 tests); `npm run lint`; `npm run format:check`; `npm run build`; `docker compose exec -T api composer cs:check`; `docker compose exec -T api composer stan`; `docker compose exec -T api composer rector:check`. Todos pasaron. El test de configuración pública también pasó por separado con `TEAM_CREATION_EMAIL_ENABLED=false`, `invalid` y variable ausente (`env -u`); las tres respuestas fueron `false`. `validate_structure.py` y `git diff --check` pasan.
 
-## Desviación de flujo y estado del Change
+## Convergencia
 
-El código se implementó antes de recibir autorización para entrar en `change-apply`; se conserva por indicación expresa de la persona usuaria y queda fuera del commit documental. Las pruebas y checks registrados describen el estado del árbol de trabajo, pero no se ha ejecutado todavía el flujo formal de verificación y cierre PDI. La SPEC permanece `ready` y abierta para el siguiente trabajo formal; no se archiva en esta fase documental. La habilitación de correo real en Railway sigue condicional a disponer de proveedor y credenciales.
+**Convergencia PASS — `READY_FOR_CHANGE_CLOSE` (2026-10-07).** Se compararon la [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md), la [ADR-EQU-002 — Registrar el envío opcional como evento transaccional](../../05_investigacion-y-decisiones/05_adr/adr-equ-002-evento-transaccional-correo.md), la [RD-EQU-005 — Correo transitorio para enviar el enlace](../../03_requisitos/03_datos/EQU/rd-equ-005-correo-transitorio-enlace.md), los contratos API/WEB, los ocho criterios, el código y los tests. No se encontró drift significativo ni cambio de verdad normativa pendiente. La bandera fail-closed y el comportamiento WEB/API coinciden con el alcance. El correo externo en Railway sigue deshabilitado hasta disponer de proveedor y credenciales seguros, conforme a la omisión aceptada en REL-002.
 
-## Estado de preparación
+La implementación precedió a la autorización del gate `change-apply`, según la desviación registrada durante la preparación. Se conservó por instrucción de la persona impulsora, se verificó formalmente y se integró en el commit `4cb91be`; esta desviación de proceso no dejó discrepancias funcionales abiertas.
 
-La SPEC y sus referencias dejan definido el alcance para REL-002 y en estado `ready`. Esto completa la preparación documental de este Change, no de todos los Changes de REL-002. El Change no se cierra ni se archiva; la implementación y su cierre formal quedan para el siguiente trabajo. El correo externo en preproducción sigue condicionado a un proveedor y credenciales seguros.
+## Resultado de cierre
+
+**DONE — Change cerrado y archivado el 2026-10-07.** Los ocho criterios de aceptación están en `PASS`; las suites y checks API/WEB aplicables pasaron, incluidos los hooks del commit funcional. El control de disponibilidad del correo por entorno queda `VALIDADO` en [REL-002 — Preproducción pública en Railway](../../01_producto/10_entregas/rel-002-preproduccion-publica-railway.md). El envío real externo permanece `PLANIFICADO` y no bloquea la entrega: no se configuró proveedor ni credencial. No se declara REL-002 entregada.
+
+Commits: implementación `4cb91be feat(repo): configurar correo de creación por entorno`; preparación documental `e249944 docs(pdi): preparar documentación de REL-002`; cierre documental posterior.
