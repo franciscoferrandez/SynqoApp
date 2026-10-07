@@ -35,7 +35,7 @@ El script crea una red y contenedores con sufijo aleatorio, ejecuta migraciones 
 
 ## Preparación y aplicación manual de IaC
 
-La definición declara un proyecto `Synqo`, entorno `preproduction`, PostgreSQL 18 y un servicio HTTP combinado WEB/API. El servicio utiliza `Dockerfile.railway`, escucha en el puerto 8080, hace healthcheck en `/healthz` y ejecuta las migraciones Doctrine como pre-deploy command durante una publicación iniciada manualmente. No se declaran fuente de código, credenciales, dominio, copias de seguridad ni triggers automáticos.
+La definición declara un proyecto `Synqo`, entorno `preproduction`, PostgreSQL 18 y un servicio HTTP combinado WEB/API. El servicio utiliza `Dockerfile.railway`, escucha en el puerto 8080, hace healthcheck en `/healthz` y ejecuta las migraciones Doctrine como pre-deploy command durante una publicación iniciada manualmente. Doctrine tiene `server_version: '18'` fijado en la configuración de API, porque la URL de conexión generada por Railway no incluye `serverVersion`; este valor debe seguir la versión PostgreSQL declarada en IaC. No se declaran fuente de código, credenciales, dominio, copias de seguridad ni triggers automáticos.
 
 Antes de planificar, confirmar manualmente workspace/cuenta y que el proyecto/entorno enlazados son los previstos. Comprobar también el límite de gasto, plan/región disponibles, fuente GitHub ausente hasta completar el gate, estado de persistencia y que el repositorio está en el commit que se pretende revisar. La definición no fija región ni activa backups.
 

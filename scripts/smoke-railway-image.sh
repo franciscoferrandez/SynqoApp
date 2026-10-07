@@ -37,7 +37,7 @@ for _ in $(seq 1 60); do
 done
 [ "$database_ready" -eq 1 ]
 
-database_url="postgresql://synqo:${database_password}@${database}:5432/synqo?serverVersion=18&charset=utf8"
+database_url="postgresql://synqo:${database_password}@${database}:5432/synqo?charset=utf8"
 docker run --rm --network "$network" \
   -e APP_ENV=prod -e APP_DEBUG=0 -e APP_SECRET=local-smoke-only-secret \
   -e APP_PUBLIC_URL=http://localhost -e DEFAULT_URI=http://localhost \
