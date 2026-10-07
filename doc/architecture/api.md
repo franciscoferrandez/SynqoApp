@@ -78,4 +78,6 @@ El reset manual se ejecuta con `php bin/console app:demo:reset` desde el servici
 
 ## Desarrollo
 
+El paquete Composer se identifica como `synqo/api` con metadato `proprietary` para las aportaciones propias. `apps/api/LICENSE` conserva el aviso MIT de Symfony Skeleton; no licencia toda Synqo. El staging de producción preserva el vendor íntegro y añade los avisos propios y agregados de terceros mediante el [procedimiento de distribución](../legal/procedencia-y-avisos.md).
+
 Los comandos de Composer, migraciones, limpieza, base de prueba y análisis estático están en el [README principal](../../README.md#desarrollo-local). Los scripts ejecutables se declaran en `apps/api/composer.json`.

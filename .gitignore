@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 node_modules/
 apps/web/dist/
+apps/api/SYNQO-LICENSE.txt
+apps/api/THIRD_PARTY_NOTICES.txt
 apps/web/.angular/
 apps/web/coverage/
 apps/web/test-results/

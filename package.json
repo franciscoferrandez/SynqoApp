@@ -1,6 +1,7 @@
 {
   "name": "synqo-repo",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "prepare": "lefthook install"
   },

@@ -1,7 +1,7 @@
 ---
 id: SPEC-COO-005
 nivel: N3
-estado: ready
+estado: cerrado
 release: REL-002
 ---
 # SPEC-COO-005 — Reservar los derechos del software propio para REL-002
@@ -72,22 +72,22 @@ La documentación oficial de Railway dice que la categoría se identifica al ent
 - La [documentación oficial de Railway CLI — Deploying](https://docs.railway.com/cli/deploying) indica que `railway up` escanea, comprime y sube los archivos del directorio. No se usó la CLI ni se conectó una cuenta para probarlo.
 - El [esquema oficial de `composer.json`](https://getcomposer.org/doc/04-schema.md#license) documenta `proprietary` como identificador disponible para paquetes cerrados. Esto permite revisar el metadato técnico durante el Change, pero no resuelve la procedencia de archivos ni sustituye avisos de terceros.
 
-### Investigación pendiente para preparación
+### Resultado de investigación
 
-1. Completar el inventario de procedencia API/WEB, incluidos archivos de Symfony Skeleton, recetas Symfony Flex, fuentes y activos de terceros; dejar explícita la evidencia y las limitaciones para cada grupo.
-2. Determinar qué avisos y licencias deben acompañar cada artefacto final mediante los lockfiles y los contenidos empaquetados, sin tratar los avisos encontrados en `vendor` o `node_modules` como prueba automática de qué se distribuye.
-3. Definir cómo el artefacto WEB final sirve `3rdpartylicenses.txt` además del aviso de Inter; comprobar también la ubicación de avisos de dependencias API en el contenedor final.
-4. Investigar cómo verificar/configurar que el source sea de audiencia limitada y no visible antes de transferirlo. No iniciar una conexión o envío para obtener la respuesta bajo esta autorización; si la clasificación solo puede conocerse tras la transferencia, mantener bloqueado el gate de transferencia/despliegue y elevar una vía alternativa para decisión expresa.
+1. El inventario de procedencia API/WEB y los límites de atribución están registrados en [procedencia y avisos](../../../doc/legal/procedencia-y-avisos.md), incluidas las limitaciones de inferir titularidad a partir del historial.
+2. Los lockfiles y artefactos locales están comprobados: la distribución WEB conserva los avisos en `browser/` y el staging API los conserva para sus 87 dependencias de producción.
+3. El build WEB copia `3rdpartylicenses.txt` junto a los avisos propios, de terceros, de plantillas y de Inter. Los avisos API se generan en staging; la imagen combinada queda pendiente de comprobación antes de desplegar.
+4. La clasificación del source en el proyecto/workspace real sigue sin verificarse. No se conectó ni transfirió el repositorio; se mantiene el gate operativo bloqueado y cualquier vía alternativa requiere investigación y decisión posterior.
 
 ## Design / Structure
 
-La implementación local seguirá un inventario de procedencia antes de delimitar cada aviso. La estructura prevista abarca: aviso raíz para aportaciones propias con exclusiones expresas; preservación de los avisos de plantilla/terceros que sigan siendo aplicables; metadatos de paquete coherentes con el límite aprobado; y avisos de dependencias disponibles junto a cada artefacto servido. No se asignará propiedad por inferencia ni se retirará el aviso MIT de API hasta conocer el alcance heredado de ese contenido. El gate de clasificación de Railway se comprobará por separado antes de transferencia o despliegue.
+La implementación local sigue el inventario de procedencia: aviso raíz para aportaciones propias con exclusiones expresas; preservación de los avisos de plantilla/terceros aplicables; metadatos de paquete coherentes con el límite aprobado; y avisos de dependencias junto a los artefactos locales. No se asigna propiedad por inferencia ni se retira el aviso MIT de API. El gate de clasificación de Railway permanece separado y bloquea cualquier transferencia o despliegue.
 
 Módulos y responsabilidades:
 
 - [API — arquitectura del módulo](../../06_arquitectura/03_modulos/API/README.md) y [API — reglas de implementación](../../07_desarrollo/08_modulos/API/README.md): procedencia heredada, manifiesto Composer y avisos incluidos en el contenedor.
 - [WEB — arquitectura del módulo](../../06_arquitectura/03_modulos/WEB/README.md) y [WEB — reglas de implementación](../../07_desarrollo/08_modulos/WEB/README.md): manifest NPM, salida del build y ubicación accesible del aviso agregado y licencia de fuente.
-- [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md): gate previo a cada despliegue; se coordina su preflight con este Change, sin duplicar su procedimiento operativo.
+- [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md): gate previo a cada despliegue; se coordina su preflight con este Change, sin duplicar su procedimiento operativo.
 
 **Clasificación N3:** el Change afecta reserva de derechos sobre código propio, atribución/avisos de terceros y condiciones contractuales del proveedor donde se enviará el source; una transferencia no autorizada puede ser difícil de revertir. Por ello se separan el DoR de trabajo local y el gate obligatorio previo a toda transferencia.
 
@@ -101,18 +101,57 @@ Módulos y responsabilidades:
 2. Con ese inventario, concretar el aviso propio y los metadatos de paquete, conservando las licencias, avisos y atribuciones de terceros aplicables.
 3. Concretar la distribución de avisos en los artefactos WEB y API; comprobar en los artefactos generados dónde quedan el aviso `3rdpartylicenses.txt`, la licencia de Inter y los avisos API.
 4. Proseguir con la implementación local y ejecutar checks de manifiestos/build, revisión independiente del alcance de avisos y validación final.
-5. Resolver el gate de Railway sin transferir source durante este Change. Si solo se revela la categoría al enviar, detenerse y mantener bloqueado el envío; evaluar una vía compatible o elevar una solicitud de autorización explícita. El flujo de [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md) deberá comprobar el estado del gate antes de cada conexión o despliegue.
+5. Resolver el gate de Railway sin transferir source durante este Change. Si solo se revela la categoría al enviar, detenerse y mantener bloqueado el envío; evaluar una vía compatible o elevar una solicitud de autorización explícita. El flujo de [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md) deberá comprobar el estado del gate antes de cada conexión o despliegue.
 
 ## Evidencia / Validation
+
+### Preparación inicial (2026-10-07)
 
 Inspección documental, metadatos de paquetes, historial Git y artefactos locales realizada; no se modificó código ni se ejecutó build/test en esta preparación. La inspección confirma el manifiesto API heredado, el manifiesto WEB privado sin licencia de aplicación, la existencia local de avisos por dependencia API y la ubicación de los avisos WEB fuera de `browser/`. Esto no verifica los artefactos finales previstos para Railway.
 
 **Resultado DoR: READY para implementación local.** La pregunta Q2 resolvió que la incertidumbre de clasificación no impide completar el trabajo local de licencia. El gate de conexión/transferencia/despliegue permanece **BLOCKED**: no hay evidencia de la clasificación aplicable al proyecto real, y no se inferirá ni se probará enviando el código. No se ejecutó transferencia ni se conectó Railway.
 
+### Implementación local (2026-10-07)
+
+- El [aviso propietario](../../../LICENSE) identifica al titular e incluye exclusiones de terceros y de documentación, marcas, datos demo y contenido de usuarios. Los manifiestos pasan a `synqo/api`/`proprietary` y npm `UNLICENSED`; los lockfiles solo cambian el hash del manifiesto/API y el metadato npm, sin cambiar versiones de dependencias.
+- El [inventario de procedencia y avisos](../../../doc/legal/procedencia-y-avisos.md) identifica material de Skeleton, archivos de recetas idénticos/modificados frente a un commit upstream inmutable, configuración Symfony generada, estructura Angular y fuente Inter. No usa el historial Git como prueba definitiva de titularidad. El aviso MIT de API permanece intacto; se preservan los textos de recetas y Angular y un suplemento de API Platform para JSON-LD, cuyo split auditado omite el archivo LICENSE.
+- El [generador de avisos](../../../scripts/distribution-notices.mjs) conserva los avisos de los paquetes instalados y rechaza omisiones o discrepancias del lockfile. El [wrapper de build WEB](../../../scripts/build-web.mjs) conserva los avisos en el directorio `browser/` efectivamente servido, también al cambiar `--output-path`. La [suite de empaquetado](../../../scripts/distribution-notices.test.mjs) comprueba fallos por pérdida de avisos y dependencias de desarrollo en producción; queda integrada en CI.
+- Se instaló el lockfile API en un staging temporal local independiente mediante `composer install --no-dev --no-scripts --prefer-dist --optimize-autoloader --no-interaction`. Los 87 paquetes de producción se instalaron y el generador produjo `SYNQO-LICENSE.txt` y `THIRD_PARTY_NOTICES.txt`, conservando los avisos del vendor. No se cambió la base de datos ni el vendor del servicio API activo.
+- `composer validate --strict --no-check-publish` pasó. `node --test scripts/distribution-notices.test.mjs` pasó sus dos casos. El build de producción WEB con Node 24.21.0/npm 11.19.0 pasó, generando avisos propios, agregados, plantillas Angular e Inter. La imagen final FrankenPHP/Caddy de [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md) aún no existe: esta evidencia local no declara que sus capas o el servicio remoto hayan sido comprobados.
+
+| Criterio | Evidencia | Resultado local |
+|---|---|---|
+| 1 — titular y reserva de derechos | Aviso raíz y copias idénticas en artefactos locales | PASS |
+| 2 — terceros y alcance separados | Exclusiones expresas; MIT Skeleton intacto, recetas, Inter y licencias de dependencias conservadas | PASS |
+| 3 — procedencia API y metadatos | Inventario, comparación upstream de recetas, manifiestos y validación Composer | PASS |
+| 4 — conservación de avisos de distribución | WEB `browser/` y staging API no-dev comprobados; falta inspección de la imagen final combinada y sus componentes de runtime | PARTIAL; excepción de cierre local documentada |
+| 5 — clasificación de envío en Railway | No hay evidencia del proyecto/workspace real; no se conectó ni transfirió código | NOT_TESTED; excepción de cierre local documentada y transferencia BLOCKED |
+
+## Verificación independiente (2026-10-07)
+
+| Criterio | Evidencia | Resultado |
+|---|---|---|
+| 1 — titular y reserva de derechos | Aviso raíz y copias idénticas en los artefactos locales | PASS |
+| 2 — terceros y alcance separados | Exclusiones expresas; aviso MIT de Skeleton intacto, recetas, Inter y licencias de dependencias conservadas | PASS |
+| 3 — procedencia y metadatos | Inventario y comparación upstream; `composer validate --strict --no-check-publish` pasó | PASS |
+| 4 — avisos en artefactos | Build WEB de producción y staging API limpio (`--no-dev`, 87 paquetes) contienen los avisos esperados | PARTIAL: imagen final combinada inexistente |
+| 5 — clasificación de source Railway | No se examinó la interfaz/workspace real ni se transfirió source | NOT_TESTED; gate de transferencia permanece BLOCKED |
+
+Validaciones repetidas: build WEB con Node 24.21.0/npm 11.19.0; los dos tests de `scripts/distribution-notices.test.mjs`; instalación limpia de Composer con el lockfile de producción y ejecución del generador sobre el staging; Composer validate; `validate_structure.py` (`VALIDATION OK`) y `git diff --check`.
+
+La evidencia confirma los artefactos locales, pero no la imagen final combinada ni el servicio Railway. El criterio 5 sigue sin resultado porque verificarlo mediante envío de código está expresamente fuera de la autorización vigente.
+
+### Excepciones de cierre
+
+Se cierra el trabajo local de esta SPEC a petición de la persona impulsora, con estas excepciones documentadas; ninguna cambia el gate de transferencia ni equivale a aceptar términos de Railway:
+
+1. **Criterio 4 — imagen final:** se acepta como evidencia de cierre la distribución WEB y el staging API local. La comprobación de avisos dentro de la imagen FrankenPHP/Caddy se traslada a [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md) antes del primer envío o despliegue. Riesgo residual: el empaquetado de la imagen podría omitir avisos que están presentes en los stagings.
+2. **Criterio 5 — clasificación Railway:** se cierra el trabajo documental y local sin comprobar la clasificación real. La transferencia, conexión del repositorio y despliegue permanecen bloqueados hasta que [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](../01_activas/spec-coo-006-railway-iac-operacion-rel-002.md) registre evidencia compatible obtenida sin incumplir la prohibición de transferir source. Si no puede obtenerse sin envío, se requerirá una nueva decisión expresa sobre una vía compatible; esta excepción no autoriza probar mediante transferencia.
+
 ## Convergence
 
-Preparación completada para implementación local; transferencia y despliegue siguen sujetos al gate del criterio 5.
+**Convergencia PASS — `READY_FOR_CHANGE_CLOSE` (2026-10-07).** No hay drift de intención ni de implementación en el alcance local. Las dos limitaciones restantes se asignan explícitamente a COO-006; la clasificación de Railway sigue siendo un gate operativo independiente.
 
 ## Resultado de cierre
 
-Pendiente de implementación local, verificación y cierre PDI. La autorización de transferencia a Railway no forma parte de READY.
+Cerrado con excepciones de verificación local descritas arriba. La licencia y los avisos están implementados en los artefactos locales. La clasificación de Railway y la imagen final siguen sin verificarse; no se ha conectado ni enviado el repositorio y el despliegue continúa bloqueado.

@@ -1,0 +1,18 @@
+Copyright (c) 2026 Francisco M. Ferrández Sánchez (Valencia, Spain)
+Todos los derechos reservados / All rights reserved.
+
+Este aviso se aplica exclusivamente a las aportaciones propias de software de
+Synqo, en código fuente y en sus formas compiladas. La disponibilidad pública
+del código no concede una licencia de reutilización. Su reproducción,
+modificación, redistribución o explotación requiere autorización expresa del
+titular, concedida caso por caso, salvo los derechos que otorgue la ley aplicable.
+
+Este aviso no sustituye ni restringe las licencias y derechos de las plantillas,
+dependencias, fuentes tipográficas u otros componentes de terceros incorporados
+al proyecto. Sus avisos, atribuciones y licencias se conservan por separado.
+En particular, apps/api/LICENSE corresponde al material heredado de Symfony
+Skeleton, no a la totalidad de la aplicación Synqo.
+
+Este aviso no establece una licencia sobre documentación, marcas, datos de
+ejemplo ni contenido de usuarios. El inventario de procedencia y los avisos de
+distribución de terceros se describen en doc/legal/procedencia-y-avisos.md.

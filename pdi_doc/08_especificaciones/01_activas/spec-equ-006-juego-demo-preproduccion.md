@@ -55,7 +55,7 @@ Publicar el juego de ejemplo en la preproducción y ejecutar de forma horaria el
 
 ## Dependencias y gate de ejecución
 
-Este Change no bloquea la implementación local de SPEC-EQU-004. Su verificación end-to-end y la activación del Cron requieren que el servicio HTTP y PostgreSQL de preproducción estén desplegados conforme a SPEC-COO-006 y que se haya satisfecho el gate de clasificación/transferencia definido por [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](spec-coo-005-licencia-propietaria-rel-002.md). No se conectará ni enviará código a Railway durante esta preparación.
+Este Change no bloquea la implementación local de SPEC-EQU-004. Su verificación end-to-end y la activación del Cron requieren que el servicio HTTP y PostgreSQL de preproducción estén desplegados conforme a SPEC-COO-006 y que se haya satisfecho el gate de clasificación/transferencia definido por [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../99_archivadas/spec-coo-005-licencia-propietaria-rel-002.md). No se conectará ni enviará código a Railway durante esta preparación.
 
 ## Questions / Assumptions
 

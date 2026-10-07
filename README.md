@@ -18,6 +18,7 @@ Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con I
 - [Tecnologías y arquitectura](#tecnologías-y-arquitectura)
 - [Documentación de los módulos](#documentación-de-los-módulos)
 - [Proceso de desarrollo](#proceso-de-desarrollo)
+- [Derechos del software y avisos de terceros](#derechos-del-software-y-avisos-de-terceros)
 - [Estructura del proyecto](#estructura-del-proyecto)
 - [Desarrollo local](#desarrollo-local)
 - [Calidad y reglas de implementación](#calidad-y-reglas-de-implementación)
@@ -29,6 +30,10 @@ Este proyecto forma parte de un trabajo de fin de máster sobre desarrollo con I
 ## Objetivo
 
 Facilitar que varias personas encuentren una fecha y tomen decisiones compartidas desde un lugar común. La disponibilidad pertenece al equipo y se actualiza con independencia de las consultas; el calendario sirve para reconocer las fechas prometedoras antes de proponerlas. La [visión de Synqo](pdi_doc/01_producto/01_vision/vision.md) y el [problema de coordinación](pdi_doc/01_producto/02_problema-oportunidad/problema-coordinacion-disponibilidad.md) desarrollan este propósito.
+
+## Derechos del software y avisos de terceros
+
+Las aportaciones propias de software tienen todos los derechos reservados a Francisco M. Ferrández Sánchez, conforme al [aviso propio](LICENSE); la reutilización requiere autorización caso por caso. Las plantillas, dependencias y fuentes mantienen sus licencias. El [inventario de procedencia y procedimiento de conservación de avisos](doc/legal/procedencia-y-avisos.md) explica sus límites y los artefactos que deben acompañar la distribución.
 
 ## Primera entrega
 

@@ -1,8 +1,8 @@
 {
-    "name": "symfony/skeleton",
+    "name": "synqo/api",
     "type": "project",
-    "license": "MIT",
-    "description": "A minimal Symfony project recommended to create bare bones applications",
+    "license": "proprietary",
+    "description": "API de Synqo; aportaciones propias con derechos reservados y componentes de terceros bajo sus licencias",
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {

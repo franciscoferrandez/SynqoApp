@@ -8,7 +8,7 @@ estado: aprobado
 
 [REL-002 — Preproducción pública en Railway](../../01_producto/10_entregas/rel-002-preproduccion-publica-railway.md) necesita publicar la SPA Angular y la API Symfony en Railway. La WEB usa rutas relativas `/api/...`; localmente Angular las redirige a la API mediante su proxy de desarrollo. El Dockerfile actual sirve a ese flujo local y no es una imagen de producción. Se compararon servicios WEB/API independientes, un runtime HTTP combinado y un gateway delante de servicios independientes en [RESR-COO-003 — ¿Cómo modelar y operar la preproducción de Synqo en Railway?](../01_research/resr-coo-003-railway-iac-preproduccion.md).
 
-La persona impulsora eligió el servicio combinado el 2026-10-07. La aprobación determina la topología de REL-002; no autoriza conectar Railway o enviar source. El envío permanece condicionado por [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../../08_especificaciones/01_activas/spec-coo-005-licencia-propietaria-rel-002.md). Los despliegues seguirán iniciándose manualmente conforme a [ADR-COO-004 — Desplegar la preproducción de Synqo en Railway con IaC](adr-coo-004-preproduccion-railway-iac.md).
+La persona impulsora eligió el servicio combinado el 2026-10-07. La aprobación determina la topología de REL-002; no autoriza conectar Railway o enviar source. El envío permanece condicionado por [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../../08_especificaciones/99_archivadas/spec-coo-005-licencia-propietaria-rel-002.md). Los despliegues seguirán iniciándose manualmente conforme a [ADR-COO-004 — Desplegar la preproducción de Synqo en Railway con IaC](adr-coo-004-preproduccion-railway-iac.md).
 
 ## Drivers
 

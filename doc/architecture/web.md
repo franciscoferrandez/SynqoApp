@@ -57,4 +57,6 @@ sequenceDiagram
 
 ## Desarrollo
 
+El build de producción se ejecuta con `npm --prefix apps/web run build`. Además de compilar Angular, conserva los avisos propios y de terceros dentro de `dist/web/browser/`, incluido el agregado que Angular genera fuera de esa carpeta. Las rutas y los límites de estos avisos están en el [inventario de procedencia y distribución](../legal/procedencia-y-avisos.md).
+
 La interfaz cambia a su presentación móvil hasta 768 CSS px inclusive; desde 769 px usa la presentación de escritorio. La frontera y los recorridos completos están cubiertos por `apps/web/e2e/mobile-journey.spec.ts`; las comprobaciones parciales de teclado/foco, reflujo y ampliación de texto están en `apps/web/e2e/accessibility-smoke.spec.ts`. Estas pruebas usan viewports emulados en Chromium, no dispositivos móviles físicos. REL-001 se aceptó con una excepción documentada de accesibilidad; no se declara conformidad WCAG global. El objetivo de [RNF-COO-002 — Accesibilidad web WCAG 2.2 nivel AA](../../pdi_doc/03_requisitos/04_no-funcionales/COO/rnf-coo-002-accesibilidad-web.md) permanece vigente. Los comandos de instalación, servidor, pruebas, lint, formato y build están en el [README principal](../../README.md#desarrollo-local); las rutas y los recorridos Playwright están en `apps/web/src/app/` y `apps/web/e2e/`.

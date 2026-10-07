@@ -25,6 +25,8 @@ jobs:
             apps/web/package-lock.json
       - run: npm ci
       - run: npm --prefix apps/web ci
+      - name: Comprobar conservación de avisos de distribución
+        run: node --test scripts/distribution-notices.test.mjs
       - name: Instalar Chromium para pruebas de navegador
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
