@@ -53,7 +53,7 @@ railway config apply
 
 No añadir `--yes` ni `--confirm-destructive`. No aplicar desde una sesión vinculada a otro proyecto o entorno. Tras el primer apply, volver a planificar y verificar que no quedan cambios inesperados.
 
-La app necesita variables protegidas fuera del repositorio. `APP_SECRET` se preserva como variable de Railway y se debe crear en el servicio HTTP antes del primer despliegue. `DEMO_ACCESS_SECRET` también se configura manualmente como variable protegida de al menos 32 bytes aleatorios; puede generarse localmente con `openssl rand -hex 32`, sin guardar ni compartir su valor. La IaC preserva ese secreto y los servicios lo referencian. Rotarlo invalida los enlaces demo hasta que un reset satisfactorio regenere las credenciales. La URL pública de la app se deriva de `RAILWAY_PUBLIC_DOMAIN`. El servicio usa `DATABASE_URL` referenciada desde PostgreSQL, `APP_ENV=prod`, `SYNQO_DEPLOYMENT_ENV=preproduction`, `TEAM_CREATION_EMAIL_ENABLED=false`, límites `2/60`, y `MAILER_DSN=null://null`. Así el correo real permanece desactivado y no requiere credenciales.
+La app necesita variables protegidas fuera del repositorio. `APP_SECRET` se preserva como variable de Railway y se debe crear en el servicio HTTP antes del primer despliegue. `DEMO_ACCESS_SECRET` también se configura manualmente como variable protegida de al menos 32 bytes aleatorios; puede generarse localmente con `openssl rand -hex 32`, sin guardar ni compartir su valor. La IaC preserva ese secreto y los servicios lo referencian. Rotarlo invalida los enlaces demo hasta que un reset satisfactorio regenere las credenciales. `DEMO_DATABASE_HOST` debe apuntar al dominio privado del servicio `synqo-postgres`, mediante la referencia `${{synqo-postgres.RAILWAY_PRIVATE_DOMAIN}}`; el reset compara este valor con el host real de `DATABASE_URL` y solo admite PostgreSQL privado. La URL pública de la app se deriva de `RAILWAY_PUBLIC_DOMAIN`. El servicio usa `DATABASE_URL` referenciada desde PostgreSQL, `APP_ENV=prod`, `SYNQO_DEPLOYMENT_ENV=preproduction`, `TEAM_CREATION_EMAIL_ENABLED=false`, límites `2/60`, y `MAILER_DSN=null://null`. Así el correo real permanece desactivado y no requiere credenciales.
 
 Tras el primer despliegue satisfactorio, generar manualmente un dominio Railway para `synqo-http` desde Settings → Networking → Public Networking → Generate Domain y seleccionar el puerto 8080 si Railway no lo detecta. Railway no asigna dominio al crear el servicio; al generarlo, `RAILWAY_PUBLIC_DOMAIN` alimenta `APP_PUBLIC_URL` y `DEFAULT_URI` en el siguiente runtime/deploy. No configurar un dominio personalizado.
 
@@ -89,6 +89,8 @@ SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON=1 railway config apply
 
 El plan debe añadir únicamente `synqo-demo-reset` (`0 * * * *` UTC). Cada job usa la misma imagen y PostgreSQL privado; el reset lleva sus guardas de entorno y ambos procesos terminan al completar. No habilitar el reset recurrente si no aparece el guard de preproducción o la prueba manual falla.
 
+Si el reset devuelve el mensaje genérico de perfil no autorizado, consultar las variables del servicio HTTP sin copiar valores secretos. `APP_ENV`, `SYNQO_DEPLOYMENT_ENV` y `RAILWAY_ENVIRONMENT_NAME` deben indicar producción/preproducción; `DEMO_ACCESS_SECRET` debe existir y tener al menos 32 bytes; `DEMO_DATABASE_HOST` debe existir y coincidir exactamente con el hostname privado usado por `DATABASE_URL`. Una variable ausente o distinta bloquea el reset antes de borrar o cargar datos. Generar el secreto localmente con `openssl rand -hex 32` y cargarlo como variable protegida; definir `DEMO_DATABASE_HOST` con la referencia Railway indicada arriba. Si la IaC del repositorio ya declara estas variables, revisar `railway config plan` y aplicar manualmente solo un plan entendido y limitado al entorno `preproduction`. Railway puede reiniciar/republicar el servicio al cambiar variables; después, repetir la comprobación segura y consultar los logs antes de volver a invocar el comando. No habilitar el Cron como método de prueba.
+
 ## Comprobación inicial y operación
 
 Tras cada publicación manual, verificar desde el dominio HTTPS asignado:
@@ -105,6 +107,14 @@ curl --include --silent https://<dominio-railway>/api/no-such-route
 En Railway, revisar estado/healthcheck y logs del servicio, conectividad PostgreSQL, resultado de migraciones y persistencia con una comprobación de lectura. No registrar ni copiar secretos desde la pestaña de variables o los logs. Cuando cada Cron esté habilitado, verificar por separado que su servicio concluye y revisar sus logs; Railway puede omitir una ejecución si la anterior sigue activa.
 
 El primer healthcheck solo acredita que Caddy responde. No prueba por sí solo DB ni migraciones; esas comprobaciones son independientes. Correo está desactivado y no bloquea el piloto.
+
+Si `GET /api/configuration` u otra ruta devuelve `500 application/problem+json`, obtener primero el request ID de la respuesta HTTP y consultar los logs del servicio en esa ventana:
+
+```sh
+railway logs --service synqo-http --environment preproduction --since 15m --lines 100
+```
+
+Tras desplegar una imagen con el manejador instrumentado, buscar `http.unhandled_exception`. El registro incluye únicamente clase de excepción, nombre de fichero y línea, método, nombre de ruta y request ID validado; omite mensaje, stack trace, query, cuerpo y credenciales. Correlacionar el request ID con la línea y revisar el commit activo antes de corregir. No habilitar `APP_DEBUG` públicamente ni copiar secretos a logs o incidencias. Si no aparece ningún registro, confirmar que la imagen activa contiene esta instrumentación y repetir la petición una sola vez para generar evidencia nueva.
 
 ## Recuperación
 

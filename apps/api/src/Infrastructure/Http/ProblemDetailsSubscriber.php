@@ -22,6 +22,21 @@ final class ProblemDetailsSubscriber implements EventSubscriberInterface
         if ($event->getThrowable() instanceof HttpExceptionInterface) {
             return;
         }
+
+        $exception = $event->getThrowable();
+        $request = $event->getRequest();
+        $requestId = $request->headers->get('x-railway-request-id');
+        $route = $request->attributes->get('_route');
+        error_log((string) json_encode([
+            'event' => 'http.unhandled_exception',
+            'exception' => $exception::class,
+            'file' => basename($exception->getFile()),
+            'line' => $exception->getLine(),
+            'method' => $request->getMethod(),
+            'route' => is_string($route) ? $route : null,
+            'requestId' => is_string($requestId) && preg_match('/^[A-Za-z0-9_-]{1,128}$/D', $requestId) === 1 ? $requestId : null,
+        ], JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE));
+
         $response = new JsonResponse([
             'type' => 'about:blank',
             'title' => 'Error interno',
