@@ -22,6 +22,8 @@ export default defineRailway((context) => {
       APP_ENV: 'prod',
       APP_DEBUG: '0',
       APP_SECRET: preserve(),
+      DEMO_ACCESS_SECRET: preserve(),
+      DEMO_DATABASE_HOST: '${{synqo-postgres.RAILWAY_PRIVATE_DOMAIN}}',
       APP_PUBLIC_URL: 'https://${{RAILWAY_PUBLIC_DOMAIN}}',
       DEFAULT_URI: 'https://${{RAILWAY_PUBLIC_DOMAIN}}',
       DATABASE_URL: database.env.DATABASE_URL,
@@ -37,12 +39,12 @@ export default defineRailway((context) => {
 
   const resources: ProjectResourceInput[] = [database, http];
 
-  // The reset job remains absent from the desired state until the operator
-  // explicitly opts in after deploy verification and SPEC-EQU-006 is ready.
+  // Recurring jobs are independently opt-in so the data purge can be verified
+  // before the destructive demo reset schedule is activated.
   const processEnvironment = (globalThis as typeof globalThis & {
     process?: { env?: Record<string, string | undefined> };
   }).process?.env;
-  if (processEnvironment?.SYNQO_ENABLE_PREPRODUCTION_CRONS === '1') {
+  if (processEnvironment?.SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON === '1') {
     resources.push(service('synqo-demo-reset', {
       build: appImage,
       start: 'php bin/console app:demo:reset --force --no-interaction',
@@ -55,11 +57,16 @@ export default defineRailway((context) => {
         DEFAULT_URI: http.env.DEFAULT_URI,
         DATABASE_URL: database.env.DATABASE_URL,
         SYNQO_DEPLOYMENT_ENV: 'preproduction',
+        DEMO_RESET_ENABLED: 'true',
+        DEMO_DATABASE_HOST: http.env.DEMO_DATABASE_HOST,
+        DEMO_ACCESS_SECRET: http.env.DEMO_ACCESS_SECRET,
         TEAM_CREATION_EMAIL_ENABLED: 'false',
         MAILER_DSN: 'null://null',
       },
     }));
+  }
 
+  if (processEnvironment?.SYNQO_ENABLE_PREPRODUCTION_CREATION_LIMITS_PURGE === '1') {
     resources.push(service('synqo-creation-limits-purge', {
       build: appImage,
       start: 'php bin/console app:creation-limits:purge --no-interaction',

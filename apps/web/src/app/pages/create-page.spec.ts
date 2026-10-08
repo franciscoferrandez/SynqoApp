@@ -172,3 +172,49 @@ it('keeps email hidden when public configuration cannot be loaded', () => {
   expect(fixture.nativeElement.querySelector('#team-name')).not.toBeNull();
   fixture.destroy();
 });
+
+it('shows the preproduction demo links and reset notice from public configuration', () => {
+  vi.stubGlobal('window', {
+    navigator: window.navigator,
+    location: window.location,
+    matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+  });
+  const api = {
+    publicConfiguration: vi.fn(() =>
+      of({
+        teamCreationEmailEnabled: false,
+        teamCreationMaxTeams: 2,
+        teamCreationWindowMinutes: 60,
+        demo: {
+          nextResetAt: '2030-01-01T12:00:00+00:00',
+          teams: [
+            { name: 'La mesa del jueves', accessUrl: 'https://example.invalid/e#t=friends' },
+            { name: 'La banda del patio', accessUrl: 'https://example.invalid/e#t=band' },
+          ],
+        },
+      }),
+    ),
+    create: vi.fn(),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: TeamApi, useValue: api },
+      { provide: Router, useValue: { navigateByUrl: vi.fn() } },
+      { provide: TEAM_CREATION_CONFIRMATION, useValue: true },
+    ],
+  });
+  const fixture = TestBed.createComponent(CreatePage);
+  Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
+  fixture.detectChanges();
+
+  expect(fixture.nativeElement.textContent).toContain(
+    'Los cambios se borran en el siguiente reinicio.',
+  );
+  expect(fixture.nativeElement.querySelectorAll('#demo-title + p + ul a')).toHaveLength(2);
+  expect(fixture.nativeElement.querySelector('app-demo-reset-timer')).not.toBeNull();
+  expect(
+    fixture.nativeElement.querySelector('a[href="https://example.invalid/e#t=friends"]')
+      ?.textContent,
+  ).toContain('La mesa del jueves');
+  fixture.destroy();
+});

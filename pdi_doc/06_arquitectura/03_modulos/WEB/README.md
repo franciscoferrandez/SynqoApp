@@ -19,6 +19,7 @@ Presentar con Angular en navegador los recorridos de [REL-001 — Demo local ope
 - Interacciones de teclado, foco, anuncios y adaptación móvil.
 - Mostrar el estado del intento de correo solo al navegador creador, con aviso persistente y descartable si falla, conforme a [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md).
 - Mostrar el campo opcional de correo solo cuando la configuración pública de API indique que está habilitado; si no se puede consultar, mantenerlo oculto, según [RF-EQU-006 — Enviar el enlace del equipo por correo opcional](../../../03_requisitos/01_funcionales/EQU/rf-equ-006-enviar-enlace-por-correo.md).
+- En preproducción, mostrar los enlaces a los dos equipos demo, el aviso de borrado horario y la cuenta atrás UTC del próximo reset en creación y en la zona superior del equipo.
 
 La presentación separa interacción, estado visual y acceso a la API sin replicar el modelo autoritativo del servidor, conforme a [ADR-COO-002 — Separar el dominio con arquitectura limpia y DDD pragmático](../../../05_investigacion-y-decisiones/05_adr/adr-coo-002-arquitectura-limpia-y-ddd-pragmatico.md).
 

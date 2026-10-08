@@ -9,6 +9,15 @@ use DateTimeZone;
 
 final class DemoFixture
 {
+    public function accessKey(int $teamIndex): string
+    {
+        return match ($teamIndex) {
+            0 => 'friends',
+            1 => 'band',
+            default => throw new \OutOfBoundsException('No hay una clave demo para este equipo.'),
+        };
+    }
+
     /** @return array<string, list<string>> */
     public function teams(): array
     {

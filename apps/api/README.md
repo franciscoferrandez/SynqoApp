@@ -33,6 +33,8 @@ docker compose exec api php bin/console app:teams:cleanup
 
 El proceso elimina únicamente datos de la base activa; no implementa retención de copias de seguridad ni medidas de restauración.
 
+En preproducción, el mismo comando tiene un perfil remoto protegido por configuración: exige `APP_ENV=prod`, `SYNQO_DEPLOYMENT_ENV=preproduction`, `DEMO_RESET_ENABLED=true`, `DEMO_ACCESS_SECRET` y la referencia al host privado de PostgreSQL esperado. La IaC conserva el secreto fuera del repositorio. Los tokens derivados solo se usan para los dos equipos demo; sus hashes son lo único que se guarda en la base. `--force` no omite esas comprobaciones. El reset horario es un servicio Cron independiente con activación manual; no se activa con el proceso HTTP ni con la configuración IaC predeterminada.
+
 
 ## Restaurar el juego demo local
 

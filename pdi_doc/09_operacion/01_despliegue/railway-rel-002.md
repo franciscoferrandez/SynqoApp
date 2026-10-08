@@ -8,7 +8,7 @@ Este documento concreta la preparación local de [SPEC-COO-006 — Preparar la i
 - Tampoco se debe ejecutar `railway up`: el código solo se publicará desde el panel después del gate de licencia y con autodeploy desactivado.
 - El tope aprobado para REL-002 es 5 USD al mes. La documentación actual de Railway indica que el hard limit de compute se configura en dólares enteros y su mínimo es 10 USD; por tanto, no demuestra que se pueda aplicar el límite aprobado de 5 USD. Hasta confirmar un control efectivo de máximo 5 USD o recibir una decisión que cambie el límite, no activar recursos con coste potencial. El uso Free puede evaluarse primero; no subir a Hobby bajo la configuración documentada hoy.
 - Las copias de PostgreSQL se dejan sin configurar. Antes de habilitar copias hay que comprobar el coste incremental, su retención y los controles visibles en la cuenta. Si no se confirma que caben dentro del mismo tope de 5 USD, permanecen desactivadas. La retención diaria documentada por Railway es de seis días; restaurar una copia puede reintroducir filas ya expiradas del pool temporal.
-- Los Cron no forman parte del plan predeterminado. El job `app:demo:reset` solo se añade tras publicar y verificar la aplicación y completar [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../../08_especificaciones/01_activas/spec-equ-006-juego-demo-preproduccion.md). La purga depende del contrato ya implementado en [SPEC-EQU-005 — Limitar la creación de equipos por origen efímero](../../08_especificaciones/99_archivadas/spec-equ-005-limite-creacion-origen-efimero.md).
+- Los Cron no forman parte del plan predeterminado y tienen opt-ins independientes. La purga se puede habilitar primero para comprobar el proceso cada cinco minutos; el reset destructivo horario solo se añade después de completar su validación manual según [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../../08_especificaciones/01_activas/spec-equ-006-juego-demo-preproduccion.md). La purga depende del contrato ya implementado en [SPEC-EQU-005 — Limitar la creación de equipos por origen efímero](../../08_especificaciones/99_archivadas/spec-equ-005-limite-creacion-origen-efimero.md).
 
 ## Herramientas locales
 
@@ -23,7 +23,7 @@ npm --prefix apps/web ci
 npm run railway:iac:check
 ```
 
-El test local evalúa el grafo sin autenticar, enlazar ni comunicarse con Railway. Revisa que la configuración siga limitada al entorno preproduction, que no declare una fuente GitHub y que los dos Cron no aparezcan por defecto.
+El test local evalúa el grafo sin autenticar, enlazar ni comunicarse con Railway. Revisa que la configuración siga limitada al entorno preproduction, que no declare una fuente GitHub y que ambos Cron no aparezcan por defecto; además comprueba que la purga y el reset se habilitan con variables independientes.
 
 Para construir la imagen local y probarla con un PostgreSQL efímero aislado:
 
@@ -53,7 +53,7 @@ railway config apply
 
 No añadir `--yes` ni `--confirm-destructive`. No aplicar desde una sesión vinculada a otro proyecto o entorno. Tras el primer apply, volver a planificar y verificar que no quedan cambios inesperados.
 
-La app necesita variables protegidas fuera del repositorio. `APP_SECRET` se preserva como variable de Railway y se debe crear en el servicio HTTP antes del primer despliegue. La URL pública de la app se deriva de `RAILWAY_PUBLIC_DOMAIN`. El servicio usa `DATABASE_URL` referenciada desde PostgreSQL, `APP_ENV=prod`, `SYNQO_DEPLOYMENT_ENV=preproduction`, `TEAM_CREATION_EMAIL_ENABLED=false`, límites `2/60`, y `MAILER_DSN=null://null`. Así el correo real permanece desactivado y no requiere credenciales.
+La app necesita variables protegidas fuera del repositorio. `APP_SECRET` se preserva como variable de Railway y se debe crear en el servicio HTTP antes del primer despliegue. `DEMO_ACCESS_SECRET` también se configura manualmente como variable protegida de al menos 32 bytes aleatorios; puede generarse localmente con `openssl rand -hex 32`, sin guardar ni compartir su valor. La IaC preserva ese secreto y los servicios lo referencian. Rotarlo invalida los enlaces demo hasta que un reset satisfactorio regenere las credenciales. La URL pública de la app se deriva de `RAILWAY_PUBLIC_DOMAIN`. El servicio usa `DATABASE_URL` referenciada desde PostgreSQL, `APP_ENV=prod`, `SYNQO_DEPLOYMENT_ENV=preproduction`, `TEAM_CREATION_EMAIL_ENABLED=false`, límites `2/60`, y `MAILER_DSN=null://null`. Así el correo real permanece desactivado y no requiere credenciales.
 
 Tras el primer despliegue satisfactorio, generar manualmente un dominio Railway para `synqo-http` desde Settings → Networking → Public Networking → Generate Domain y seleccionar el puerto 8080 si Railway no lo detecta. Railway no asigna dominio al crear el servicio; al generarlo, `RAILWAY_PUBLIC_DOMAIN` alimenta `APP_PUBLIC_URL` y `DEFAULT_URI` en el siguiente runtime/deploy. No configurar un dominio personalizado.
 
@@ -67,14 +67,27 @@ Las migraciones se ejecutan en el pre-deploy de la publicación manual. Antes de
 
 ## Activación de Cron
 
-Después del despliegue, las comprobaciones HTTP, DB y migraciones deben ser satisfactorias y SPEC-EQU-006 debe estar verificada. Solo entonces se puede incluir la tarea programada en un plan explícito:
+Después del despliegue, las comprobaciones HTTP, DB y migraciones deben ser satisfactorias. Configurar primero solo la purga para probar su tarea no destructiva:
 
 ```sh
-SYNQO_ENABLE_PREPRODUCTION_CRONS=1 railway config plan
-SYNQO_ENABLE_PREPRODUCTION_CRONS=1 railway config apply
+SYNQO_ENABLE_PREPRODUCTION_CREATION_LIMITS_PURGE=1 railway config plan
+SYNQO_ENABLE_PREPRODUCTION_CREATION_LIMITS_PURGE=1 railway config apply
 ```
 
-Revisar en el plan que solo se añaden `synqo-demo-reset` (`0 * * * *` UTC) y `synqo-creation-limits-purge` (`*/5 * * * *` UTC), sin cambios colaterales. Los dos jobs utilizan la misma imagen, el mismo PostgreSQL privado y procesos de consola que finalizan al completar. Si el reset programado no está autorizado por SPEC-EQU-006 o no aparece su guard de preproducción, no habilitar esta opción.
+Revisar que solo se añade `synqo-creation-limits-purge` (`*/5 * * * *` UTC). Confirmar que el proceso termina y que conserva las filas vigentes del pool. Para ejecutar una prueba puntual del fixture, usar el comando remoto desde el servicio HTTP; requiere que el reset remoto esté listo conforme a SPEC-EQU-006 y habilitar la variable solo para ese comando:
+
+```sh
+railway ssh --service synqo-http --environment preproduction -- sh -lc 'DEMO_RESET_ENABLED=true php bin/console app:demo:reset --force --no-interaction'
+```
+
+Revisar los enlaces públicos, los dos equipos, el pool y los logs sin exponer secretos. Solo después de que esta prueba manual sea satisfactoria y SPEC-EQU-006 haya sido verificada, habilitar el Cron destructivo con un plan separado:
+
+```sh
+SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON=1 railway config plan
+SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON=1 railway config apply
+```
+
+El plan debe añadir únicamente `synqo-demo-reset` (`0 * * * *` UTC). Cada job usa la misma imagen y PostgreSQL privado; el reset lleva sus guardas de entorno y ambos procesos terminan al completar. No habilitar el reset recurrente si no aparece el guard de preproducción o la prueba manual falla.
 
 ## Comprobación inicial y operación
 
@@ -89,7 +102,7 @@ curl --include --silent https://<dominio-railway>/api/no-such-route
 
 `/healthz` debe devolver `200`; `/` debe servir el `index.html` de Angular; `/api/configuration` debe devolver JSON con correo desactivado y límites preproduction `2/60`. `/api` debe redirigir a `/api/docs`, donde se publica la documentación de API Platform. Una ruta API inexistente anidada debe devolver `404` `application/problem+json`, nunca el HTML SPA. Comprobar los avisos públicos en `/SYNQO-LICENSE.txt`, `/THIRD_PARTY_NOTICES.txt`, `/3rdpartylicenses.txt` y `/ANGULAR-TEMPLATES-LICENSE.txt`.
 
-En Railway, revisar estado/healthcheck y logs del servicio, conectividad PostgreSQL, resultado de migraciones y persistencia con una comprobación de lectura. No registrar ni copiar secretos desde la pestaña de variables o los logs. Cuando los Cron estén habilitados, verificar que los dos servicios concluyen y revisar sus logs en una ejecución; Railway puede omitir una ejecución si la anterior sigue activa.
+En Railway, revisar estado/healthcheck y logs del servicio, conectividad PostgreSQL, resultado de migraciones y persistencia con una comprobación de lectura. No registrar ni copiar secretos desde la pestaña de variables o los logs. Cuando cada Cron esté habilitado, verificar por separado que su servicio concluye y revisar sus logs; Railway puede omitir una ejecución si la anterior sigue activa.
 
 El primer healthcheck solo acredita que Caddy responde. No prueba por sí solo DB ni migraciones; esas comprobaciones son independientes. Correo está desactivado y no bloquea el piloto.
 

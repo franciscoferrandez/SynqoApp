@@ -53,6 +53,10 @@ export interface PublicConfiguration {
   teamCreationEmailEnabled: boolean;
   teamCreationMaxTeams: number;
   teamCreationWindowMinutes: number;
+  demo?: {
+    nextResetAt: string;
+    teams: { name: string; accessUrl: string }[];
+  };
 }
 export type MailAttemptStatus = 'pending' | 'succeeded' | 'failed';
 export interface TeamData {

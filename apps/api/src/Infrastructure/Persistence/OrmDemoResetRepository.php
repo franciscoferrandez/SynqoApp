@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence;
 
 use App\Application\Demo\DemoFixture;
 use App\Application\Demo\DemoResetRepository;
+use App\Application\Demo\DemoAccessTokenDeriver;
 use App\Application\Team\AccessTokenGenerator;
 use App\Application\Team\IdentifierGenerator;
 use App\Domain\Team\ParticipantName;
@@ -25,7 +26,14 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
 {
     public const int LOCK_KEY = 783912004;
 
-    public function __construct(private ManagerRegistry $managers, private DemoFixture $fixture, private IdentifierGenerator $identifiers, private AccessTokenGenerator $tokens) {}
+    public function __construct(
+        private ManagerRegistry $managers,
+        private DemoFixture $fixture,
+        private IdentifierGenerator $identifiers,
+        private AccessTokenGenerator $tokens,
+        private DemoAccessTokenDeriver $demoTokens,
+        private string $deploymentEnvironment,
+    ) {}
 
     public function isLocalPostgreSql(): bool
     {
@@ -34,6 +42,19 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
         // Requiring a TCP host also rejects socket DSNs and missing/ambiguous hosts.
         return in_array($params['host'] ?? null, ['database', 'localhost', '127.0.0.1', '::1'], true)
             && $connection->getDatabasePlatform() instanceof PostgreSQLPlatform;
+    }
+
+    public function isPrivatePreproductionPostgreSql(string $expectedHost, ?string $railwayEnvironmentName): bool
+    {
+        $connection = $this->managers->getConnection();
+        $host = $connection->getParams()['host'] ?? null;
+
+        return $connection->getDatabasePlatform() instanceof PostgreSQLPlatform
+            && $expectedHost !== ''
+            && is_string($host)
+            && hash_equals($expectedHost, $host)
+            && str_ends_with($host, '.railway.internal')
+            && $railwayEnvironmentName === 'preproduction';
     }
 
     public function replace(DateTimeImmutable $now): array
@@ -54,7 +75,9 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
                 $links = [];
                 $teamIndex = 0;
                 foreach ($this->fixture->teams() as $name => $names) {
-                    $token = $this->tokens->generate();
+                    $token = $this->deploymentEnvironment === 'preproduction'
+                        ? $this->demoTokens->tokenFor($this->fixture->accessKey($teamIndex))
+                        : $this->tokens->generate();
                     $team = new TeamRecord($this->identifiers->generate(), $name, hash('sha256', $token), 'UTC', $now, $now);
                     $manager->persist($team);
                     $participants = [];

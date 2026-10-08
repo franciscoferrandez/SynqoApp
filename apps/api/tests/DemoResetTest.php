@@ -6,6 +6,7 @@ namespace App\Tests;
 
 use App\Application\Demo\DemoFixture;
 use App\Application\Demo\DemoResetService;
+use App\Application\Demo\DemoAccessTokenDeriver;
 use App\Application\Team\IdentifierGenerator;
 use App\Application\Team\AccessTokenGenerator;
 use Doctrine\Persistence\ManagerRegistry;
@@ -88,6 +89,29 @@ final class DemoResetTest extends KernelTestCase
         }
     }
 
+    public function testPreproductionFixtureUsesStableDerivedTokensWithoutStoringThem(): void
+    {
+        $repository = new OrmDemoResetRepository(
+            static::getContainer()->get(ManagerRegistry::class),
+            new DemoFixture(),
+            static::getContainer()->get(IdentifierGenerator::class),
+            static::getContainer()->get(AccessTokenGenerator::class),
+            new DemoAccessTokenDeriver(str_repeat('d', 32)),
+            'preproduction',
+        );
+
+        $first = $repository->replace(new DateTimeImmutable('2026-10-08T10:00:00Z'));
+        $repository->replace(new DateTimeImmutable('2026-10-08T11:00:00Z'));
+        $last = $repository->replace(new DateTimeImmutable('2026-10-08T12:00:00Z'));
+
+        self::assertSame(array_column($first, 'token'), array_column($last, 'token'));
+        foreach ($first as $team) {
+            $verifier = trim((string) $this->db->fetchOne('SELECT access_verifier FROM team WHERE name = ?', [$team['name']]));
+            self::assertSame(hash('sha256', $team['token']), $verifier);
+            self::assertStringNotContainsString($team['token'], $verifier);
+        }
+    }
+
     public function testFailureRollsBackDeletionAndPartialFixture(): void
     {
         $this->service->reset();
@@ -131,7 +155,7 @@ final class DemoResetTest extends KernelTestCase
 
     public function testCommandRequiresConfirmationAndNeverPrintsTokensInAutomation(): void
     {
-        $tester = new CommandTester(new ResetDemoCommand($this->service, 'dev', 'development', 'http://localhost:4200'));
+        $tester = new CommandTester(new ResetDemoCommand($this->service, 'dev', 'development', 'http://localhost:4200', false, '', null));
         $this->service->reset();
         $ids = $this->db->fetchFirstColumn('SELECT id FROM team ORDER BY id');
         self::assertSame(1, $tester->execute([], ['interactive' => false]));
@@ -152,20 +176,60 @@ final class DemoResetTest extends KernelTestCase
             $connection = DriverManager::getConnection(['driver' => 'pdo_pgsql', 'host' => $host, 'password' => 'secret-should-not-appear', 'serverVersion' => '18']);
             $registry = $this->createStub(ManagerRegistry::class);
             $registry->method('getConnection')->willReturn($connection);
-            $repository = new OrmDemoResetRepository($registry, new DemoFixture(), $this->createStub(IdentifierGenerator::class), $this->createStub(AccessTokenGenerator::class));
+            $repository = new OrmDemoResetRepository($registry, new DemoFixture(), $this->createStub(IdentifierGenerator::class), $this->createStub(AccessTokenGenerator::class), new DemoAccessTokenDeriver(str_repeat('k', 32)), 'development');
             self::assertSame(in_array($host, ['database', 'localhost', '127.0.0.1', '::1'], true), $repository->isLocalPostgreSql());
             self::assertFalse($connection->isConnected());
             if (!in_array($host, ['database', 'localhost', '127.0.0.1', '::1'], true)) {
-                $service = new DemoResetService($repository, new MockClock());
-                $tester = new CommandTester(new ResetDemoCommand($service, 'dev', 'development', 'http://localhost:4200'));
+                $service = new DemoResetService($repository, new MockClock(), new DemoAccessTokenDeriver(str_repeat('k', 32)));
+                $tester = new CommandTester(new ResetDemoCommand($service, 'dev', 'development', 'http://localhost:4200', false, '', null));
                 self::assertSame(1, $tester->execute(['--force' => true], ['interactive' => false]));
                 self::assertStringNotContainsString('secret-should-not-appear', $tester->getDisplay());
             }
         }
         $registry = $this->createStub(ManagerRegistry::class);
         $registry->method('getConnection')->willReturn(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'host' => 'localhost', 'memory' => true]));
-        $repository = new OrmDemoResetRepository($registry, new DemoFixture(), $this->createStub(IdentifierGenerator::class), $this->createStub(AccessTokenGenerator::class));
+        $repository = new OrmDemoResetRepository($registry, new DemoFixture(), $this->createStub(IdentifierGenerator::class), $this->createStub(AccessTokenGenerator::class), new DemoAccessTokenDeriver(str_repeat('k', 32)), 'development');
         self::assertFalse($repository->isLocalPostgreSql());
+    }
+
+    public function testRemoteHostGuardAcceptsOnlyExpectedRailwayPrivatePostgresInPreproduction(): void
+    {
+        $connection = DriverManager::getConnection(['driver' => 'pdo_pgsql', 'host' => 'synqo-postgres.railway.internal', 'serverVersion' => '18']);
+        $registry = $this->createStub(ManagerRegistry::class);
+        $registry->method('getConnection')->willReturn($connection);
+        $repository = new OrmDemoResetRepository($registry, new DemoFixture(), $this->createStub(IdentifierGenerator::class), $this->createStub(AccessTokenGenerator::class), new DemoAccessTokenDeriver(str_repeat('k', 32)), 'preproduction');
+
+        self::assertTrue($repository->isPrivatePreproductionPostgreSql('synqo-postgres.railway.internal', 'preproduction'));
+        self::assertFalse($repository->isPrivatePreproductionPostgreSql('another-postgres.railway.internal', 'preproduction'));
+        self::assertFalse($repository->isPrivatePreproductionPostgreSql('synqo-postgres.railway.internal', 'production'));
+        self::assertFalse($connection->isConnected());
+    }
+
+    public function testRemoteResetRequiresEveryGuardEvenWhenForceIsPassed(): void
+    {
+        $repository = $this->createMock(\App\Application\Demo\DemoResetRepository::class);
+        $repository->expects(self::never())->method('replace');
+        $repository->method('isPrivatePreproductionPostgreSql')->willReturn(false);
+        $service = new DemoResetService($repository, new MockClock(), new DemoAccessTokenDeriver(str_repeat('k', 32)));
+        $tester = new CommandTester(new ResetDemoCommand($service, 'prod', 'preproduction', 'https://example.invalid', true, 'db.railway.internal', 'preproduction'));
+
+        self::assertSame(1, $tester->execute(['--force' => true], ['interactive' => false]));
+        self::assertStringNotContainsString('railway.internal', $tester->getDisplay());
+    }
+
+    public function testAuthorizedPreproductionResetDoesNotPrintTokensInAutomation(): void
+    {
+        $repository = $this->createMock(\App\Application\Demo\DemoResetRepository::class);
+        $repository->expects(self::once())->method('isPrivatePreproductionPostgreSql')->with('synqo-postgres.railway.internal', 'preproduction')->willReturn(true);
+        $repository->expects(self::once())->method('replace')->willReturn([
+            ['name' => 'La mesa del jueves', 'token' => 'never-log-this'],
+            ['name' => 'La banda del patio', 'token' => 'never-log-this-either'],
+        ]);
+        $service = new DemoResetService($repository, new MockClock(), new DemoAccessTokenDeriver(str_repeat('k', 32)));
+        $tester = new CommandTester(new ResetDemoCommand($service, 'prod', 'preproduction', 'https://example.invalid', true, 'synqo-postgres.railway.internal', 'preproduction'));
+
+        self::assertSame(0, $tester->execute(['--force' => true], ['interactive' => false]));
+        self::assertStringNotContainsString('never-log-this', $tester->getDisplay());
     }
 
     public function testCommandRejectsUnsafeEnvironmentsWithoutModifyingData(): void
@@ -173,7 +237,7 @@ final class DemoResetTest extends KernelTestCase
         $this->service->reset();
         $ids = $this->db->fetchFirstColumn('SELECT id FROM team ORDER BY id');
         foreach ([['prod', 'development'], ['dev', 'production'], ['dev', null], ['test', 'development']] as [$app, $deployment]) {
-            $tester = new CommandTester(new ResetDemoCommand($this->service, $app, $deployment, 'http://localhost:4200'));
+            $tester = new CommandTester(new ResetDemoCommand($this->service, $app, $deployment, 'http://localhost:4200', false, '', null));
             self::assertSame(1, $tester->execute(['--force' => true], ['interactive' => false]));
             self::assertSame($ids, $this->db->fetchFirstColumn('SELECT id FROM team ORDER BY id'));
         }

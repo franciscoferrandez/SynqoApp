@@ -127,7 +127,7 @@ Flujo de operación aprobado: IaC se inspecciona con CLI config plan y se aplica
 ## Plan por slices
 
 1. **PASS local — Runtime combinado:** imagen FrankenPHP/Caddy multietapa y routing same-origin probados localmente con WEB, `/api`, `PORT`, healthcheck y fallback SPA, sin enviar código a Railway.
-2. **PASS en configuración; runtime pendiente — Coordinación de procesos:** IaC declara los dos Cron con sus comandos/schedules solo por opt-in. El horario de reset permanece desactivado hasta que el servicio esté desplegado y verificado según SPEC-EQU-006.
+2. **PASS en configuración; runtime pendiente — Coordinación de procesos:** IaC declara los dos Cron con comandos/schedules y opt-ins independientes. La purga puede habilitarse primero para verificación; el reset permanece desactivado hasta superar la prueba manual de SPEC-EQU-006.
 3. **PASS local — IaC:** proyecto/entorno, PostgreSQL, variables y referencias se modelan localmente; tests y typecheck no contactan Railway. No se ejecutó un plan remoto.
 4. **PASS — Operación/documentación:** README, pasos manuales, preflight, postflight, recuperación y ejecución local quedan escritos en los artefactos afectados.
 5. **PASS local; gate remoto pendiente:** checks IaC, imagen y documentación pasan. Plan real, conexión GitHub y primer deploy siguen bloqueados por licencia, source y límite de gasto; requieren acción manual de la persona impulsora.
@@ -138,7 +138,7 @@ Preparación documental e investigación oficial realizadas el 2026-10-07. La de
 
 ### Implementación local (2026-10-07)
 
-- `.railway/railway.ts` define únicamente el entorno `preproduction`, PostgreSQL 18 y el HTTP combinado. No declara fuente GitHub. Los Cron quedan fuera del grafo por defecto y solo se añaden con `SYNQO_ENABLE_PREPRODUCTION_CRONS=1`.
+- `.railway/railway.ts` define únicamente el entorno `preproduction`, PostgreSQL 18 y el HTTP combinado. No declara fuente GitHub. Los Cron quedan fuera del grafo por defecto; la purga se añade con `SYNQO_ENABLE_PREPRODUCTION_CREATION_LIMITS_PURGE=1` y el reset horario, independientemente, con `SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON=1`.
 - `Dockerfile.railway`, `.dockerignore` y `apps/api/Caddyfile.railway` construyen una imagen de producción multietapa; enrutan la API bajo `/api`, la SPA con fallback, y publican `/healthz` y avisos legales. Se añadieron avisos del runtime FrankenPHP, Caddy y PHP.
 - `scripts/railway-iac.test.mjs`, `scripts/smoke-railway-image.sh` y el job existente de CI comprueban localmente el grafo, tipos TypeScript, construcción y arranque de la imagen con PostgreSQL efímero.
 - README y guías de API/WEB se actualizaron para las instrucciones cotidianas y el runtime combinado. El procedimiento Railway está en [Operación manual de Railway para REL-002](../../09_operacion/01_despliegue/railway-rel-002.md).

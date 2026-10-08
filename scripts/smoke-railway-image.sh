@@ -79,11 +79,20 @@ assert.match(await web.text(), /<app-root/);
 
 const configuration = await fetch(`${baseUrl}/api/configuration`);
 assert.equal(configuration.status, 200);
-assert.deepEqual(await configuration.json(), {
+const publicConfiguration = await configuration.json();
+assert.deepEqual({
+  teamCreationEmailEnabled: publicConfiguration.teamCreationEmailEnabled,
+  teamCreationMaxTeams: publicConfiguration.teamCreationMaxTeams,
+  teamCreationWindowMinutes: publicConfiguration.teamCreationWindowMinutes,
+}, {
   teamCreationEmailEnabled: false,
   teamCreationMaxTeams: 2,
   teamCreationWindowMinutes: 60,
 });
+assert.deepEqual(publicConfiguration.demo?.teams, []);
+assert.ok(Number.isFinite(Date.parse(publicConfiguration.demo?.nextResetAt)));
+assert.match(publicConfiguration.demo.nextResetAt, /(?:Z|\+00:00)$/);
+assert.match(configuration.headers.get('cache-control') ?? '', /no-store/);
 
 for (const path of ['/api', '/api/']) {
   const apiRoot = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });

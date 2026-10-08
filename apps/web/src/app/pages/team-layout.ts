@@ -4,9 +4,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TeamApi, TeamData } from '../shared/team-api';
 import { LinkMessagePage } from './link-message-page';
 import { MailAttemptNotice } from '../shared/mail-attempt-notice';
+import { DemoResetTimer } from '../shared/demo-reset-timer';
 
 @Component({
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, LinkMessagePage, MailAttemptNotice],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    LinkMessagePage,
+    MailAttemptNotice,
+    DemoResetTimer,
+  ],
   template: `
     @if (error) {
       <app-link-message [kind]="error" />
@@ -19,6 +27,11 @@ import { MailAttemptNotice } from '../shared/mail-attempt-notice';
     } @else if (team) {
       <div class="pt-5 sm:pt-7">
         <app-mail-attempt-notice [teamId]="team.id" [accessUrl]="accessUrl()" context="team" />
+        @if (demoResetAt) {
+          <p class="mb-3 text-sm text-muted" aria-label="Temporizador del reinicio de equipos demo">
+            Reinicio de equipos de ejemplo: <app-demo-reset-timer [resetAt]="demoResetAt" />
+          </p>
+        }
         @if (participantId) {
           <section class="team-header" aria-label="Equipo">
             <div class="min-w-0">
@@ -172,11 +185,18 @@ export class TeamLayout implements OnInit {
   protected readonly canShare = typeof navigator.share === 'function';
   protected linkFeedback = '';
   participantId = '';
+  protected demoResetAt = '';
   get activeParticipantName(): string {
     return this.participantName;
   }
   ngOnInit(): void {
     this.load();
+    this.api.publicConfiguration().subscribe({
+      next: (configuration) => {
+        this.demoResetAt = configuration.demo?.nextResetAt ?? '';
+        this.changeDetector.markForCheck();
+      },
+    });
   }
   protected load(): void {
     this.loadFailed = false;

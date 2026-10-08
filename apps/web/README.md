@@ -30,6 +30,8 @@ El servidor abre en `http://localhost:4200/` y envía `/api` a `http://localhost
 
 La pantalla de creación obtiene de `/api/configuration` el límite de equipos y su ventana vigentes, muestra esa información antes del envío y presenta el aviso genérico si la API responde que se alcanzó el límite. La clave first-party de origen se genera con Web Crypto y se conserva en `localStorage`; si no está disponible, la solicitud continúa sin esa señal y la API evalúa cualquier otra señal confiable.
 
+En preproducción, la misma configuración pública puede incluir enlaces a los dos equipos demo y el instante del siguiente reset horario UTC. La pantalla de creación muestra el aviso de borrado y la cuenta atrás; las pantallas de equipo muestran el temporizador en su cabecera general. El cliente no genera ni almacena los tokens demo.
+
 Para aplicar correcciones explícitas:
 
 ```bash

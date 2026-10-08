@@ -12,4 +12,6 @@ interface DemoResetRepository
     public function replace(DateTimeImmutable $now): array;
 
     public function isLocalPostgreSql(): bool;
+
+    public function isPrivatePreproductionPostgreSql(string $expectedHost, ?string $railwayEnvironmentName): bool;
 }

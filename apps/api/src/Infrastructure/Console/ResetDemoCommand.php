@@ -24,6 +24,12 @@ final class ResetDemoCommand extends Command
         private readonly ?string $deploymentEnvironment,
         #[Autowire(env: 'APP_PUBLIC_URL')]
         private readonly string $publicUrl,
+        #[Autowire(env: 'bool:DEMO_RESET_ENABLED')]
+        private readonly bool $demoResetEnabled,
+        #[Autowire(env: 'DEMO_DATABASE_HOST')]
+        private readonly string $demoDatabaseHost,
+        #[Autowire(env: 'RAILWAY_ENVIRONMENT_NAME')]
+        private readonly ?string $railwayEnvironmentName,
     ) {
         parent::__construct();
     }
@@ -37,13 +43,23 @@ final class ResetDemoCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         try {
-            $this->reset->assertLocalProfile($this->appEnvironment, $this->deploymentEnvironment);
+            if ($this->appEnvironment === 'dev' && $this->deploymentEnvironment === 'development') {
+                $this->reset->assertLocalProfile($this->appEnvironment, $this->deploymentEnvironment);
+            } else {
+                $this->reset->assertPreproductionProfile(
+                    $this->appEnvironment,
+                    $this->deploymentEnvironment,
+                    $this->demoResetEnabled,
+                    $this->demoDatabaseHost,
+                    $this->railwayEnvironmentName,
+                );
+            }
             if (!$input->getOption('force')) {
                 if (!$input->isInteractive()) {
                     $io->error('En modo no interactivo debes confirmar el reemplazo con --force.');
                     return Command::FAILURE;
                 }
-                if (!$io->confirm('Se borrarán todos los equipos de la base local y se cargará el juego demo. ¿Continuar?', false)) {
+                if (!$io->confirm('Se borrarán todos los equipos de la base de datos permitida para este entorno y se cargará el juego demo. ¿Continuar?', false)) {
                     $io->text('Reset cancelado; no se ha modificado ningún dato.');
                     return Command::SUCCESS;
                 }
@@ -59,7 +75,7 @@ final class ResetDemoCommand extends Command
             return Command::SUCCESS;
         } catch (\Throwable) {
             // Never print driver errors or connection URLs, which can contain credentials.
-            $io->error('No se ha realizado el reset demo. Comprueba el entorno local, la conexión y que no haya otro reset activo.');
+            $io->error('No se ha realizado el reset demo. Comprueba el perfil autorizado, la conexión y que no haya otro reset activo.');
             return Command::FAILURE;
         }
     }

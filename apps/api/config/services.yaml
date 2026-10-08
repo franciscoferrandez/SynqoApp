@@ -15,6 +15,10 @@ parameters:
     env(SYNQO_DEPLOYMENT_ENV): 'development'
     env(TEAM_CREATION_LIMIT): ''
     env(TEAM_CREATION_WINDOW_MINUTES): ''
+    env(DEMO_ACCESS_SECRET): ''
+    env(DEMO_RESET_ENABLED): 'false'
+    env(DEMO_DATABASE_HOST): ''
+    env(RAILWAY_ENVIRONMENT_NAME): ''
 
 services:
     # default configuration for services in *this* file
@@ -47,11 +51,21 @@ services:
             $maxTeamsOverride: '%env(TEAM_CREATION_LIMIT)%'
             $windowMinutesOverride: '%env(TEAM_CREATION_WINDOW_MINUTES)%'
 
+    App\Application\Demo\DemoAccessTokenDeriver:
+        arguments:
+            $secret: '%env(DEMO_ACCESS_SECRET)%'
+
+    App\Infrastructure\Persistence\OrmDemoResetRepository:
+        arguments:
+            $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
+
     App\Controller\PublicConfigurationController:
         public: true
         tags: ['controller.service_arguments']
         arguments:
             $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
+            $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
+            $publicUrl: '%env(APP_PUBLIC_URL)%'
 
     App\Infrastructure\Mail\SodiumPayloadCipher:
         arguments:

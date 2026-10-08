@@ -10,12 +10,13 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TEAM_CREATION_CONFIRMATION } from '../shared/team-flow-config';
-import { TeamApi } from '../shared/team-api';
+import { TeamApi, type PublicConfiguration } from '../shared/team-api';
 import { ArrivalIntro } from '../shared/arrival-intro';
 import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
+import { DemoResetTimer } from '../shared/demo-reset-timer';
 
 @Component({
-  imports: [FormsModule, ArrivalIntro],
+  imports: [FormsModule, ArrivalIntro, DemoResetTimer],
   template: `
     <div
       class="grid grid-cols-[minmax(0,1fr)] flex-1 items-center gap-9 py-10 min-[769px]:grid-cols-[minmax(0,.9fr)_minmax(340px,1fr)] min-[769px]:gap-14 min-[769px]:py-16"
@@ -42,6 +43,36 @@ import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
           </p>
         } @else {
           <p class="mt-3 text-sm text-muted" role="status">Cargando el límite de creación…</p>
+        }
+        @if (demo) {
+          <aside
+            class="mt-5 rounded-lg border border-line bg-soft p-4"
+            aria-labelledby="demo-title"
+          >
+            <h3 class="font-semibold" id="demo-title">Prueba Synqo con equipos de ejemplo</h3>
+            <p class="mt-1 text-sm text-muted">
+              Estos equipos se reinician cada hora. Los cambios se borran en el siguiente reinicio.
+            </p>
+            <ul class="mt-3 space-y-2">
+              @for (team of demo.teams; track team.name) {
+                <li>
+                  <a
+                    class="rounded-md border border-line px-3 py-2 font-semibold text-action underline-offset-2 hover:underline focus-visible:outline-2"
+                    [href]="team.accessUrl"
+                    >{{ team.name }}</a
+                  >
+                </li>
+              }
+            </ul>
+            @if (demo.teams.length === 0) {
+              <p class="mt-2 text-sm text-muted">
+                Los equipos de ejemplo estarán disponibles cuando termine su carga.
+              </p>
+            }
+            <p class="mt-3 text-sm text-muted">
+              Próximo reinicio: <app-demo-reset-timer [resetAt]="demo.nextResetAt" />
+            </p>
+          </aside>
         }
         <form class="mt-6 space-y-5" (submit)="create($event)" autocomplete="off">
           <div class="field">
@@ -139,6 +170,7 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
   protected emailPlaceholder = '';
   protected emailEnabled = false;
   protected creationLimit?: { maxTeams: number; windowMinutes: number };
+  protected demo?: PublicConfiguration['demo'];
   protected creationLimitLoadFailed = false;
   private readonly reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   private exampleTimeout?: ReturnType<typeof setTimeout>;
@@ -222,6 +254,7 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
     this.api.publicConfiguration().subscribe({
       next: (configuration) => {
         this.emailEnabled = configuration.teamCreationEmailEnabled === true;
+        this.demo = configuration.demo;
         if (
           Number.isInteger(configuration.teamCreationMaxTeams) &&
           configuration.teamCreationMaxTeams > 0 &&
