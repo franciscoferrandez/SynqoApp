@@ -85,6 +85,16 @@ assert.deepEqual(await configuration.json(), {
   teamCreationWindowMinutes: 60,
 });
 
+for (const path of ['/api', '/api/']) {
+  const apiRoot = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
+  assert.equal(apiRoot.status, 308, `${path} should redirect to API docs`);
+  assert.equal(apiRoot.headers.get('location'), '/api/docs');
+}
+
+const apiDocs = await fetch(`${baseUrl}/api/docs`);
+assert.equal(apiDocs.status, 200);
+assert.match(apiDocs.headers.get('content-type') ?? '', /application\/json/);
+
 const unknownApi = await fetch(`${baseUrl}/api/no-such-route`);
 assert.equal(unknownApi.status, 404);
 assert.doesNotMatch(await unknownApi.text(), /<app-root/);
@@ -104,5 +114,5 @@ for (const path of [
   assert.ok((await response.text()).length > 0, `Empty distribution notice ${path}`);
 }
 
-console.log('PASS: health, SPA, API configuration, API 404 and eight distribution notices');
+console.log('PASS: health, SPA, API configuration/docs/404 redirects and eight distribution notices');
 NODE

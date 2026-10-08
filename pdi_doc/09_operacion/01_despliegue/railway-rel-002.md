@@ -87,7 +87,7 @@ curl --fail --show-error --silent https://<dominio-railway>/api/configuration
 curl --include --silent https://<dominio-railway>/api/no-such-route
 ```
 
-`/healthz` debe devolver `200`; `/` debe servir el `index.html` de Angular; `/api/configuration` debe devolver JSON con correo desactivado y límites preproduction `2/60`. Una ruta API inexistente anidada debe devolver `404` `application/problem+json`, nunca el HTML SPA. `/api` es el endpoint de documentación de API Platform y no es una URL de prueba de 404. Comprobar los avisos públicos en `/SYNQO-LICENSE.txt`, `/THIRD_PARTY_NOTICES.txt`, `/3rdpartylicenses.txt` y `/ANGULAR-TEMPLATES-LICENSE.txt`.
+`/healthz` debe devolver `200`; `/` debe servir el `index.html` de Angular; `/api/configuration` debe devolver JSON con correo desactivado y límites preproduction `2/60`. `/api` debe redirigir a `/api/docs`, donde se publica la documentación de API Platform. Una ruta API inexistente anidada debe devolver `404` `application/problem+json`, nunca el HTML SPA. Comprobar los avisos públicos en `/SYNQO-LICENSE.txt`, `/THIRD_PARTY_NOTICES.txt`, `/3rdpartylicenses.txt` y `/ANGULAR-TEMPLATES-LICENSE.txt`.
 
 En Railway, revisar estado/healthcheck y logs del servicio, conectividad PostgreSQL, resultado de migraciones y persistencia con una comprobación de lectura. No registrar ni copiar secretos desde la pestaña de variables o los logs. Cuando los Cron estén habilitados, verificar que los dos servicios concluyen y revisar sus logs en una ejecución; Railway puede omitir una ejecución si la anterior sigue activa.
 
