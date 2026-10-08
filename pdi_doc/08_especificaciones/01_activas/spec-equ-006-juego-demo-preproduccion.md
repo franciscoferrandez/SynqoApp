@@ -76,11 +76,11 @@ Railway ejecutará un proceso Cron separado con la misma imagen WEB/API, en vez 
 
 ## Evidencia / Validation
 
-Esta SPEC separa los criterios que requieren una aplicación desplegada de la carga local cubierta por SPEC-EQU-004 y el control funcional local cubierto por SPEC-EQU-005. No se han creado recursos Railway ni probado un Cron remoto. Las pruebas locales de UI/contrato pueden prepararse antes; la validación final de reset/pool, routing/IP y los Cron de demo y purga necesita el entorno preproducción desplegado y el gate de source-transfer cerrado.
+Esta SPEC separa los criterios que requieren una aplicación desplegada de la carga local cubierta por SPEC-EQU-004 y el control funcional local cubierto por SPEC-EQU-005. El servicio público Railway ya está online y su smoke HTTP/API se registra en [SPEC-COO-006 — Preparar la infraestructura Railway y la operación de REL-002](spec-coo-006-railway-iac-operacion-rel-002.md). Aún no se ha probado un reset remoto ni Cron, ni la preservación del pool, routing/IP o purga en producción; el gate de clasificación/source sigue sin reconciliar. Las pruebas locales de UI/contrato pueden prepararse antes; la validación end-to-end de este Change requiere preparar e implementar su perfil seguro de preproducción.
 
 ## Convergence
 
-**DoR: en preparación.** No es prerequisito para implementar ni verificar el reset local de SPEC-EQU-004 ni el control funcional local de SPEC-EQU-005. La integración de preproducción y su evidencia runtime —incluida preservación del pool, routing/IP y purga de orígenes— queda vinculada al despliegue y a la autorización de transferencia de fuente.
+**DoR: en preparación.** No es prerequisito para implementar ni verificar el reset local de SPEC-EQU-004 ni el control funcional local de SPEC-EQU-005. La integración de preproducción y su evidencia runtime —incluida preservación del pool, routing/IP y purga de orígenes— requiere completar la preparación de este Change y reconciliar la discrepancia de source/licencia con el despliegue público existente.
 
 ## Resultado de cierre
 

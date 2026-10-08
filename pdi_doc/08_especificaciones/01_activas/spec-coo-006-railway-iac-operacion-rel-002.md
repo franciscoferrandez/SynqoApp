@@ -118,9 +118,9 @@ Sin cambio de intención normativa. Materializa la elección de Railway, IaC Typ
 
 ## Design / Structure
 
-El diseño de preparación está definido; cada detalle de imagen, routing y comandos se implementará y probará por slices, conforme a [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). Estructura prevista: servicio HTTP combinado FrankenPHP/Caddy, PostgreSQL privado, Cron de reset (contrato de presentación/activación en SPEC-EQU-006) y Cron `*/5 * * * *` UTC que invoca `app:creation-limits:purge`; worker de correo solo si se habilita una alternativa segura. Los procesos Cron/worker usan la misma imagen con comandos distintos, nunca corren dentro del servidor HTTP. Los servicios acceden a PostgreSQL por red privada y referencia a `DATABASE_URL`; correo y `APP_SECRET` se configuran fuera del repositorio. Los contratos de purga/reset están repartidos entre SPEC-EQU-004/005/006. Se puede implementar y validar localmente IaC y runbooks. La conexión GitHub, transferencia de fuente y primer deploy permanecen bloqueados por el gate operativo de SPEC-COO-005.
+El diseño de preparación está definido; cada detalle de imagen, routing y comandos se implementará y probará por slices, conforme a [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). Estructura prevista: servicio HTTP combinado FrankenPHP/Caddy, PostgreSQL privado, Cron de reset (contrato de presentación/activación en SPEC-EQU-006) y Cron `*/5 * * * *` UTC que invoca `app:creation-limits:purge`; worker de correo solo si se habilita una alternativa segura. Los procesos Cron/worker usan la misma imagen con comandos distintos, nunca corren dentro del servidor HTTP. Los servicios acceden a PostgreSQL por red privada y referencia a `DATABASE_URL`; correo y `APP_SECRET` se configuran fuera del repositorio. Los contratos de purga/reset están repartidos entre SPEC-EQU-004/005/006. La preparación estableció un gate de fuente/licencia antes del primer deploy; el estado real posterior queda registrado en Evidencia y Convergence, sin considerar que la publicación observada haya resuelto ese gate.
 
-Flujo autorizado: IaC se inspecciona con CLI config plan, aplica con config apply y confirmación interactiva; código se conecta desde GitHub con auto-deploy apagado, y solo se publica desde el panel con “Deploy Latest Commit” luego del preflight. Nunca usar railway up. La conexión y el primer build permanecen bloqueados por licencia hasta [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../99_archivadas/spec-coo-005-licencia-propietaria-rel-002.md).
+Flujo de operación aprobado: IaC se inspecciona con CLI config plan y se aplica con config apply y confirmación interactiva; el código se publica manualmente desde el panel con auto-deploy apagado y después del preflight. No se usa `railway up`. El gate de clasificación/licencia en [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../99_archivadas/spec-coo-005-licencia-propietaria-rel-002.md) continúa sin evidencia de resolución, aunque el despliegue público ya existe; reconciliar el hecho con la decisión antes de declarar el criterio satisfecho.
 
 **Clasificación N3:** crea infraestructura pública y recursos persistentes, integra secretos y un job con borrado periódico. Un error puede causar exposición de configuración o pérdida de datos; requiere diseño operativo y verificación antes de activar recursos reales.
 
@@ -143,13 +143,29 @@ Preparación documental e investigación oficial realizadas el 2026-10-07. La de
 - `scripts/railway-iac.test.mjs`, `scripts/smoke-railway-image.sh` y el job existente de CI comprueban localmente el grafo, tipos TypeScript, construcción y arranque de la imagen con PostgreSQL efímero.
 - README y guías de API/WEB se actualizaron para las instrucciones cotidianas y el runtime combinado. El procedimiento Railway está en [Operación manual de Railway para REL-002](../../09_operacion/01_despliegue/railway-rel-002.md).
 - Verificaciones locales: `npm run railway:iac:check` (3 tests y TypeScript), `npm run railway:image:smoke` (migraciones, healthcheck, SPA, API, ruta desconocida y 8 avisos), `php vendor/bin/phpunit tests/ApiUnknownRouteTest.php` (1 test, 8 assertions), `python3 pdi/scripts/validate_structure.py` y `git diff --check`.
-- No se inició sesión, vinculó proyecto, conectó GitHub, ejecutó plan/apply, creó recursos, activó gasto ni subió código a Railway. La imagen construida localmente no se transfiere.
+- Durante esta implementación local no se inició sesión, vinculó proyecto, conectó GitHub, ejecutó plan/apply, creó recursos, activó gasto ni transfirió la imagen.
 
-**Pendientes antes del cierre/verificación completa:** la verificación manual de URL pública y despliegue no es posible sin resolver la clasificación de source de SPEC-COO-005; el hard limit documentado parte de 10 USD, incompatible con el máximo aprobado de 5 USD, así que cualquier recurso con coste potencial permanece apagado. No se probaron cuenta, plan, coste real, conexión inicial, backups ni Cron en Railway. La auditoría de licencias transitivas del runtime debe completarse antes de transferencia externa.
+### Verificación de preproducción publicada (2026-10-08)
+
+La redirección incluida en `fbb926b` se observa en el servicio público, indicando que la imagen con ese cambio está activa; CI finalizó satisfactoriamente en [GitHub Actions, run 37786033685](https://github.com/franciscoferrandez/SynqoApp/actions/runs/37786033685). Se realizaron 17 peticiones GET de solo lectura, sin crear ni borrar datos:
+
+| Comprobación | Resultado observado | Estado |
+|---|---|---|
+| `/healthz` y `/` | `200`; healthcheck `ok` y SPA Synqo | PASS |
+| `/api/configuration` | `200`; correo desactivado, límite 2 equipos/60 minutos | PASS |
+| `/api` y `/api/` | `308` a `/api/docs` | PASS |
+| `/api/docs` y `/api/docs.jsonopenapi` | `200`; documentación y OpenAPI | PASS |
+| `/api/no-such-route` | `404 application/problem+json`, sin fallback HTML | PASS |
+| `/api/teams/current` con Bearer aleatorio inválido | `404` de equipo inexistente; recorrido de lectura llega a PostgreSQL sin error | PASS — conectividad de lectura |
+| Ocho avisos/licencias públicos | Todos responden `200` con contenido | PASS |
+
+La prueba pública no modifica estado. No se pudieron inspeccionar los logs de Railway ni confirmar allí el resultado de pre-deploy/migraciones, la persistencia de una mutación controlada, los servicios Cron, el límite de gasto, backups o rollback. El endpoint de salud tampoco comprueba PostgreSQL; la consulta API anterior aporta evidencia de lectura de DB, no de escritura/persistencia.
+
+El despliegue público confirma transferencia de código a Railway, pero no aporta por sí mismo evidencia de que se haya satisfecho el gate documental de clasificación/licencia de source en [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../99_archivadas/spec-coo-005-licencia-propietaria-rel-002.md). Mantener ese punto como discrepancia pendiente de reconciliación; no convertir el despliegue en una aprobación de licencia.
 
 ## Convergence
 
-**Implementación local completada; pendiente de `change-verify`.** La conexión, transferencia de source y cualquier operación en Railway siguen bloqueadas por sus preflight independientes; READY no autoriza provisionar recursos ni desplegar. Los tests locales no declaran verificados los criterios que requieren cuenta/infraestructura real.
+**Verificación parcial; no listo para cierre.** La imagen local y el smoke público de HTTP/API están verificados. Existe un despliegue Railway real del commit `fbb926b`, pero no se han revisado el plan IaC aplicado, los límites de gasto/backups, los logs de migración, la operación Cron ni la evidencia del gate de source/licencia.
 
 | Comprobación | Estado | Evidencia / gate |
 |---|---|---|
@@ -159,13 +175,16 @@ Preparación documental e investigación oficial realizadas el 2026-10-07. La de
 | Contrato de Cron para reset y purga | PASS local | IaC modela schedules opt-in y tests inspeccionan comandos/schedules; ejecución real corresponde a EQU-006 tras autorización/despliegue. |
 | Límite mensual y reacción al alcanzarlo | BLOCKED — operación | El hard limit actual tiene mínimo documentado de 10 USD; no activar servicios con coste potencial bajo el máximo vigente de 5 USD. |
 | Política de backup dentro del tope y retención | PASS | Copia diaria solo si cabe bajo 5 USD/mes; si no, desactivada. Se acepta que restaurar reintroduzca filas expiradas. |
-| Gate de clasificación, conexión y envío del código fuente | BLOCKED — operación | No impide escribir/verificar localmente IaC y runbooks; antes de conectar/subir/desplegar se requiere evidencia de clasificación compatible según SPEC-COO-005. |
-| Recursos/proyecto real de Railway | OUT OF SCOPE | Ningún recurso se crea durante preparación; conexión y despliegue requieren acción manual posterior. |
-| Verificación de imagen e IaC local | PASS local | `railway:iac:check`, smoke Docker, test API desconocida, estructura PDI y diff check; falta change-verify independiente. |
-| Verificación pública, conexión y Cron reales | BLOCKED — operación | Requiere resolver licencia/source y el tope de gasto; ningún recurso remoto fue creado. |
+| Gate de clasificación, conexión y envío del código fuente | CONFLICTO pendiente | El despliegue público prueba que el código llegó a Railway; la evidencia de clasificación/licencia sigue sin registrarse según SPEC-COO-005. La verificación técnica no concede autorización. |
+| Recursos/proyecto real de Railway | PARTIAL | El servicio público responde con el commit `fbb926b`; IaC plan/apply, configuración del proyecto y límites de coste no se inspeccionaron. |
+| Verificación de imagen e IaC local | PASS local | `railway:iac:check`, smoke Docker (incluida redirección `/api`), test de ruta desconocida, estructura PDI y diff check. CI de `fbb926b` pasa. |
+| Verificación pública HTTP/API | PASS | 17 GET de solo lectura; health, SPA, configuración, OpenAPI, redirecciones, 404 Problem Details, lectura que alcanza DB y ocho avisos. |
+| Migraciones/persistencia en Railway | PARTIAL | La lectura inválida de equipo no da error de DB; falta evidencia de logs/resultados de migración y una comprobación real de escritura/persistencia autorizada. |
+| Cron de demo y purga en Railway | NOT_TESTED | No se comprobó activación, configuración ni ejecución real. Reset manual remoto corresponde a SPEC-EQU-006 y no se debe ejecutar con el comando local de SPEC-EQU-004. |
+| Coste, hard limit, backups y rollback remotos | NOT_TESTED | No se inspeccionó la cuenta ni el panel Railway; se mantienen los límites documentados y sin aprobación adicional. |
 
-La respuesta de Q2 en SPEC-COO-005 separó DoR local y gate operativo. La implementación local puede pasar a verificación PDI independiente, pero no puede conectar GitHub, enviar source, crear recursos reales ni desplegar hasta cerrar el gate de clasificación y confirmar un límite de gasto compatible con el máximo aprobado.
+La evidencia del despliegue real sustituye las afirmaciones anteriores de que no existían recursos ni deploy remoto, pero no sustituye los gates no comprobados. La validación pública GET queda completa para el alcance indicado; la SPEC global sigue parcial hasta verificar los criterios operativos pendientes y reconciliar la discrepancia de clasificación/licencia.
 
 ## Resultado de cierre
 
-**Gate operativo pendiente:** clasificación de la fuente y términos aplicables en [SPEC-COO-005 — Reservar los derechos del software propio para REL-002](../99_archivadas/spec-coo-005-licencia-propietaria-rel-002.md). No hay pregunta de preparación pendiente; la respuesta Q2 autoriza el trabajo local, no la conexión, transferencia ni despliegue.
+**Verificación parcial; quedan gates operativos pendientes:** evidencia de clasificación/licencia del source, plan/configuración/coste real de Railway, migración y escritura persistente, backups/rollback y ejecución de Cron. El correo externo continúa siendo omisión aceptada/no bloqueante.
