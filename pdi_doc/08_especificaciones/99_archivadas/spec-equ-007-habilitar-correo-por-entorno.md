@@ -99,6 +99,6 @@ La implementación precedió a la autorización del gate `change-apply`, según 
 
 ## Resultado de cierre
 
-**DONE — Change cerrado y archivado el 2026-10-07.** Los ocho criterios de aceptación están en `PASS`; las suites y checks API/WEB aplicables pasaron, incluidos los hooks del commit funcional. El control de disponibilidad del correo por entorno queda `VALIDADO` en [REL-002 — Preproducción pública en Railway](../../01_producto/10_entregas/rel-002-preproduccion-publica-railway.md). El envío real externo permanece `PLANIFICADO` y no bloquea la entrega: no se configuró proveedor ni credencial. No se declara REL-002 entregada.
+**DONE — Change cerrado y archivado el 2026-10-07.** Los ocho criterios de aceptación están en `PASS`; las suites y checks API/WEB aplicables pasaron, incluidos los hooks del commit funcional. El control de disponibilidad del correo por entorno queda `VALIDADO` en [REL-002 — Preproducción pública en Railway](../../01_producto/10_entregas/rel-002-preproduccion-publica-railway.md). El envío real externo permanece `PLANIFICADO` y no bloquea la entrega: no se configuró proveedor ni credencial. En la fecha de cierre de esta SPEC no se declaraba REL-002 entregada; la entrega global se cerró posteriormente el 2026-10-12 según [REL-002 — Preproducción pública en Railway](../../01_producto/10_entregas/rel-002-preproduccion-publica-railway.md).
 
 Commits: implementación `4cb91be feat(repo): configurar correo de creación por entorno`; preparación documental `e249944 docs(pdi): preparar documentación de REL-002`; cierre documental posterior.

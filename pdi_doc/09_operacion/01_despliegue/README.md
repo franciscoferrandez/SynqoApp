@@ -8,7 +8,7 @@ Proceso y rollback.
 
 deploy/rollback
 
-Para el piloto Railway consulta [Operación manual de Railway para REL-002](railway-rel-002.md).
+Para el piloto Railway consulta [Operación de Railway para REL-002](railway-rel-002.md).
 
 ## No contiene
 

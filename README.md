@@ -67,7 +67,7 @@ WEB consume JSON de API y envía el valor de acceso como Bearer desde el fragmen
 - [Arquitectura y componentes de API](doc/architecture/api.md): operaciones HTTP, reglas, persistencia y limpieza de equipos.
 - [Arquitectura y componentes de WEB](doc/architecture/web.md): rutas, calendario, consultas y cliente HTTP.
 - [Documentación PDI del producto](pdi_doc/README.md): requisitos, experiencia, decisiones y especificaciones.
-- [Despliegue y operación de REL-002](pdi_doc/09_operacion/01_despliegue/railway-rel-002.md): IaC Railway, publicación manual, verificaciones y límites pendientes.
+- [Despliegue y operación de REL-002](pdi_doc/09_operacion/01_despliegue/railway-rel-002.md): IaC Railway, auto-deploy de aplicación desde `main`, verificaciones y límites operativos.
 
 ## Proceso de desarrollo
 
@@ -92,7 +92,7 @@ Este es el repositorio [SynqoApp](https://github.com/franciscoferrandez/SynqoApp
 ### Requisitos
 
 - Docker con Docker Compose.
-- Node.js `24.21.0` y npm `11.19.0` para WEB; la versión de Node está fijada en `apps/web/.nvmrc`.
+- Node.js `24.21.0` y npm `11.19.0` para WEB; la versión de Node está fijada en `.nvmrc` en la raíz del repositorio (también en `apps/web/.nvmrc` para CI).
 - `nvm` es opcional y facilita instalar la versión indicada.
 
 ### Instalación y arranque
@@ -100,8 +100,8 @@ Este es el repositorio [SynqoApp](https://github.com/franciscoferrandez/SynqoApp
 Desde la raíz del repositorio, en un clon nuevo:
 
 ```bash
-nvm install 24.21.0
-nvm use 24.21.0
+nvm install
+nvm use
 npm ci
 npm --prefix apps/web ci
 cp .env.example .env
@@ -116,7 +116,7 @@ WEB abre en <http://localhost:4200>. API queda en <http://localhost:8000>; el pr
 
 Mailpit recibe el correo de desarrollo (SMTP solo dentro de la red de Compose) y muestra los mensajes en <http://localhost:8025>; el servicio `mail-worker` procesa un único intento por envío pendiente. `MAIL_EVENT_KEY` (base64 de 32 bytes, no versionada) protege la dirección y el enlace mientras esperan; sin ella, crear un equipo con correo falla. Usa solo direcciones de prueba: Mailpit conserva copias visibles para quien acceda al entorno local. `MAIL_EVENT_TTL_SECONDS` (1800 por defecto) fija el plazo global de un envío.
 
-Después de la instalación inicial, el arranque cotidiano es `nvm use 24.21.0`, `docker compose up -d database api mail-worker mailpit` y `npm --prefix apps/web start`. `docker compose stop` detiene los servicios y conserva los datos; `docker compose down` elimina los contenedores y conserva el volumen PostgreSQL. `docker compose down -v` borra también todas las bases locales.
+Después de la instalación inicial, el arranque cotidiano es `nvm use`, `docker compose up -d database api mail-worker mailpit` y `npm --prefix apps/web start`. `nvm` lee `.nvmrc` desde la raíz del repositorio y selecciona Node `24.21.0`. `docker compose stop` detiene los servicios y conserva los datos; `docker compose down` elimina los contenedores y conserva el volumen PostgreSQL. `docker compose down -v` borra también todas las bases locales.
 
 `.env.example` contiene valores locales de ejemplo. Ajusta `POSTGRES_DB`, `POSTGRES_TEST_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `API_PORT`, `APP_ENV`, `APP_SECRET`, `APP_PUBLIC_URL` o `TEAM_DELETION_RETENTION_DAYS` en `.env` si el entorno lo necesita; no uses estos valores locales en despliegues.
 
