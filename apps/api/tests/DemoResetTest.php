@@ -12,6 +12,7 @@ use App\Application\Team\AccessTokenGenerator;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Infrastructure\Console\ResetDemoCommand;
 use App\Infrastructure\Persistence\OrmDemoResetRepository;
+use App\Domain\Availability\DailyAvailability;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -37,8 +38,8 @@ final class DemoResetTest extends KernelTestCase
     {
         $fixture = new DemoFixture();
         $now = new DateTimeImmutable('2026-01-01T01:00:00+02:00');
-        $marks = $fixture->availability($now, 0);
-        self::assertEquals($marks, $fixture->availability($now, 0));
+        $marks = $fixture->availability($now, 0, 0);
+        self::assertEquals($marks, $fixture->availability($now, 0, 0));
         self::assertSame('2025-11-01', $marks[0]['date']->format('Y-m-d'));
         self::assertSame('2026-03-31', $marks[array_key_last($marks)]['date']->format('Y-m-d'));
         $dates = array_map(static fn(array $mark): string => $mark['date']->format('Y-m-d'), $marks);
@@ -52,6 +53,52 @@ final class DemoResetTest extends KernelTestCase
                     self::assertLessThanOrEqual('2026-03-31', $date);
                 }
             }
+        }
+    }
+
+    public function testFixtureIsSparseAndShowsTheTeamAvailabilityScenarios(): void
+    {
+        $fixture = new DemoFixture();
+        $now = new DateTimeImmutable('2026-10-07T10:00:00Z');
+        $monday = $now->modify('monday this week')->setTime(0, 0);
+
+        foreach ([0, 1] as $teamIndex) {
+            $byDate = [];
+            foreach ([0, 1, 2, 3] as $participantIndex) {
+                $marks = $fixture->availability($now, $teamIndex, $participantIndex);
+                self::assertEquals($marks, $fixture->availability($now, $teamIndex, $participantIndex));
+                $markedCount = 0;
+                foreach ($marks as $mark) {
+                    $date = $mark['date']->format('Y-m-d');
+                    if ($mark['state'] !== null) {
+                        ++$markedCount;
+                        $byDate[$date][] = [
+                            'participantId' => (string) $participantIndex,
+                            'participantName' => 'Demo',
+                            'state' => $mark['state'],
+                        ];
+                    }
+                }
+                self::assertLessThan(count($marks) / 2, $markedCount, 'Cada participante debe dejar sin marcar la mayoría de fechas.');
+            }
+
+            $aggregates = [];
+            foreach ($fixture->availability($now, $teamIndex, 0) as $mark) {
+                $date = $mark['date']->format('Y-m-d');
+                $summary = DailyAvailability::day($date, $byDate[$date] ?? []);
+                $aggregates[$summary['state'] ?? 'neutral'] = true;
+            }
+            self::assertContains('neutral', array_keys($aggregates));
+            self::assertContains('available', array_keys($aggregates));
+            self::assertContains('maybe', array_keys($aggregates));
+            self::assertContains('unavailable', array_keys($aggregates));
+
+            $blankDate = $monday->modify('+7 days')->format('Y-m-d');
+            self::assertSame([], $byDate[$blankDate] ?? [], 'La semana de muestra debe incluir un día completamente en blanco.');
+            $mixedDate = $monday->modify('+10 days')->format('Y-m-d');
+            self::assertSame('unavailable', DailyAvailability::day($mixedDate, $byDate[$mixedDate] ?? [])['state']);
+            self::assertSame(['available' => 1, 'maybe' => 0, 'unavailable' => 1], DailyAvailability::day($mixedDate, $byDate[$mixedDate] ?? [])['counts']);
+            self::assertGreaterThan(1, count($byDate[$monday->modify('+9 days')->format('Y-m-d')] ?? []), 'Debe existir una fecha con marcas parciales de varias personas.');
         }
     }
 
@@ -69,6 +116,7 @@ final class DemoResetTest extends KernelTestCase
         self::assertSame(['La mesa del jueves', 'La banda del patio'], array_column($first, 'name'));
         self::assertSame(8, (int) $this->db->fetchOne('SELECT COUNT(*) FROM participant'));
         self::assertSame(4, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation'));
+        self::assertSame(0, (int) $this->db->fetchOne("SELECT COUNT(*) FROM availability WHERE date = '2026-10-12'"), 'El día explícitamente vacío debe seguir sin marcas tras persistir el reset.');
         self::assertSame(['open' => 2, 'rejected' => 1, 'resolved' => 1], $this->db->fetchAllKeyValue('SELECT state, COUNT(*)::int FROM consultation GROUP BY state ORDER BY state'));
         self::assertSame(12, (int) $this->db->fetchOne('SELECT COUNT(*) FROM consultation_vote'));
         self::assertSame(0, (int) $this->db->fetchOne('SELECT COUNT(*) FROM team_mail_attempt'));

@@ -85,8 +85,10 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
                         $participant = new ParticipantRecord($this->identifiers->generate(), $team, $participantName, ParticipantName::normalize($participantName), $now);
                         $manager->persist($participant);
                         $participants[] = $participant;
-                        foreach ($this->fixture->availability($now, $index) as $mark) {
-                            $manager->persist(new AvailabilityRecord($team, $participant, $mark['date'], $mark['state']));
+                        foreach ($this->fixture->availability($now, $teamIndex, $index) as $mark) {
+                            if ($mark['state'] !== null) {
+                                $manager->persist(new AvailabilityRecord($team, $participant, $mark['date'], $mark['state']));
+                            }
                         }
                     }
                     foreach ($this->fixture->consultations($now, $teamIndex) as $definition) {
