@@ -26,11 +26,18 @@ class TeamRecord
         private DateTimeImmutable $createdAt,
         #[ORM\Column(name: 'last_activity_at', type: Types::DATETIMETZ_IMMUTABLE)]
         private DateTimeImmutable $lastActivityAt,
+        #[ORM\Column(name: 'demo_access_generation', type: Types::INTEGER, options: ['default' => 0])]
+        private int $demoAccessGeneration = 0,
     ) {}
 
     public function setLastActivityAt(DateTimeImmutable $lastActivityAt): void
     {
         $this->lastActivityAt = $lastActivityAt;
+    }
+
+    public function demoAccessGeneration(): int
+    {
+        return $this->demoAccessGeneration;
     }
 
     /** @return array{id: string, name: string, access_verifier: string, time_zone: string, created_at: string, last_activity_at: string} */

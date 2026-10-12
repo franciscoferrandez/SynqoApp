@@ -33,6 +33,9 @@ interface TeamRepository
     /** @return array<string, mixed>|null */
     public function findByAccessVerifier(string $verifier): ?array;
 
+    /** @return array<string, mixed>|null */
+    public function findById(string $id): ?array;
+
     /** @param callable(array<string, mixed>|null): mixed $work */
     public function withLockedTeam(string $verifier, callable $work): mixed;
 

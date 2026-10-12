@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Application\Team\CreationLimitPolicy;
 use App\Application\Demo\DemoAccessTokenDeriver;
 use App\Application\Demo\DemoFixture;
+use App\Application\Demo\DemoTeamSelection;
+use App\Application\Demo\DemoResetException;
 use App\Application\Team\TeamRepository;
 use DateTimeZone;
 use Psr\Clock\ClockInterface;
@@ -23,6 +25,7 @@ final readonly class PublicConfigurationController
         private TeamRepository $teams,
         private ClockInterface $clock,
         private string $publicUrl,
+        private ?string $demoTeamIds = null,
     ) {}
 
     public function __invoke(): JsonResponse
@@ -51,11 +54,32 @@ final readonly class PublicConfigurationController
             return $result;
         }
 
+        try {
+            $ids = DemoTeamSelection::parse($this->demoTeamIds);
+        } catch (DemoResetException) {
+            return $result;
+        }
+        if ($ids === []) {
+            return $result;
+        }
+
         $teams = [];
         foreach (array_keys($this->demoFixture->teams()) as $index => $name) {
-            $token = $this->demoTokens->tokenFor($this->demoFixture->accessKey($index));
-            $team = $this->teams->findByAccessVerifier(hash('sha256', $token));
-            if ($team === null || $team['name'] !== $name) {
+            $matched = null;
+            $token = '';
+            foreach ($ids as $id) {
+                $candidate = $this->teams->findById($id);
+                if ($candidate === null || $candidate['name'] !== $name) {
+                    continue;
+                }
+                $candidateToken = $this->demoTokens->tokenFor($this->demoFixture->accessKey($index), (int) $candidate['demo_access_generation']);
+                if (hash_equals((string) $candidate['access_verifier'], hash('sha256', $candidateToken))) {
+                    $matched = $candidate;
+                    $token = $candidateToken;
+                    break;
+                }
+            }
+            if ($matched === null) {
                 return $result;
             }
             $teams[] = ['name' => $name, 'accessUrl' => rtrim($this->publicUrl, '/') . '/e#t=' . $token];

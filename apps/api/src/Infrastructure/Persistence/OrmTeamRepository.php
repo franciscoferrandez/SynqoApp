@@ -122,6 +122,14 @@ final readonly class OrmTeamRepository implements TeamRepository
         return $team?->toRow();
     }
 
+    public function findById(string $id): ?array
+    {
+        return $this->manager()->getConnection()->fetchAssociative(
+            'SELECT id, name, access_verifier, demo_access_generation FROM team WHERE id = ?',
+            [$id],
+        ) ?: null;
+    }
+
     public function withLockedTeam(string $verifier, callable $work): mixed
     {
         $manager = $this->manager();

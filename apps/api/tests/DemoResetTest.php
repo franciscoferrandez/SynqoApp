@@ -137,26 +137,30 @@ final class DemoResetTest extends KernelTestCase
         }
     }
 
-    public function testPreproductionFixtureUsesStableDerivedTokensWithoutStoringThem(): void
+    public function testPreproductionFixtureRotatesDerivedTokensWithoutChangingRootsOrStoringThem(): void
     {
-        $repository = new OrmDemoResetRepository(
+        $this->db->executeStatement('DELETE FROM team');
+        $createRepository = fn(string $selection): OrmDemoResetRepository => new OrmDemoResetRepository(
             static::getContainer()->get(ManagerRegistry::class),
             new DemoFixture(),
             static::getContainer()->get(IdentifierGenerator::class),
             static::getContainer()->get(AccessTokenGenerator::class),
             new DemoAccessTokenDeriver(str_repeat('d', 32)),
             'preproduction',
+            $selection,
         );
-
-        $first = $repository->replace(new DateTimeImmutable('2026-10-08T10:00:00Z'));
+        $first = $createRepository('')->initialize(new DateTimeImmutable('2026-10-08T10:00:00Z'));
+        $repository = $createRepository(implode(',', array_column($first, 'id')));
         $repository->replace(new DateTimeImmutable('2026-10-08T11:00:00Z'));
         $last = $repository->replace(new DateTimeImmutable('2026-10-08T12:00:00Z'));
 
-        self::assertSame(array_column($first, 'token'), array_column($last, 'token'));
-        foreach ($first as $team) {
-            $verifier = trim((string) $this->db->fetchOne('SELECT access_verifier FROM team WHERE name = ?', [$team['name']]));
-            self::assertSame(hash('sha256', $team['token']), $verifier);
-            self::assertStringNotContainsString($team['token'], $verifier);
+        self::assertSame(array_column($first, 'id'), array_column($last, 'id'));
+        self::assertNotSame(array_column($first, 'token'), array_column($last, 'token'));
+        foreach ($last as $team) {
+            $row = $this->db->fetchAssociative('SELECT access_verifier, demo_access_generation FROM team WHERE id = ?', [$team['id']]);
+            self::assertSame(hash('sha256', $team['token']), trim((string) $row['access_verifier']));
+            self::assertSame(3, (int) $row['demo_access_generation']);
+            self::assertStringNotContainsString($team['token'], (string) $row['access_verifier']);
         }
     }
 
@@ -270,8 +274,8 @@ final class DemoResetTest extends KernelTestCase
         $repository = $this->createMock(\App\Application\Demo\DemoResetRepository::class);
         $repository->expects(self::once())->method('isPrivatePreproductionPostgreSql')->with('synqo-postgres.railway.internal', 'preproduction')->willReturn(true);
         $repository->expects(self::once())->method('replace')->willReturn([
-            ['name' => 'La mesa del jueves', 'token' => 'never-log-this'],
-            ['name' => 'La banda del patio', 'token' => 'never-log-this-either'],
+            ['name' => 'La mesa del jueves', 'token' => 'never-log-this', 'id' => '00000000-0000-4000-8000-000000000001'],
+            ['name' => 'La banda del patio', 'token' => 'never-log-this-either', 'id' => '00000000-0000-4000-8000-000000000002'],
         ]);
         $service = new DemoResetService($repository, new MockClock(), new DemoAccessTokenDeriver(str_repeat('k', 32)));
         $tester = new CommandTester(new ResetDemoCommand($service, 'prod', 'preproduction', 'https://example.invalid', true, 'synqo-postgres.railway.internal', 'preproduction'));

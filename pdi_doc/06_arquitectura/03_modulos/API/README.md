@@ -37,7 +37,9 @@ Toda operación relativa a un equipo debe respetar la separación entre UUID y a
 
 En REL-002, Symfony se servirá bajo `/api` desde el servicio HTTP combinado FrankenPHP/Caddy que también publica la WEB, según [ADR-COO-005 — Publicar WEB y API en un servicio HTTP combinado para REL-002](../../../05_investigacion-y-decisiones/05_adr/adr-coo-005-topologia-web-api-railway.md). Esta es una decisión de empaquetado para Railway, no una dependencia lógica de API respecto de WEB. El proxy de desarrollo local y los límites de módulo se conservan.
 
-En preproducción, la API reconstruye únicamente los enlaces de los equipos demo a partir del secreto dedicado acordado en [ADR-EQU-004 — Derivar credenciales estables para los equipos demo](../../../05_investigacion-y-decisiones/05_adr/adr-equ-004-credenciales-estables-equipos-demo.md). La respuesta de metadatos es pública, no cacheable y limitada a los enlaces demo y el instante del siguiente reset.
+En preproducción, la API reconstruye los enlaces demo a partir del secreto dedicado y la generación vigente de cada UUID configurado, según [ADR-EQU-004 — Derivar credenciales estables para los equipos demo](../../../05_investigacion-y-decisiones/05_adr/adr-equ-004-credenciales-estables-equipos-demo.md) y [ADR-EQU-005 — Conservar UUID y limitar el reset a los equipos demo configurados](../../../05_investigacion-y-decisiones/05_adr/adr-equ-005-reset-demo-uuid-estables.md). Cada reset revoca el enlace anterior sin guardar historial; la respuesta de metadatos es pública y no cacheable.
+
+El reset remoto conserva las raíces de los demo configurados, restaura solo sus datos dependientes y rota su enlace activo por contador, según ADR-EQU-005.
 
 ## Datos
 

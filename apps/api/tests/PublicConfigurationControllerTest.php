@@ -17,7 +17,7 @@ final class PublicConfigurationControllerTest extends TestCase
     public function testDemoMetadataIsOmittedOutsidePreproduction(): void
     {
         $teams = $this->createMock(TeamRepository::class);
-        $teams->expects(self::never())->method('findByAccessVerifier');
+        $teams->expects(self::never())->method('findById');
         $controller = new PublicConfigurationController(false, new CreationLimitPolicy('development', '', ''), 'development', new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $teams, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid');
 
         $response = $controller();
@@ -31,31 +31,31 @@ final class PublicConfigurationControllerTest extends TestCase
     {
         $deriver = new DemoAccessTokenDeriver(str_repeat('s', 32));
         $repository = $this->createMock(TeamRepository::class);
-        $repository->expects(self::exactly(2))->method('findByAccessVerifier')->willReturnCallback(
-            static function (string $hash) use ($deriver): ?array {
-                return match ($hash) {
-                    hash('sha256', $deriver->tokenFor('friends')) => ['id' => 'team-1', 'name' => 'La mesa del jueves'],
-                    hash('sha256', $deriver->tokenFor('band')) => ['id' => 'team-2', 'name' => 'La banda del patio'],
+        $repository->expects(self::exactly(3))->method('findById')->willReturnCallback(
+            static function (string $id) use ($deriver): ?array {
+                return match ($id) {
+                    '00000000-0000-4000-8000-000000000001' => ['id' => '00000000-0000-4000-8000-000000000001', 'name' => 'La mesa del jueves', 'demo_access_generation' => 2, 'access_verifier' => hash('sha256', $deriver->tokenFor('friends', 2))],
+                    '00000000-0000-4000-8000-000000000002' => ['id' => '00000000-0000-4000-8000-000000000002', 'name' => 'La banda del patio', 'demo_access_generation' => 3, 'access_verifier' => hash('sha256', $deriver->tokenFor('band', 3))],
                     default => null,
                 };
             },
         );
-        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('preproduction', '', ''), 'preproduction', $deriver, new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid');
+        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('preproduction', '', ''), 'preproduction', $deriver, new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid', '00000000-0000-4000-8000-000000000001,00000000-0000-4000-8000-000000000002');
 
         $response = $controller();
         $payload = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
 
         self::assertSame('2026-10-08T11:00:00+00:00', $payload['demo']['nextResetAt']);
         self::assertSame(['La mesa del jueves', 'La banda del patio'], array_column($payload['demo']['teams'], 'name'));
-        self::assertSame('https://example.invalid/e#t=' . $deriver->tokenFor('friends'), $payload['demo']['teams'][0]['accessUrl']);
+        self::assertSame('https://example.invalid/e#t=' . $deriver->tokenFor('friends', 2), $payload['demo']['teams'][0]['accessUrl']);
         self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }
 
     public function testMissingDemoFixtureDoesNotPublishStaleLinks(): void
     {
         $repository = $this->createStub(TeamRepository::class);
-        $repository->method('findByAccessVerifier')->willReturn(null);
-        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('preproduction', '', ''), 'preproduction', new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid');
+        $repository->method('findById')->willReturn(null);
+        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('preproduction', '', ''), 'preproduction', new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid', '00000000-0000-4000-8000-000000000001,00000000-0000-4000-8000-000000000002');
 
         $payload = json_decode((string) $controller()->getContent(), true, flags: JSON_THROW_ON_ERROR);
 

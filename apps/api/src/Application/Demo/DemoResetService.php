@@ -39,9 +39,15 @@ final readonly class DemoResetService
         }
     }
 
-    /** @return list<array{name: string, token: string}> */
+    /** @return list<array{name: string, token: string, id: string}> */
     public function reset(): array
     {
         return $this->repository->replace($this->clock->now());
+    }
+
+    /** @return list<array{name: string, token: string, id: string}> */
+    public function initialize(bool $allowNonEmpty = false): array
+    {
+        return $this->repository->initialize($this->clock->now(), $allowNonEmpty);
     }
 }

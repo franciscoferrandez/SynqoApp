@@ -8,8 +8,11 @@ use DateTimeImmutable;
 
 interface DemoResetRepository
 {
-    /** @return list<array{name: string, token: string}> */
+    /** @return list<array{name: string, token: string, id: string}> */
     public function replace(DateTimeImmutable $now): array;
+
+    /** @return list<array{name: string, token: string, id: string}> */
+    public function initialize(DateTimeImmutable $now, bool $allowNonEmpty = false): array;
 
     public function isLocalPostgreSql(): bool;
 

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use App\Application\Demo\DemoFixture;
+use App\Application\Demo\DemoResetException;
+use App\Application\Demo\DemoTeamSelection;
 use App\Application\Demo\DemoResetRepository;
 use App\Application\Demo\DemoAccessTokenDeriver;
 use App\Application\Team\AccessTokenGenerator;
@@ -19,6 +21,8 @@ use App\Infrastructure\Persistence\Entity\TeamRecord;
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -33,6 +37,7 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
         private AccessTokenGenerator $tokens,
         private DemoAccessTokenDeriver $demoTokens,
         private string $deploymentEnvironment,
+        private ?string $demoTeamIds = null,
     ) {}
 
     public function isLocalPostgreSql(): bool
@@ -59,6 +64,24 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
 
     public function replace(DateTimeImmutable $now): array
     {
+        return $this->restore($now, false);
+    }
+
+    public function initialize(DateTimeImmutable $now, bool $allowNonEmpty = false): array
+    {
+        return $this->restore($now, true, $allowNonEmpty);
+    }
+
+    /** @return list<array{name: string, token: string, id?: string}> */
+    private function restore(DateTimeImmutable $now, bool $initialize, bool $allowNonEmpty = false): array
+    {
+        $selectedIds = $this->deploymentEnvironment === 'preproduction' ? DemoTeamSelection::parse($this->demoTeamIds) : [];
+        if ($initialize && $selectedIds !== []) {
+            throw new DemoResetException('La inicialización requiere DEMO_TEAM_IDS definida y vacía.');
+        }
+        if ($this->deploymentEnvironment === 'preproduction' && !$initialize && $selectedIds === []) {
+            return [];
+        }
         $manager = $this->managers->getManager();
         if (!$manager instanceof EntityManagerInterface) {
             throw new \LogicException('Doctrine ORM entity manager is required.');
@@ -66,20 +89,57 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
         $now = $now->setTimezone(new DateTimeZone('UTC'));
         $connection = $manager->getConnection();
         try {
-            return $connection->transactional(function () use ($manager, $connection, $now): array {
+            return $connection->transactional(function () use ($manager, $connection, $now, $selectedIds, $initialize, $allowNonEmpty): array {
                 if ($connection->fetchOne('SELECT pg_try_advisory_xact_lock(?)', [self::LOCK_KEY]) !== true) {
                     throw new \RuntimeException('Ya hay un reset demo en ejecución.');
                 }
-                $connection->executeStatement('DELETE FROM team');
+                $existing = [];
+                if ($initialize) {
+                    // Prevent a normal team creation racing with the empty-database check.
+                    $connection->executeStatement('LOCK TABLE team IN SHARE ROW EXCLUSIVE MODE');
+                    if (!$allowNonEmpty && (int) $connection->fetchOne('SELECT COUNT(*) FROM team') !== 0) {
+                        throw new DemoResetException('La inicialización requiere una base sin equipos; usa --allow-non-empty para añadir los demo sin borrar los equipos existentes.');
+                    }
+                    if ($allowNonEmpty && $this->deploymentEnvironment === 'preproduction') {
+                        if ($this->containsDemoTeam($connection)) {
+                            throw new DemoResetException('La inicialización encontró credenciales demo existentes; no se ha añadido ningún equipo.');
+                        }
+                    }
+                } elseif ($this->deploymentEnvironment === 'preproduction') {
+                    $existing = $this->clearSelectedTeams($connection, $selectedIds);
+                } else {
+                    $connection->executeStatement('DELETE FROM team');
+                }
                 $manager->clear();
                 $links = [];
                 $teamIndex = 0;
                 foreach ($this->fixture->teams() as $name => $names) {
+                    $existingTeam = $existing[$this->fixture->accessKey($teamIndex)] ?? null;
+                    $generation = $this->deploymentEnvironment === 'preproduction'
+                        ? ($existingTeam === null ? 1 : $existingTeam['generation'] + 1)
+                        : 0;
                     $token = $this->deploymentEnvironment === 'preproduction'
-                        ? $this->demoTokens->tokenFor($this->fixture->accessKey($teamIndex))
+                        ? $this->demoTokens->tokenFor($this->fixture->accessKey($teamIndex), $generation)
                         : $this->tokens->generate();
-                    $team = new TeamRecord($this->identifiers->generate(), $name, hash('sha256', $token), 'UTC', $now, $now);
-                    $manager->persist($team);
+                    $verifier = hash('sha256', $token);
+                    if ($existingTeam !== null) {
+                        $id = $existingTeam['id'];
+                        $updated = $connection->executeStatement(
+                            'UPDATE team SET name = ?, time_zone = ?, last_activity_at = ?, access_verifier = ?, demo_access_generation = ? WHERE id = ?',
+                            [$name, 'UTC', $now->format('Y-m-d H:i:sP'), $verifier, $generation, $id],
+                        );
+                        if ($updated !== 1) {
+                            throw new DemoResetException(sprintf('Reset demo revertido: se esperaba actualizar 1 equipo y se actualizaron %d.', $updated));
+                        }
+                        $team = $manager->find(TeamRecord::class, $id);
+                        if (!$team instanceof TeamRecord) {
+                            throw new DemoResetException('Reset demo revertido: no se encontró una raíz demo bloqueada.');
+                        }
+                    } else {
+                        $id = $this->identifiers->generate();
+                        $team = new TeamRecord($id, $name, $verifier, 'UTC', $now, $now, $generation);
+                        $manager->persist($team);
+                    }
                     $participants = [];
                     foreach ($names as $index => $participantName) {
                         $participant = new ParticipantRecord($this->identifiers->generate(), $team, $participantName, ParticipantName::normalize($participantName), $now);
@@ -111,7 +171,7 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
                             $consultation->resolve($definition['state'], $participants[0], $now, $definition['state'] === 'resolved' ? [$options[0]] : []);
                         }
                     }
-                    $links[] = ['name' => $name, 'token' => $token];
+                    $links[] = ['name' => $name, 'token' => $token, 'id' => $id];
                     ++$teamIndex;
                 }
                 $manager->flush();
@@ -121,4 +181,62 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
             $manager->clear();
         }
     }
+
+    /**
+     * @param list<string> $ids
+     * @return array<string, array{id: string, generation: int}> keyed by logical demo identity
+     */
+    private function clearSelectedTeams(Connection $connection, array $ids): array
+    {
+        $rows = $connection->fetchAllAssociative(
+            'SELECT id, access_verifier, demo_access_generation FROM team WHERE id IN (?) ORDER BY id FOR UPDATE',
+            [$ids],
+            [ArrayParameterType::STRING],
+        );
+        if (count($rows) !== count($ids)) {
+            throw new DemoResetException(sprintf('Reset demo cancelado: se esperaban %d equipos configurados y se encontraron %d.', count($ids), count($rows)));
+        }
+        $teams = [];
+        $matchedKeys = [];
+        foreach (array_keys($this->fixture->teams()) as $index => $name) {
+            $key = $this->fixture->accessKey($index);
+            foreach ($rows as $row) {
+                $generation = (int) $row['demo_access_generation'];
+                $verifier = hash('sha256', $this->demoTokens->tokenFor($key, $generation));
+                if (hash_equals($verifier, trim((string) $row['access_verifier']))) {
+                    if (isset($teams[$key])) {
+                        throw new DemoResetException('Reset demo cancelado: hay identidades demo duplicadas.');
+                    }
+                    $teams[$key] = ['id' => (string) $row['id'], 'generation' => $generation];
+                    $matchedKeys[(string) $row['id']] = true;
+                }
+            }
+        }
+        if (count($teams) !== count($this->fixture->teams()) || count($matchedKeys) !== count($rows)) {
+            throw new DemoResetException('Reset demo cancelado: los equipos configurados no corresponden a las dos identidades demo esperadas.');
+        }
+        foreach (['consultation', 'availability', 'team_mail_attempt', 'participant'] as $table) {
+            $connection->executeStatement('DELETE FROM ' . $table . ' WHERE team_id IN (?)', [$ids], [ArrayParameterType::STRING]);
+            if ((int) $connection->fetchOne('SELECT COUNT(*) FROM ' . $table . ' WHERE team_id IN (?)', [$ids], [ArrayParameterType::STRING]) !== 0) {
+                throw new DemoResetException('Reset demo revertido: quedaron datos dependientes anteriores sin eliminar.');
+            }
+        }
+        return $teams;
+    }
+
+    private function containsDemoTeam(Connection $connection): bool
+    {
+        $rows = $connection->fetchAllAssociative('SELECT access_verifier, demo_access_generation FROM team');
+        foreach (array_keys($this->fixture->teams()) as $index => $name) {
+            foreach ($rows as $row) {
+                $token = $this->demoTokens->tokenFor($this->fixture->accessKey($index), (int) $row['demo_access_generation']);
+                if (hash_equals(hash('sha256', $token), trim((string) $row['access_verifier']))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Console;
 
 use App\Application\Demo\DemoResetService;
+use App\Application\Demo\DemoResetException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-#[AsCommand(name: 'app:demo:reset', description: 'Reemplazar los equipos locales por el juego demo de Synqo.')]
+#[AsCommand(name: 'app:demo:reset', description: 'Restaurar la demo local o los equipos demo configurados de preproducción.')]
 final class ResetDemoCommand extends Command
 {
     public function __construct(
@@ -36,13 +37,20 @@ final class ResetDemoCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('force', null, InputOption::VALUE_NONE, 'Confirmar el reemplazo de todos los equipos locales; no omite las guardas.');
+        $this->addOption('force', null, InputOption::VALUE_NONE, 'Confirmar la restauración del perfil autorizado; no omite las guardas.');
+        $this->addOption('initialize', null, InputOption::VALUE_NONE, 'Crear los equipos demo sin borrar equipos existentes.');
+        $this->addOption('allow-non-empty', null, InputOption::VALUE_NONE, 'Permitir la inicialización si la base ya contiene equipos; solo tiene efecto con --initialize.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         try {
+            $initialize = (bool) $input->getOption('initialize');
+            $allowNonEmpty = (bool) $input->getOption('allow-non-empty');
+            if ($allowNonEmpty && !$initialize) {
+                throw new DemoResetException('--allow-non-empty requiere --initialize.');
+            }
             if ($this->appEnvironment === 'dev' && $this->deploymentEnvironment === 'development') {
                 $this->reset->assertLocalProfile($this->appEnvironment, $this->deploymentEnvironment);
             } else {
@@ -59,13 +67,22 @@ final class ResetDemoCommand extends Command
                     $io->error('En modo no interactivo debes confirmar el reemplazo con --force.');
                     return Command::FAILURE;
                 }
-                if (!$io->confirm('Se borrarán todos los equipos de la base de datos permitida para este entorno y se cargará el juego demo. ¿Continuar?', false)) {
+                $confirmation = $this->deploymentEnvironment === 'development'
+                    ? 'Se borrarán todos los equipos de la base local y se cargará el juego demo. ¿Continuar?'
+                    : ($initialize ? 'Se crearán los equipos demo sin borrar equipos existentes.' . ($allowNonEmpty ? ' La base puede contener otros equipos.' : ' La base debe estar vacía.') . ' ¿Continuar?' : 'Se restaurarán solo los datos de los equipos demo configurados, conservando sus UUID. ¿Continuar?');
+                if (!$io->confirm($confirmation, false)) {
                     $io->text('Reset cancelado; no se ha modificado ningún dato.');
                     return Command::SUCCESS;
                 }
             }
-            $teams = $this->reset->reset();
+            $teams = $initialize ? $this->reset->initialize($allowNonEmpty) : $this->reset->reset();
+            if ($teams === []) {
+                $io->success('DEMO_TEAM_IDS está vacía; no se ha modificado ni cargado ningún dato.');
+                return Command::SUCCESS;
+            }
             $io->success('Juego demo restaurado correctamente: dos equipos.');
+            $teamIds = array_column($teams, 'id');
+            $io->text('DEMO_TEAM_IDS=' . implode(',', $teamIds));
             // Tokens are deliberately omitted from automation/non-interactive output.
             if ($input->isInteractive()) {
                 foreach ($teams as $team) {
@@ -73,6 +90,9 @@ final class ResetDemoCommand extends Command
                 }
             }
             return Command::SUCCESS;
+        } catch (DemoResetException $error) {
+            $io->error($error->getMessage());
+            return Command::FAILURE;
         } catch (\Throwable) {
             // Never print driver errors or connection URLs, which can contain credentials.
             $io->error('No se ha realizado el reset demo. Comprueba el perfil autorizado, la conexión y que no haya otro reset activo.');

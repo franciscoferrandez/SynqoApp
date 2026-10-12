@@ -13,12 +13,13 @@ final readonly class DemoAccessTokenDeriver
         return strlen($this->secret) >= 32;
     }
 
-    public function tokenFor(string $logicalId): string
+    public function tokenFor(string $logicalId, int $generation = 0): string
     {
-        if (!$this->isConfigured()) {
+        if (!$this->isConfigured() || $generation < 0) {
             throw new \RuntimeException('La clave de acceso demo no está configurada.');
         }
 
-        return rtrim(strtr(base64_encode(hash_hmac('sha256', 'synqo:demo:' . $logicalId, $this->secret, true)), '+/', '-_'), '=');
+        $message = $generation === 0 ? 'synqo:demo:' . $logicalId : 'synqo:demo:' . $logicalId . ':' . $generation;
+        return rtrim(strtr(base64_encode(hash_hmac('sha256', $message, $this->secret, true)), '+/', '-_'), '=');
     }
 }

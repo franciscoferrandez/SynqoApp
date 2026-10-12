@@ -18,6 +18,8 @@ parameters:
     env(DEMO_ACCESS_SECRET): ''
     env(DEMO_RESET_ENABLED): 'false'
     env(DEMO_DATABASE_HOST): ''
+    # Null distinguishes an absent selector from an explicitly empty one.
+    env(DEMO_TEAM_IDS): ~
     env(RAILWAY_ENVIRONMENT_NAME): ''
 
 services:
@@ -58,6 +60,7 @@ services:
     App\Infrastructure\Persistence\OrmDemoResetRepository:
         arguments:
             $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
+            $demoTeamIds: '%env(DEMO_TEAM_IDS)%'
 
     App\Controller\PublicConfigurationController:
         public: true
@@ -66,6 +69,7 @@ services:
             $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
             $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
             $publicUrl: '%env(APP_PUBLIC_URL)%'
+            $demoTeamIds: '%env(DEMO_TEAM_IDS)%'
 
     App\Infrastructure\Mail\SodiumPayloadCipher:
         arguments:

@@ -5,6 +5,10 @@ estado: aprobado
 
 # ADR-EQU-004 — Derivar credenciales estables para los equipos demo
 
+## Evolución de vigencia — 2026-10-12
+
+[ADR-EQU-005 — Conservar UUID y limitar el reset a los equipos demo configurados](adr-equ-005-reset-demo-uuid-estables.md) concreta la derivación HMAC con una generación mutable por raíz. El reset ordinario incrementa esa versión, sustituye el verificador y publica el nuevo enlace, revocando el anterior sin conservar historial. La versión cero mantiene los enlaces ya publicados hasta el primer reset tras desplegar la migración. La rotación de `DEMO_ACCESS_SECRET` aún requiere operación dirigida.
+
 ## Contexto
 
 [SPEC-EQU-006 — Publicación y reset programado del juego demo en preproducción](../../08_especificaciones/99_archivadas/spec-equ-006-juego-demo-preproduccion.md) necesita que los enlaces de los equipos demo sigan disponibles después de cada reset horario. El reset actual genera tokens aleatorios y PostgreSQL solo conserva su hash; el proceso HTTP no puede reconstruir el valor original. Los enlaces demo son públicos por decisión de producto, pero la API y los logs no deben almacenar ni revelar credenciales de otros equipos.
