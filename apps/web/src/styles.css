@@ -935,9 +935,12 @@ html[data-theme='dark'] {
   font-weight: 750;
 }
 .availability-dialog {
+  position: fixed;
+  inset: 0;
   width: min(440px, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   overflow: auto;
+  margin: auto;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--raised);
@@ -958,6 +961,9 @@ html[data-theme='dark'] {
   .calendar-filters {
     width: auto;
     flex-direction: row;
+  }
+  .availability-dialog {
+    padding: 1rem;
   }
 }
 

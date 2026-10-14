@@ -290,15 +290,51 @@ test('navigates months, shows complete Monday-to-Sunday weeks, and returns to to
 });
 
 test('opens the day detail as a mobile dialog and returns focus to its day', async ({
-  browser,
+  page,
 }) => {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const page = await context.newPage();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const participant = { id: 'mobile-participant', name: 'Ana' };
+  await page.route('**/api/teams', (route) => {
+    const { name } = route.request().postDataJSON() as { name: string };
+    return route.fulfill({
+      status: 201,
+      json: {
+        id: 'mobile-team',
+        name,
+        timeZone: 'Europe/Madrid',
+        expiresAt: '2027-01-05T00:00:00+00:00',
+        firstParticipant: participant,
+        accessUrl: 'http://localhost:4200/e#t=mobile-token',
+      },
+    });
+  });
+  await page.route('**/api/teams/current', (route) =>
+    route.fulfill({
+      json: {
+        id: 'mobile-team',
+        name: 'Equipo móvil',
+        timeZone: 'Europe/Madrid',
+        expiresAt: '2027-01-05T00:00:00+00:00',
+        participants: [participant],
+      },
+    }),
+  );
   await createTeam(page);
   const day = page.locator('.calendar-day.today');
   await day.press('Enter');
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
+  const geometry = await dialog.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      centerX: rect.x + rect.width / 2,
+      centerY: rect.y + rect.height / 2,
+      viewportX: innerWidth / 2,
+      viewportY: innerHeight / 2,
+    };
+  });
+  expect(Math.abs(geometry.centerX - geometry.viewportX)).toBeLessThan(2);
+  expect(Math.abs(geometry.centerY - geometry.viewportY)).toBeLessThan(2);
   await dialog.getByRole('button', { name: 'Cerrar detalle del día' }).press('Enter');
   await expect(dialog).toBeHidden();
   await expect(day).toBeFocused();
@@ -309,7 +345,6 @@ test('opens the day detail as a mobile dialog and returns focus to its day', asy
   await page.locator(`.calendar-day[data-date="${pastDate}"]`).press('Enter');
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: /Disponible ·/ })).toBeDisabled();
-  await context.close();
 });
 
 test('restores the previous mark after a 500 response and retries the same action', async ({
