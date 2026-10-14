@@ -33,36 +33,44 @@ docker compose exec api php bin/console app:teams:cleanup
 
 El proceso elimina únicamente datos de la base activa; no implementa retención de copias de seguridad ni medidas de restauración.
 
-En preproducción, el mismo comando tiene un perfil remoto protegido por configuración: exige `APP_ENV=prod`, `SYNQO_DEPLOYMENT_ENV=preproduction`, `DEMO_RESET_ENABLED=true`, `DEMO_ACCESS_SECRET`, `DEMO_TEAM_IDS` explícita y la referencia al host privado de PostgreSQL esperado. La IaC conserva el secreto fuera del repositorio. Los tokens derivados solo se usan para los dos equipos demo; sus hashes son lo único que se guarda en la base. `--force` no omite esas comprobaciones. El reset horario es un servicio Cron independiente con activación manual; no se activa con el proceso HTTP ni con la configuración IaC predeterminada.
+## Restaurar únicamente los equipos demo
 
+`DEMO_TEAM_IDS` debe estar definida en el proceso que ejecuta el reset. Una cadena vacía, sin `--initialize`, termina correctamente sin borrar ni cargar datos. Una lista no vacía contiene exactamente los dos UUID distintos de los demo, separados por coma. Se validan sus verificadores contra `DEMO_ACCESS_SECRET`; nombres iguales no identifican equipos demo. Una lista parcial, inválida o con un equipo real falla sin cambios. La IaC preserva la variable del HTTP y la referencia desde el Cron; el HTTP puede servir peticiones aunque falte esta variable.
 
-## Restaurar únicamente los demo de preproducción
+En cualquier entorno se conservan las raíces demo, sus UUID y fecha de creación. Se eliminan y recargan sus datos dependientes en una transacción. Cada reset incrementa `demo_access_generation` y reemplaza el verificador activo: los enlaces anteriores caducan y `/api/configuration` publica los nuevos. No se guarda historial. Los equipos de usuarios y el pool de creación persisten y siguen sujetos a caducidad/retención normales; los UUID de participantes demo pueden cambiar.
 
-`DEMO_TEAM_IDS` debe estar definida en el proceso que ejecuta el reset. Una cadena vacía termina correctamente sin borrar ni cargar datos. Una lista no vacía contiene exactamente los dos UUID distintos de los demo, separados por coma. Se validan sus verificadores contra `DEMO_ACCESS_SECRET`; nombres iguales no identifican equipos demo. Una lista parcial, inválida o con un equipo real falla sin cambios. La IaC preserva la variable del HTTP y la referencia desde el Cron; el HTTP puede servir peticiones aunque falte esta variable.
+El mismo comando selectivo se usa en desarrollo, preproducción y producción. En remoto exige perfil, secreto, los dos UUID y host de PostgreSQL autorizado para ese destino; producción verifica que el host exacto resuelva únicamente a direcciones privadas sin depender de una plataforma concreta. `--force --no-interaction` permite ejecutarlo desde un scheduler y no omite ninguna guarda. La IaC actual solo declara el Cron horario de preproducción y su activación sigue siendo independiente. Producción puede programar este comando con cualquier plataforma cuando tenga un entorno propio validado; este repositorio no crea ni activa ese entorno.
 
-En preproducción se conservan las raíces demo, sus UUID y fecha de creación. Se eliminan y recargan sus datos dependientes en una transacción. Cada reset incrementa `demo_access_generation` y reemplaza el verificador activo: los enlaces anteriores caducan y `/api/configuration` publica los nuevos. No se guarda historial. Los equipos de usuarios y el pool de creación persisten y siguen sujetos a caducidad/retención normales; los UUID de participantes demo pueden cambiar.
-
-Para una **primera carga manual**, definir `DEMO_TEAM_IDS` como cadena vacía y ejecutar `app:demo:reset --initialize --force --no-interaction` con las guardas del perfil. Por defecto exige que no haya equipos; si deben conservarse equipos existentes, añadir `--allow-non-empty`. La salida muestra una línea `DEMO_TEAM_IDS=<uuid-1>,<uuid-2>` sin tokens para copiar en HTTP y Cron. El Cron nunca usa `--initialize`. En preproducción, cada reset conserva UUID, incrementa `demo_access_generation` y sustituye el verificador; los enlaces anteriores dejan de funcionar y `/api/configuration` publica los nuevos. Solo se almacena la versión actual, no un historial. La [operación de Railway](../../pdi_doc/09_operacion/01_despliegue/railway-rel-002.md#reset-selectivo-de-demo--rel-003) detalla la transición y el despliegue de ambos servicios.
+Para una **primera carga manual**, genera un valor con `openssl rand -hex 32`, guárdalo como `DEMO_ACCESS_SECRET` en el `.env` local y deja `DEMO_TEAM_IDS=` vacío. Recrea los servicios para que Compose les pase los cambios y ejecuta `app:demo:reset --initialize`. Por defecto exige que no haya equipos; si quieres conservar equipos existentes, añade `--allow-non-empty`. La salida muestra `DEMO_TEAM_IDS=<uuid-1>,<uuid-2>` sin tokens en modo no interactivo. Copia esos UUID al `.env` antes del reset siguiente y vuelve a recrear API. El Cron nunca usa `--initialize`. Cada reset conserva los UUID, incrementa `demo_access_generation` y sustituye el verificador; los enlaces anteriores dejan de funcionar y `/api/configuration` publica los nuevos. Solo se almacena la versión actual, no un historial. La [operación de Railway](../../pdi_doc/09_operacion/01_despliegue/railway-rel-002.md#reset-selectivo-de-demo--rel-003) detalla la configuración de preproducción.
 
 Si hay una discrepancia se informa de la fase o cantidades esperadas/observadas y se devuelve error; se revierte cualquier limpieza parcial. `--force` no omite estas comprobaciones. No se cambia ni se rota el secreto durante esta transición: una rotación exige una intervención dirigida sobre los dos UUID y verificadores anteriores, separada del reset normal.
 
-## Restaurar el juego demo local
+## Inicializar y restaurar el juego demo local
 
-Para cargar «La mesa del jueves» y «La banda del patio» con cuatro participantes por equipo, disponibilidades y consultas de fechas/texto, ejecuta desde la raíz:
-
-```sh
-docker compose exec -e SYNQO_DEPLOYMENT_ENV=development api php bin/console app:demo:reset
-```
-
-El comando **borra todos los equipos de la base de desarrollo conectada**, junto con sus participantes, disponibilidades, consultas, votos y eventos de correo, y carga el juego demo en una única transacción. Solicita confirmación, con respuesta negativa por defecto. Al terminar imprime siempre `DEMO_TEAM_IDS=<uuid-1>,<uuid-2>`; los enlaces con tokens aparecen únicamente en salida interactiva. Trata esos enlaces como credenciales y evita guardar esa salida en logs. Las disponibilidades abarcan el mes anterior, el actual y los tres siguientes, con un patrón reproducible anclado al lunes UTC de la semana de ejecución. Las cuatro consultas se reparten entre ambos equipos e incluyen fechas futuras, texto y estados abierto, resuelto y rechazado.
-
-Si necesitas una ejecución deliberada sin interacción:
+La carga inicial solo añade los dos equipos de ejemplo. En `.env` local, define un secreto para derivar sus enlaces y deja `DEMO_TEAM_IDS=` vacía. Aplica esos valores al contenedor:
 
 ```sh
-docker compose exec -T -e SYNQO_DEPLOYMENT_ENV=development api php bin/console app:demo:reset --no-interaction --force
+docker compose up -d --force-recreate api
 ```
 
-`--force` confirma el reemplazo, pero nunca omite las guardas: requiere `APP_ENV=dev`, `SYNQO_DEPLOYMENT_ENV=development`, PostgreSQL y host `database`, `localhost`, `127.0.0.1` o `::1`. Un entorno o conexión distintos fallan sin modificar datos y sin imprimir credenciales. No uses este comando para bases remotas ni producción. La ejecución no registra envíos de correo, no limpia el pool independiente de control de creación y no se programa al iniciar la aplicación. Si otra restauración mantiene el lock, el comando falla inmediatamente; un error de escritura revierte el reemplazo entero.
+Después, desde la raíz, ejecuta:
+
+```sh
+docker compose exec -e DEMO_TEAM_IDS= api php bin/console app:demo:reset --initialize
+```
+
+La inicialización no borra datos. Sin `--allow-non-empty` exige una base sin equipos; al añadir ese flag permite conservar los equipos existentes, pero falla si ya hay alguno demo. Confirma la operación cuando pregunte. Al terminar imprime los dos UUID para que los copies a `DEMO_TEAM_IDS`; los enlaces con tokens aparecen solo en salida interactiva. Trátalos como credenciales y evita guardarlos en logs. La fixture contiene cuatro participantes por equipo, disponibilidades y consultas de fechas/texto.
+
+Una vez guardados los UUID en `.env`, actualiza primero el contenedor API y restaura solo esos dos equipos:
+
+```sh
+docker compose up -d --force-recreate api
+docker compose exec api php bin/console app:demo:reset
+```
+
+El comando solicita confirmación. En modo no interactivo añade `-T --force --no-interaction`. En local siempre exige `APP_ENV=dev` y PostgreSQL en un host local permitido, aunque cambies `SYNQO_DEPLOYMENT_ENV` para simular preproducción o producción. Solo borra los datos que dependen de los dos UUID indicados; los equipos reales y el pool independiente de creación permanecen. Si faltan UUID, no coinciden con las dos identidades demo o falla una escritura, no se aplica el reset.
+
+Para probar la presentación de otros entornos, cambia en `.env` `SYNQO_DEPLOYMENT_ENV` a `preproduction` o `production`, y ajusta por separado `TEAM_CREATION_EMAIL_MODE`, `DEMO_PANEL_ENABLED` y `DEMO_RESET_SCHEDULE_ENABLED`; después recrea `api` y `mail-worker` con `docker compose up -d --force-recreate api mail-worker`. Vacío conserva el default del entorno: correo oculto fuera de desarrollo y panel demo visible por defecto en preproducción. Puedes usar `TEAM_CREATION_EMAIL_MODE=demo` para ver el campo y el aviso sin enviar ni guardar la dirección. `DEMO_RESET_SCHEDULE_ENABLED=true` solo simula el aviso y el temporizador en la interfaz local; no crea un Cron. Estas simulaciones siguen conectadas a PostgreSQL local y no habilitan ningún destino remoto.
 
 ## Límite de creación por origen
 

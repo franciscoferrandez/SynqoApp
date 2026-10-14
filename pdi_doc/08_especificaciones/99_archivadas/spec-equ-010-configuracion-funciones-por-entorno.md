@@ -21,7 +21,7 @@ Permitir ajustar cada función de Synqo por separado mediante variables de entor
 
 ## Fuera de scope
 
-- Cambiar la política de borrado o programar el reset. Ese comportamiento se trata en el change separado de reset selectivo de equipos demo.
+- Cambiar la política de borrado o programar el reset. Lo cubre [SPEC-EQU-011 — Restaurar solo equipos demo en todos los entornos](spec-equ-011-reset-selectivo-demo-todos-entornos.md).
 - Elegir un proveedor real de correo, desplegar una infraestructura de producción o aplicar IaC en Railway.
 - Cambiar valores de negocio vigentes de límites o retención.
 

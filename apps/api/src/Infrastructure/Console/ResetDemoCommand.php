@@ -14,7 +14,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
-#[AsCommand(name: 'app:demo:reset', description: 'Restaurar la demo local o los equipos demo configurados de preproducción.')]
+#[AsCommand(name: 'app:demo:reset', description: 'Restaurar únicamente los dos equipos demo configurados del entorno.')]
 final class ResetDemoCommand extends Command
 {
     public function __construct(
@@ -51,8 +51,15 @@ final class ResetDemoCommand extends Command
             if ($allowNonEmpty && !$initialize) {
                 throw new DemoResetException('--allow-non-empty requiere --initialize.');
             }
-            if ($this->appEnvironment === 'dev' && $this->deploymentEnvironment === 'development') {
+            if ($this->appEnvironment === 'dev') {
                 $this->reset->assertLocalProfile($this->appEnvironment, $this->deploymentEnvironment);
+            } elseif ($this->deploymentEnvironment === 'production') {
+                $this->reset->assertProductionProfile(
+                    $this->appEnvironment,
+                    $this->deploymentEnvironment,
+                    $this->demoResetEnabled,
+                    $this->demoDatabaseHost,
+                );
             } else {
                 $this->reset->assertPreproductionProfile(
                     $this->appEnvironment,
@@ -62,18 +69,24 @@ final class ResetDemoCommand extends Command
                     $this->railwayEnvironmentName,
                 );
             }
-            if (!$input->getOption('force')) {
-                if (!$input->isInteractive()) {
-                    $io->error('En modo no interactivo debes confirmar el reemplazo con --force.');
-                    return Command::FAILURE;
-                }
-                $confirmation = $this->deploymentEnvironment === 'development'
-                    ? 'Se borrarán todos los equipos de la base local y se cargará el juego demo. ¿Continuar?'
-                    : ($initialize ? 'Se crearán los equipos demo sin borrar equipos existentes.' . ($allowNonEmpty ? ' La base puede contener otros equipos.' : ' La base debe estar vacía.') . ' ¿Continuar?' : 'Se restaurarán solo los datos de los equipos demo configurados, conservando sus UUID. ¿Continuar?');
+            $environment = $this->deploymentEnvironment ?? 'desconocido';
+            $color = match ($environment) {
+                'preproduction' => '#ff8800',
+                'production' => 'red',
+                default => 'green',
+            };
+            $io->writeln(sprintf('<fg=%s>Entorno de destino: %s. Solo se restauran los equipos demo configurados.</>', $color, $environment));
+            if ($input->isInteractive()) {
+                $confirmation = $initialize
+                    ? 'Se crearán los equipos demo sin borrar equipos existentes. ¿Continuar?'
+                    : 'Se restaurarán solo los datos de los dos equipos demo configurados, conservando sus UUID. ¿Continuar?';
                 if (!$io->confirm($confirmation, false)) {
                     $io->text('Reset cancelado; no se ha modificado ningún dato.');
                     return Command::SUCCESS;
                 }
+            } elseif (!$input->getOption('force') || !$input->hasParameterOption('--no-interaction', true)) {
+                $io->error('En modo no interactivo debes pasar --force --no-interaction.');
+                return Command::FAILURE;
             }
             $teams = $initialize ? $this->reset->initialize($allowNonEmpty) : $this->reset->reset();
             if ($teams === []) {

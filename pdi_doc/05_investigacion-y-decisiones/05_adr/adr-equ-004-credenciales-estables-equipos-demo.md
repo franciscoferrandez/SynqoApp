@@ -5,6 +5,10 @@ estado: aprobado
 
 # ADR-EQU-004 — Derivar credenciales estables para los equipos demo
 
+## Evolución de vigencia — 2026-10-14
+
+[ADR-EQU-005 — Conservar UUID y limitar el reset a los equipos demo configurados](adr-equ-005-reset-demo-uuid-estables.md) amplía el uso de tokens derivados a los equipos demo configurados en cada entorno, para comprobar que los UUID indicados corresponden a la fixture antes de borrar datos. Cada entorno mantiene un `DEMO_ACCESS_SECRET` propio; el secreto de preproducción no se copia a desarrollo ni a producción. El alcance anterior, limitado a preproducción, queda como historia.
+
 ## Evolución de vigencia — 2026-10-12
 
 [ADR-EQU-005 — Conservar UUID y limitar el reset a los equipos demo configurados](adr-equ-005-reset-demo-uuid-estables.md) concreta la derivación HMAC con una generación mutable por raíz. El reset ordinario incrementa esa versión, sustituye el verificador y publica el nuevo enlace, revocando el anterior sin conservar historial. La versión cero mantiene los enlaces ya publicados hasta el primer reset tras desplegar la migración. La rotación de `DEMO_ACCESS_SECRET` aún requiere operación dirigida.

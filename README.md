@@ -154,7 +154,7 @@ Después de la instalación inicial, el arranque cotidiano es `nvm use`, `docker
 | `docker compose exec api php bin/console debug:router` | Listar rutas Symfony y API Platform. |
 | `docker compose exec api php bin/console app:mail:process --once` | Procesar a mano los envíos pendientes y cerrar los vencidos (el servicio `mail-worker` lo hace en continuo). |
 | `docker compose exec api php bin/console app:teams:cleanup` | Borrar de la base activa los equipos cuyo plazo de retención tras caducar ha vencido. Ejecutarlo manualmente; no hay programación automática. |
-| `docker compose exec -e SYNQO_DEPLOYMENT_ENV=development api php bin/console app:demo:reset` | Reemplazar todos los equipos locales por los dos equipos demo. Pide confirmación; ver [operación del juego demo](apps/api/README.md#restaurar-el-juego-demo-local). No programa ningún reset. |
+| `docker compose exec api php bin/console app:demo:reset` | Restaurar solo los dos equipos demo cuyos UUID están en `DEMO_TEAM_IDS`. La carga inicial y las simulaciones por entorno están en [operación del juego demo](apps/api/README.md#inicializar-y-restaurar-el-juego-demo-local). No programa ningún reset. |
 
 **Docker Compose:** `docker compose ps` lista servicios; `docker compose logs -f api database` sigue sus logs; `docker compose stop` y `start` paran o reanudan los servicios; `docker compose down` los elimina y conserva el volumen de PostgreSQL. `docker compose down -v` elimina también ese volumen y todos los datos locales.
 

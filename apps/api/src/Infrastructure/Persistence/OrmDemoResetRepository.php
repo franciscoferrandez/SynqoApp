@@ -9,7 +9,6 @@ use App\Application\Demo\DemoResetException;
 use App\Application\Demo\DemoTeamSelection;
 use App\Application\Demo\DemoResetRepository;
 use App\Application\Demo\DemoAccessTokenDeriver;
-use App\Application\Team\AccessTokenGenerator;
 use App\Application\Team\IdentifierGenerator;
 use App\Domain\Team\ParticipantName;
 use App\Infrastructure\Persistence\Entity\AvailabilityRecord;
@@ -34,7 +33,6 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
         private ManagerRegistry $managers,
         private DemoFixture $fixture,
         private IdentifierGenerator $identifiers,
-        private AccessTokenGenerator $tokens,
         private DemoAccessTokenDeriver $demoTokens,
         private string $deploymentEnvironment,
         private ?string $demoTeamIds = null,
@@ -62,6 +60,52 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
             && $railwayEnvironmentName === 'preproduction';
     }
 
+    public function isPrivateProductionPostgreSql(string $expectedHost): bool
+    {
+        $connection = $this->managers->getConnection();
+        $host = $connection->getParams()['host'] ?? null;
+        if (
+            $this->deploymentEnvironment !== 'production'
+            || !$connection->getDatabasePlatform() instanceof PostgreSQLPlatform
+            || $expectedHost === ''
+            || !is_string($host)
+            || !hash_equals($expectedHost, $host)
+            || in_array(strtolower($host), ['database', 'localhost', '127.0.0.1', '::1'], true)
+        ) {
+            return false;
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            return self::isPrivateAddress($host);
+        }
+        // A DNS suffix is not proof of a private destination. Every returned
+        // address must be private; failed or empty resolution is denied.
+        $records = @dns_get_record($host, DNS_A | DNS_AAAA);
+        if ($records === false || $records === []) {
+            return false;
+        }
+        foreach ($records as $record) {
+            $address = $record['ip'] ?? $record['ipv6'] ?? '';
+            if (!is_string($address) || !self::isPrivateAddress($address)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function isPrivateAddress(string $address): bool
+    {
+        $packed = inet_pton($address);
+        if ($packed === false) {
+            return false;
+        }
+        if (strlen($packed) === 4) {
+            $first = ord($packed[0]);
+            $second = ord($packed[1]);
+            return $first === 10 || ($first === 172 && $second >= 16 && $second <= 31) || ($first === 192 && $second === 168);
+        }
+        return (ord($packed[0]) & 0xfe) === 0xfc;
+    }
+
     public function replace(DateTimeImmutable $now): array
     {
         return $this->restore($now, false);
@@ -75,11 +119,11 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
     /** @return list<array{name: string, token: string, id?: string}> */
     private function restore(DateTimeImmutable $now, bool $initialize, bool $allowNonEmpty = false): array
     {
-        $selectedIds = $this->deploymentEnvironment === 'preproduction' ? DemoTeamSelection::parse($this->demoTeamIds) : [];
+        $selectedIds = DemoTeamSelection::parse($this->demoTeamIds);
         if ($initialize && $selectedIds !== []) {
             throw new DemoResetException('La inicialización requiere DEMO_TEAM_IDS definida y vacía.');
         }
-        if ($this->deploymentEnvironment === 'preproduction' && !$initialize && $selectedIds === []) {
+        if (!$initialize && $selectedIds === []) {
             return [];
         }
         $manager = $this->managers->getManager();
@@ -100,27 +144,21 @@ final readonly class OrmDemoResetRepository implements DemoResetRepository
                     if (!$allowNonEmpty && (int) $connection->fetchOne('SELECT COUNT(*) FROM team') !== 0) {
                         throw new DemoResetException('La inicialización requiere una base sin equipos; usa --allow-non-empty para añadir los demo sin borrar los equipos existentes.');
                     }
-                    if ($allowNonEmpty && $this->deploymentEnvironment === 'preproduction') {
+                    if ($allowNonEmpty) {
                         if ($this->containsDemoTeam($connection)) {
                             throw new DemoResetException('La inicialización encontró credenciales demo existentes; no se ha añadido ningún equipo.');
                         }
                     }
-                } elseif ($this->deploymentEnvironment === 'preproduction') {
-                    $existing = $this->clearSelectedTeams($connection, $selectedIds);
                 } else {
-                    $connection->executeStatement('DELETE FROM team');
+                    $existing = $this->clearSelectedTeams($connection, $selectedIds);
                 }
                 $manager->clear();
                 $links = [];
                 $teamIndex = 0;
                 foreach ($this->fixture->teams() as $name => $names) {
                     $existingTeam = $existing[$this->fixture->accessKey($teamIndex)] ?? null;
-                    $generation = $this->deploymentEnvironment === 'preproduction'
-                        ? ($existingTeam === null ? 1 : $existingTeam['generation'] + 1)
-                        : 0;
-                    $token = $this->deploymentEnvironment === 'preproduction'
-                        ? $this->demoTokens->tokenFor($this->fixture->accessKey($teamIndex), $generation)
-                        : $this->tokens->generate();
+                    $generation = $existingTeam === null ? 1 : $existingTeam['generation'] + 1;
+                    $token = $this->demoTokens->tokenFor($this->fixture->accessKey($teamIndex), $generation);
                     $verifier = hash('sha256', $token);
                     if ($existingTeam !== null) {
                         $id = $existingTeam['id'];

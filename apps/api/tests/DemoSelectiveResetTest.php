@@ -8,7 +8,6 @@ use App\Application\Demo\DemoAccessTokenDeriver;
 use App\Application\Demo\DemoFixture;
 use App\Application\Demo\DemoResetException;
 use App\Application\Demo\DemoResetService;
-use App\Application\Team\AccessTokenGenerator;
 use App\Application\Team\IdentifierGenerator;
 use App\Application\Team\TeamService;
 use App\Infrastructure\Console\ResetDemoCommand;
@@ -209,7 +208,7 @@ final class DemoSelectiveResetTest extends KernelTestCase
         $private = DriverManager::getConnection(['driver' => 'pdo_pgsql', 'host' => 'db.railway.internal', 'serverVersion' => '18']);
         $registry->method('getConnection')->willReturn($private);
         $registry->method('getManager')->willReturn(static::getContainer()->get(ManagerRegistry::class)->getManager());
-        $build = fn(?string $selection): CommandTester => new CommandTester(new ResetDemoCommand(
+        $build = fn(?string $selection): CommandTester => $this->tester(new ResetDemoCommand(
             new DemoResetService($this->repository($selection, $registry), new MockClock('2026-10-12T11:00:00Z'), new DemoAccessTokenDeriver(str_repeat('s', 32))),
             'prod',
             'preproduction',
@@ -219,20 +218,20 @@ final class DemoSelectiveResetTest extends KernelTestCase
             'preproduction',
         ));
         $tester = $build($this->demo[0]['id'] . ',00000000-0000-4000-8000-000000000001');
-        self::assertSame(1, $tester->execute(['--force' => true], ['interactive' => false]));
+        self::assertSame(1, $tester->execute(['--force' => true, '--no-interaction' => true], ['interactive' => false]));
         self::assertStringContainsString('se encontraron 1', preg_replace('/\s+/', ' ', $tester->getDisplay()));
         $tester = $build('');
-        self::assertSame(0, $tester->execute(['--force' => true], ['interactive' => false]));
+        self::assertSame(0, $tester->execute(['--force' => true, '--no-interaction' => true], ['interactive' => false]));
         self::assertStringContainsString('no se ha modificado', $tester->getDisplay());
         $this->db->executeStatement('DELETE FROM team');
-        self::assertSame(0, $tester->execute(['--force' => true, '--initialize' => true], ['interactive' => false]));
+        self::assertSame(0, $tester->execute(['--force' => true, '--no-interaction' => true, '--initialize' => true], ['interactive' => false]));
         self::assertMatchesRegularExpression('/DEMO_TEAM_IDS=[0-9a-f-]{36},[0-9a-f-]{36}/', $tester->getDisplay());
         foreach ($this->demo as $team) {
             self::assertStringNotContainsString($team['token'], $tester->getDisplay());
         }
         self::assertStringNotContainsString('#t=', $tester->getDisplay());
         $tester = $build(null);
-        self::assertSame(1, $tester->execute(['--force' => true], ['interactive' => false]));
+        self::assertSame(1, $tester->execute(['--force' => true, '--no-interaction' => true], ['interactive' => false]));
         self::assertStringContainsString('debe estar definida', $tester->getDisplay());
     }
 
@@ -244,9 +243,9 @@ final class DemoSelectiveResetTest extends KernelTestCase
             static::getContainer()->get(ManagerRegistry::class),
             new DemoFixture(),
             static::getContainer()->get(IdentifierGenerator::class),
-            static::getContainer()->get(AccessTokenGenerator::class),
             new DemoAccessTokenDeriver(str_repeat('s', 32)),
             'development',
+            '',
         );
         $created = $localRepository->initialize($now);
         self::assertCount(2, $created);
@@ -274,13 +273,54 @@ final class DemoSelectiveResetTest extends KernelTestCase
             }
             return $generator->generate();
         });
-        $repository = new OrmDemoResetRepository(static::getContainer()->get(ManagerRegistry::class), new DemoFixture(), $identifiers, static::getContainer()->get(AccessTokenGenerator::class), new DemoAccessTokenDeriver(str_repeat('s', 32)), 'preproduction', '');
+        $repository = new OrmDemoResetRepository(static::getContainer()->get(ManagerRegistry::class), new DemoFixture(), $identifiers, new DemoAccessTokenDeriver(str_repeat('s', 32)), 'preproduction', '');
         try {
             self::assertCount(2, $repository->initialize(new DateTimeImmutable('2026-10-12T11:00:00Z')));
             self::assertTrue($checked);
         } finally {
             $other->close();
         }
+    }
+
+    public function testEveryEnvironmentPreservesRealDataAndRequiresItsOwnSecret(): void
+    {
+        $real = static::getContainer()->get(TeamService::class)->create('Persistente', 'Real', 'UTC', clientIp: '192.0.2.20');
+        $before = $this->snapshot($real['id']);
+        foreach (['development', 'preproduction', 'production'] as $environment) {
+            $repository = new OrmDemoResetRepository(
+                static::getContainer()->get(ManagerRegistry::class),
+                new DemoFixture(),
+                static::getContainer()->get(IdentifierGenerator::class),
+                new DemoAccessTokenDeriver(str_repeat('s', 32)),
+                $environment,
+                $this->selection,
+            );
+            self::assertSame(array_column($this->demo, 'id'), array_column($repository->replace(new DateTimeImmutable('2026-10-12T11:00:00Z')), 'id'));
+            self::assertSame($before, $this->snapshot($real['id']));
+            self::assertSame(8, (int) $this->db->fetchOne('SELECT COUNT(*) FROM participant WHERE team_id IN (?)', [explode(',', $this->selection)], [\Doctrine\DBAL\ArrayParameterType::STRING]));
+            $wrongSecret = new OrmDemoResetRepository(
+                static::getContainer()->get(ManagerRegistry::class),
+                new DemoFixture(),
+                static::getContainer()->get(IdentifierGenerator::class),
+                new DemoAccessTokenDeriver(str_repeat('x', 32)),
+                $environment,
+                $this->selection,
+            );
+            $all = $this->snapshot();
+            try {
+                $wrongSecret->replace(new DateTimeImmutable('2026-10-12T12:00:00Z'));
+                self::fail('A secret from another environment must not authorize the roots.');
+            } catch (DemoResetException) {
+                self::assertSame($all, $this->snapshot());
+            }
+        }
+    }
+
+    private function tester(ResetDemoCommand $command): CommandTester
+    {
+        $application = new \Symfony\Component\Console\Application();
+        $application->addCommand($command);
+        return new CommandTester($command);
     }
 
     private function assertTriggerRollback(string $table, string $operation, string $message): void
@@ -308,7 +348,6 @@ final class DemoSelectiveResetTest extends KernelTestCase
             $registry ?? static::getContainer()->get(ManagerRegistry::class),
             new DemoFixture(),
             static::getContainer()->get(IdentifierGenerator::class),
-            static::getContainer()->get(AccessTokenGenerator::class),
             new DemoAccessTokenDeriver(str_repeat('s', 32)),
             'preproduction',
             $selection,

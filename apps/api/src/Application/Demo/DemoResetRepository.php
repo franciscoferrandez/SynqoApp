@@ -16,5 +16,7 @@ interface DemoResetRepository
 
     public function isLocalPostgreSql(): bool;
 
+    public function isPrivateProductionPostgreSql(string $expectedHost): bool;
+
     public function isPrivatePreproductionPostgreSql(string $expectedHost, ?string $railwayEnvironmentName): bool;
 }

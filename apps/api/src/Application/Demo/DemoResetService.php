@@ -16,8 +16,8 @@ final readonly class DemoResetService
 
     public function assertLocalProfile(string $appEnvironment, ?string $deploymentEnvironment): void
     {
-        if ($appEnvironment !== 'dev' || $deploymentEnvironment !== 'development' || !$this->repository->isLocalPostgreSql()) {
-            throw new \RuntimeException('El reset demo requiere desarrollo local y una conexión PostgreSQL local permitida.');
+        if ($appEnvironment !== 'dev' || !in_array($deploymentEnvironment, ['development', 'preproduction', 'production'], true) || !$this->repository->isLocalPostgreSql()) {
+            throw new DemoResetException('La simulación local requiere APP_ENV=dev, un entorno conocido y PostgreSQL local permitido.');
         }
     }
 
@@ -36,6 +36,23 @@ final readonly class DemoResetService
             || !$this->repository->isPrivatePreproductionPostgreSql($expectedDatabaseHost, $railwayEnvironmentName)
         ) {
             throw new \RuntimeException('El perfil seguro de reset demo no está habilitado para este entorno.');
+        }
+    }
+
+    public function assertProductionProfile(
+        string $appEnvironment,
+        ?string $deploymentEnvironment,
+        bool $resetEnabled,
+        string $expectedDatabaseHost,
+    ): void {
+        if (
+            $appEnvironment !== 'prod'
+            || $deploymentEnvironment !== 'production'
+            || !$resetEnabled
+            || !$this->demoTokens->isConfigured()
+            || !$this->repository->isPrivateProductionPostgreSql($expectedDatabaseHost)
+        ) {
+            throw new DemoResetException('El perfil seguro de reset demo no está habilitado para producción.');
         }
     }
 
