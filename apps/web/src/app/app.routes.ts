@@ -1,3 +1,4 @@
+import { isDevMode } from '@angular/core';
 import { Routes } from '@angular/router';
 import { CreatePage } from './pages/create-page';
 import { ConfirmationPage } from './pages/confirmation-page';
@@ -40,5 +41,15 @@ export const routes: Routes = [
     data: { kind: 'missing' },
     title: 'Equipo no encontrado · Synqo',
   },
+  ...(isDevMode()
+    ? [
+        {
+          path: 'desarrollo/brandboard',
+          loadComponent: () =>
+            import('./dev/brandboard/brandboard-tool').then((module) => module.BrandboardTool),
+          title: 'Recortar brandboard · Synqo',
+        },
+      ]
+    : []),
   { path: '**', redirectTo: 'no-encontrado' },
 ];

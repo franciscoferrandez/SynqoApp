@@ -32,6 +32,8 @@ La pantalla de creación obtiene de `/api/configuration` los límites vigentes y
 
 La presentación en desarrollo, preproducción y producción se ajusta con variables independientes y puede simularse localmente contra PostgreSQL local. La misma configuración pública puede incluir enlaces a los dos equipos demo y, solo si `DEMO_RESET_SCHEDULE_ENABLED` está activo, el instante del siguiente reset horario UTC. El cliente no genera ni almacena los tokens demo; la guía de [API](../api/README.md#inicializar-y-restaurar-el-juego-demo-local) recoge los ejemplos.
 
+En desarrollo, la herramienta de recorte de la brandboard se abre directamente en <http://localhost:4200/desarrollo/brandboard>. No tiene enlace en la navegación. Sus coordenadas y destinos de salida se editan en `src/app/dev/brandboard/brandboard-crops.json`; cada salida admite `scale`, `width`, `height` o ambas dimensiones. Si solo se indica ancho o alto, la otra medida se calcula manteniendo la proporción; si se indican las dos, se usan como tamaño máximo y el recorte se centra en un PNG transparente sin deformarlo. El botón escribe los PNG en `public/` usando el pequeño servicio local iniciado por `npm start`. La ruta y el servicio no se incluyen en la aplicación desplegada.
+
 Para aplicar correcciones explícitas:
 
 ```bash

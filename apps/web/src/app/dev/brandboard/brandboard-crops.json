@@ -1,0 +1,97 @@
+{
+  "source": "/brandboard/brand-board.png",
+  "sourceWidth": 1536,
+  "sourceHeight": 1024,
+  "items": [
+    {
+      "id": "logo-horizontal-color",
+      "label": "Logotipo horizontal a color",
+      "crop": { "x": 37, "y": 58, "width": 333, "height": 149 },
+      "outputs": [{ "path": "assets/brand/logo-horizontal-color.png", "width": 150 }]
+    },
+    {
+      "id": "logo-vertical-color",
+      "label": "Logotipo vertical a color",
+      "crop": { "x": 465, "y": 42, "width": 181, "height": 185 },
+      "outputs": [{ "path": "assets/brand/logo-vertical-color.png", "scale": 3 }]
+    },
+    {
+      "id": "symbol-color",
+      "label": "Símbolo a color",
+      "crop": { "x": 737, "y": 56, "width": 128, "height": 166 },
+      "outputs": [{ "path": "assets/brand/symbol-color.png", "width": 512 }]
+    },
+    {
+      "id": "wordmark",
+      "label": "Nombre Synqo",
+      "crop": { "x": 952, "y": 92, "width": 226, "height": 54 },
+      "outputs": [{ "path": "assets/brand/wordmark.png", "scale": 4 }]
+    },
+    {
+      "id": "tagline",
+      "label": "Lema",
+      "crop": { "x": 1240, "y": 103, "width": 274, "height": 28 },
+      "outputs": [{ "path": "assets/brand/tagline.png", "height": 112 }]
+    },
+    {
+      "id": "horizontal-variants",
+      "label": "Logotipos horizontales: color, monocromo y sobre fondo",
+      "crop": { "x": 29, "y": 310, "width": 592, "height": 108 },
+      "outputs": [{ "path": "assets/brand/logo-horizontal-variants.png", "scale": 2 }]
+    },
+    {
+      "id": "vertical-variants",
+      "label": "Logotipos verticales: color, monocromo y sobre fondo",
+      "crop": { "x": 817, "y": 310, "width": 632, "height": 112 },
+      "outputs": [{ "path": "assets/brand/logo-vertical-variants.png", "scale": 2 }]
+    },
+    {
+      "id": "app-icon-light",
+      "label": "Icono de aplicación sobre fondo claro",
+      "crop": { "x": 512, "y": 500, "width": 128, "height": 128 },
+      "outputs": [
+        { "path": "assets/brand/app-icon-light-512.png", "width": 512, "height": 512 },
+        { "path": "assets/brand/app-icon-light-256.png", "width": 256 },
+        { "path": "assets/brand/app-icon-light-192.png", "width": 192 },
+        { "path": "assets/brand/app-icon-light-180.png", "width": 180 },
+        { "path": "assets/brand/app-icon-light-128.png", "width": 128 },
+        { "path": "assets/brand/app-icon-light-64.png", "width": 64 }
+      ]
+    },
+    {
+      "id": "app-icon-dark",
+      "label": "Icono de aplicación sobre fondo oscuro",
+      "crop": { "x": 652, "y": 500, "width": 128, "height": 128 },
+      "outputs": [
+        { "path": "assets/brand/app-icon-dark-512.png", "width": 512 },
+        { "path": "assets/brand/app-icon-dark-256.png", "width": 256 },
+        { "path": "assets/brand/app-icon-dark-192.png", "width": 192 },
+        { "path": "assets/brand/app-icon-dark-180.png", "width": 180 },
+        { "path": "assets/brand/app-icon-dark-128.png", "width": 128 },
+        { "path": "assets/brand/app-icon-dark-64.png", "width": 64 }
+      ]
+    },
+    {
+      "id": "favicon",
+      "label": "Favicones desde el icono de aplicación de alta resolución",
+      "crop": { "x": 512, "y": 500, "width": 128, "height": 128 },
+      "outputs": [
+        { "path": "favicon-brand.png", "width": 96 },
+        { "path": "assets/brand/favicon-32.png", "width": 32 },
+        { "path": "assets/brand/favicon-16.png", "width": 16 }
+      ]
+    },
+    {
+      "id": "brand-colors",
+      "label": "Muestras de color de marca",
+      "crop": { "x": 286, "y": 683, "width": 463, "height": 137 },
+      "outputs": [{ "path": "assets/brand/brand-colors.png", "width": 926, "height": 274 }]
+    },
+    {
+      "id": "decorative-gradients",
+      "label": "Degradados decorativos",
+      "crop": { "x": 1210, "y": 837, "width": 277, "height": 167 },
+      "outputs": [{ "path": "assets/brand/decorative-gradients.png", "width": 831, "height": 501 }]
+    }
+  ]
+}

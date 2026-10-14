@@ -83,14 +83,12 @@ a {
   outline: 3px solid var(--focus);
   outline-offset: 3px;
 }
-.brandmark {
-  display: inline-block;
-  width: 28px;
-  height: 36px;
+.brand-logo {
+  display: block;
+  width: 150px;
+  max-height: 80px;
   flex: none;
-  border-radius: 55% 40% 60% 45%;
-  background: linear-gradient(155deg, #5b64ff 0 42%, #20bbf3 43% 73%, #23d4a5 74%);
-  transform: rotate(20deg);
+  object-fit: contain;
 }
 .panel {
   border: 1px solid var(--line);

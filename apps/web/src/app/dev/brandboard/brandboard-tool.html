@@ -1,0 +1,145 @@
+<section class="tool-page" aria-labelledby="tool-title">
+  <header class="tool-heading">
+    <div>
+      <p class="eyebrow">Herramienta local de desarrollo</p>
+      <h1 id="tool-title">Recortar elementos de la brandboard</h1>
+      <p>
+        Ajusta las coordenadas en
+        <code>apps/web/src/app/dev/brandboard/brandboard-crops.json</code> y vuelve a cargar esta
+        pantalla. La extracción escribe los PNG en las rutas declaradas.
+      </p>
+    </div>
+    <button
+      class="extract-button"
+      type="button"
+      (click)="extract()"
+      [disabled]="loading || extracting || !imageReady"
+    >
+      {{ extracting ? 'Extrayendo…' : 'Extraer todos los elementos' }}
+    </button>
+  </header>
+
+  @if (loading) {
+    <p role="status">Cargando configuración y brandboard…</p>
+  }
+  @if (error) {
+    <p class="notice error" role="alert">{{ error }}</p>
+  }
+  @if (message) {
+    <p class="notice success" role="status">{{ message }}</p>
+  }
+
+  @if (config; as board) {
+    <div class="workspace">
+      <aside class="controls panel" aria-label="Elementos y controles de vista">
+        <div class="control-group">
+          <label for="background-color">Color del fondo</label>
+          <div class="color-control">
+            <input id="background-color" name="background" type="color" [(ngModel)]="background" />
+            <span>{{ background }}</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="zoom"
+            >Zoom <span>{{ (zoom * 100).toFixed(0) }}%</span></label
+          >
+          <input
+            id="zoom"
+            name="zoom"
+            type="range"
+            min="0.2"
+            max="1.5"
+            step="0.05"
+            [(ngModel)]="zoom"
+          />
+        </div>
+
+        <h2>Recortes del JSON</h2>
+        <ul class="item-list">
+          @for (item of board.items; track item.id) {
+            <li>
+              <button
+                type="button"
+                class="item-button"
+                [class.selected]="item.id === selectedId"
+                [attr.aria-pressed]="item.id === selectedId"
+                (click)="selectItem(item)"
+              >
+                <span class="item-name">{{ item.label }}</span>
+                <span class="item-coords">
+                  {{ item.crop.x }}, {{ item.crop.y }} · {{ item.crop.width }} ×
+                  {{ item.crop.height }} px
+                </span>
+                <span class="item-output-count">{{ item.outputs.length }} salida(s)</span>
+              </button>
+            </li>
+          }
+        </ul>
+        <p class="help-text">
+          Coordenadas en píxeles de la imagen original ({{ board.sourceWidth }} ×
+          {{ board.sourceHeight }}). El recuadro se actualiza al editar el JSON y recargar.
+        </p>
+        <p class="help-text">
+          En cada salida puedes indicar <code>scale</code>, solo <code>width</code>, solo
+          <code>height</code> o ambas dimensiones. Si indicas una, la otra se calcula manteniendo la
+          proporción; con ambas se usa una caja de ese tamaño y el sobrante queda transparente.
+        </p>
+      </aside>
+
+      <div class="preview-column">
+        @if (selectedItem; as selected) {
+          <section class="selected-details panel" aria-live="polite">
+            <div>
+              <h2>{{ selected.label }}</h2>
+              <p>
+                x {{ selected.crop.x }}, y {{ selected.crop.y }}, {{ selected.crop.width }} ×
+                {{ selected.crop.height }} px
+              </p>
+            </div>
+            <ul aria-label="Rutas de salida">
+              @for (output of selected.outputs; track output.path) {
+                <li>
+                  <code>{{ output.path }}</code> · {{ outputSize(selected.crop, output).width }} ×
+                  {{ outputSize(selected.crop, output).height }} px
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <div class="board-scroll panel" [style.backgroundColor]="background">
+          <div
+            class="board-canvas"
+            [style.width.px]="previewWidth"
+            [style.height.px]="previewHeight"
+          >
+            <img
+              #boardImage
+              [src]="board.source"
+              [width]="board.sourceWidth"
+              [height]="board.sourceHeight"
+              alt="Brandboard completa de Synqo con logotipos, iconos, colores y recursos gráficos"
+              draggable="false"
+              (load)="onBoardLoaded()"
+            />
+            @for (item of board.items; track item.id) {
+              <button
+                type="button"
+                class="crop-box"
+                [class.selected]="item.id === selectedId"
+                [style.left.px]="item.crop.x * zoom"
+                [style.top.px]="item.crop.y * zoom"
+                [style.width.px]="item.crop.width * zoom"
+                [style.height.px]="item.crop.height * zoom"
+                [attr.aria-label]="'Seleccionar recorte: ' + item.label"
+                [attr.aria-pressed]="item.id === selectedId"
+                (click)="selectItem(item)"
+              ></button>
+            }
+          </div>
+        </div>
+        <p class="help-text">El color solo cambia la vista previa; no se añade al PNG recortado.</p>
+      </div>
+    </div>
+  }
+</section>
