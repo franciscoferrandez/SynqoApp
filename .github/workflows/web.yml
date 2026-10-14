@@ -38,6 +38,8 @@ jobs:
         run: docker compose up -d --build database
       - name: Construir imagen PHP
         run: docker compose build api
+      - name: Comparar referencias visuales en entorno reproducible
+        run: npm --prefix apps/web run test:visual
       - name: Preparar el entorno Dotenv para Symfony
         run: printf 'DEFAULT_URI=http://localhost\n' > apps/api/.env
       - name: Instalar dependencias PHP bloqueadas
@@ -65,7 +67,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: apps/web/playwright-report/
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
           if-no-files-found: ignore
       - name: Comprobar mensajes de commit
         env:

@@ -10,3 +10,8 @@ commit-msg:
   commands:
     convention:
       run: 'node scripts/check-commit-message.mjs {1}'
+
+pre-push:
+  commands:
+    visual-regression:
+      run: 'npm --prefix apps/web run test:visual'

@@ -24,11 +24,20 @@ npm --prefix apps/web run format:check
 npm --prefix apps/web run build
 npm --prefix apps/web test
 npm --prefix apps/web run test:e2e
+npm --prefix apps/web run test:visual
 ```
 
 El servidor abre en `http://localhost:4200/` y envía `/api` a `http://localhost:8000/` mediante el proxy local.
 
 La pantalla de creación obtiene de `/api/configuration` los límites vigentes y el modo del correo (`hidden`, `demo` o `send`). En `demo` muestra el campo con un aviso y no envía la dirección a la API; en `hidden` oculta el campo, y en `send` utiliza el flujo de correo habitual. El panel de enlaces demo y el temporizador del próximo reset se configuran por separado: un panel visible sin Cron explica que no hay restauración automática. La clave first-party de origen se genera con Web Crypto y se conserva en `localStorage`; si no está disponible, la solicitud continúa sin esa señal y la API evalúa cualquier otra señal confiable.
+
+### Comparación visual
+
+`npm --prefix apps/web run test:visual` compara 96 capturas en Chromium: veinticuatro pantallas/casuísticas en 390×844 y 1280×800, cada una en claro y oscuro. Usa respuestas API fijas y una fecha/zona horaria controladas; no necesita API, correo ni PostgreSQL. El navegador corre dentro de la imagen oficial Playwright `v1.63.0-noble`, igual que en CI. La primera ejecución descarga esa imagen y puede tardar más.
+
+Las referencias están en `e2e/visual-regressions.spec.ts-snapshots/`. Para regenerarlas intencionadamente, ejecuta `npm --prefix apps/web run test:visual:update`. Revisa el diff de todas las imágenes antes de conservarlo; la actualización genera candidatos, no los aprueba. Vuelve a ejecutar `test:visual` en modo normal. Playwright deja el informe y las imágenes `actual`, `expected` y `diff` en `playwright-report/` y `test-results/` cuando hay diferencias. Los argumentos se pueden acotar, por ejemplo `npm --prefix apps/web run test:visual -- --grep "calendario"`.
+
+Lefthook ejecuta la comparación en `pre-push`: el push normal se detiene si no pasa, pero los commits siguen permitidos. CI repite la misma comparación. Para instalar o actualizar los hooks del clon, ejecuta `npm run prepare` desde la raíz. Como todo hook local de Git, `pre-push` puede omitirse deliberadamente con las opciones de bypass de Git; CI conserva el control remoto.
 
 La presentación en desarrollo, preproducción y producción se ajusta con variables independientes y puede simularse localmente contra PostgreSQL local. La misma configuración pública puede incluir enlaces a los dos equipos demo y, solo si `DEMO_RESET_SCHEDULE_ENABLED` está activo, el instante del siguiente reset horario UTC. El cliente no genera ni almacena los tokens demo; la guía de [API](../api/README.md#inicializar-y-restaurar-el-juego-demo-local) recoge los ejemplos.
 

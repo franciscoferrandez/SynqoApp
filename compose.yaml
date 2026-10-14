@@ -82,5 +82,17 @@ services:
     ports:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
 
+  web-visual-test:
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    working_dir: /workspace/apps/web
+    init: true
+    ipc: host
+    environment:
+      CI: "1"
+    volumes:
+      - ./:/workspace
+      - visual-web-node-modules:/workspace/apps/web/node_modules
+
 volumes:
   postgres-data:
+  visual-web-node-modules:
