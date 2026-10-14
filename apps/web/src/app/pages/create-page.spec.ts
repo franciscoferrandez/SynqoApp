@@ -30,7 +30,7 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   const api = {
     publicConfiguration: vi.fn(() =>
       of({
-        teamCreationEmailEnabled: true,
+        teamCreationEmailMode: 'send',
         teamCreationMaxTeams: 2,
         teamCreationWindowMinutes: 60,
       }),
@@ -81,7 +81,7 @@ it('shows the generic configured-limit message when creation is rate limited', (
   const api = {
     publicConfiguration: vi.fn(() =>
       of({
-        teamCreationEmailEnabled: false,
+        teamCreationEmailMode: 'hidden',
         teamCreationMaxTeams: 2,
         teamCreationWindowMinutes: 60,
       }),
@@ -123,7 +123,7 @@ it('hides email when the public configuration disables it', () => {
   const api = {
     publicConfiguration: vi.fn(() =>
       of({
-        teamCreationEmailEnabled: false,
+        teamCreationEmailMode: 'hidden',
         teamCreationMaxTeams: 2,
         teamCreationWindowMinutes: 60,
       }),
@@ -182,7 +182,7 @@ it('shows the preproduction demo links and reset notice from public configuratio
   const api = {
     publicConfiguration: vi.fn(() =>
       of({
-        teamCreationEmailEnabled: false,
+        teamCreationEmailMode: 'hidden',
         teamCreationMaxTeams: 2,
         teamCreationWindowMinutes: 60,
         demo: {
@@ -216,5 +216,48 @@ it('shows the preproduction demo links and reset notice from public configuratio
     fixture.nativeElement.querySelector('a[href="https://example.invalid/e#t=friends"]')
       ?.textContent,
   ).toContain('La mesa del jueves');
+  fixture.destroy();
+});
+
+it('shows the demonstration email field but never transmits or stores its address', () => {
+  vi.stubGlobal('window', {
+    navigator: window.navigator,
+    location: window.location,
+    matchMedia: () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+  });
+  const api = {
+    publicConfiguration: vi.fn(() =>
+      of({
+        teamCreationEmailMode: 'demo',
+        teamCreationMaxTeams: 2,
+        teamCreationWindowMinutes: 60,
+        demo: { teams: [] },
+      }),
+    ),
+    create: vi.fn(() => throwError(() => new Error('test response'))),
+  };
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: TeamApi, useValue: api },
+      { provide: Router, useValue: { navigateByUrl: vi.fn() } },
+      { provide: TEAM_CREATION_CONFIRMATION, useValue: true },
+    ],
+  });
+  const fixture = TestBed.createComponent(CreatePage);
+  Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
+  fixture.detectChanges();
+  expect(fixture.nativeElement.querySelector('#email')).not.toBeNull();
+  expect(fixture.nativeElement.textContent).toContain('no se enviará ningún correo');
+  expect(fixture.nativeElement.textContent).toContain('no tienen una restauración automática');
+  expect(fixture.nativeElement.querySelector('app-demo-reset-timer')).toBeNull();
+  Reflect.set(fixture.componentInstance, 'email', 'private@example.invalid');
+  Reflect.set(fixture.componentInstance, 'teamName', 'Equipo');
+  Reflect.set(fixture.componentInstance, 'participantName', 'Ana');
+  Reflect.get(fixture.componentInstance, 'create').call(
+    fixture.componentInstance,
+    new Event('submit'),
+  );
+  expect(api.create).toHaveBeenCalledWith('Equipo', 'Ana', undefined);
+  expect(JSON.stringify(localStorage)).not.toContain('private@example.invalid');
   fixture.destroy();
 });

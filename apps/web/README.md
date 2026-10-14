@@ -28,9 +28,9 @@ npm --prefix apps/web run test:e2e
 
 El servidor abre en `http://localhost:4200/` y envía `/api` a `http://localhost:8000/` mediante el proxy local.
 
-La pantalla de creación obtiene de `/api/configuration` el límite de equipos y su ventana vigentes, muestra esa información antes del envío y presenta el aviso genérico si la API responde que se alcanzó el límite. La clave first-party de origen se genera con Web Crypto y se conserva en `localStorage`; si no está disponible, la solicitud continúa sin esa señal y la API evalúa cualquier otra señal confiable.
+La pantalla de creación obtiene de `/api/configuration` los límites vigentes y el modo del correo (`hidden`, `demo` o `send`). En `demo` muestra el campo con un aviso y no envía la dirección a la API; en `hidden` oculta el campo, y en `send` utiliza el flujo de correo habitual. El panel de enlaces demo y el temporizador del próximo reset se configuran por separado: un panel visible sin Cron explica que no hay restauración automática. La clave first-party de origen se genera con Web Crypto y se conserva en `localStorage`; si no está disponible, la solicitud continúa sin esa señal y la API evalúa cualquier otra señal confiable.
 
-En preproducción, la misma configuración pública puede incluir enlaces a los dos equipos demo y el instante del siguiente reset horario UTC. La pantalla de creación muestra el aviso de borrado y la cuenta atrás; las pantallas de equipo muestran el temporizador en su cabecera general. El cliente no genera ni almacena los tokens demo.
+La presentación en desarrollo, preproducción y producción se ajusta con variables independientes y puede simularse localmente contra PostgreSQL local. La misma configuración pública puede incluir enlaces a los dos equipos demo y, solo si `DEMO_RESET_SCHEDULE_ENABLED` está activo, el instante del siguiente reset horario UTC. El cliente no genera ni almacena los tokens demo; la guía de [API](../api/README.md#inicializar-y-restaurar-el-juego-demo-local) recoge los ejemplos.
 
 Para aplicar correcciones explícitas:
 

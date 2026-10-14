@@ -10,6 +10,10 @@ export default defineRailway((context) => {
     throw new Error('Esta definición solo puede aplicarse al entorno preproduction.');
   }
 
+  const processEnvironment = (globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined> };
+  }).process?.env;
+  const demoResetScheduleEnabled = processEnvironment?.SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON === '1';
   const database = postgres('synqo-postgres');
   const http = service('synqo-http', {
     build: appImage,
@@ -24,12 +28,13 @@ export default defineRailway((context) => {
       APP_SECRET: preserve(),
       DEMO_ACCESS_SECRET: preserve(),
       DEMO_TEAM_IDS: preserve(),
+      DEMO_RESET_SCHEDULE_ENABLED: demoResetScheduleEnabled ? 'true' : 'false',
       DEMO_DATABASE_HOST: '${{synqo-postgres.RAILWAY_PRIVATE_DOMAIN}}',
       APP_PUBLIC_URL: 'https://${{RAILWAY_PUBLIC_DOMAIN}}',
       DEFAULT_URI: 'https://${{RAILWAY_PUBLIC_DOMAIN}}',
       DATABASE_URL: database.env.DATABASE_URL,
       SYNQO_DEPLOYMENT_ENV: 'preproduction',
-      TEAM_CREATION_EMAIL_ENABLED: 'false',
+      TEAM_CREATION_EMAIL_MODE: 'hidden',
       TEAM_CREATION_LIMIT: '2',
       TEAM_CREATION_WINDOW_MINUTES: '60',
       TEAM_DELETION_RETENTION_DAYS: '90',
@@ -42,10 +47,7 @@ export default defineRailway((context) => {
 
   // Recurring jobs are independently opt-in so the data purge can be verified
   // before the destructive demo reset schedule is activated.
-  const processEnvironment = (globalThis as typeof globalThis & {
-    process?: { env?: Record<string, string | undefined> };
-  }).process?.env;
-  if (processEnvironment?.SYNQO_ENABLE_PREPRODUCTION_DEMO_RESET_CRON === '1') {
+  if (demoResetScheduleEnabled) {
     resources.push(service('synqo-demo-reset', {
       build: appImage,
       start: 'php bin/console app:demo:reset --force --no-interaction',
@@ -62,7 +64,7 @@ export default defineRailway((context) => {
         DEMO_DATABASE_HOST: http.env.DEMO_DATABASE_HOST,
         DEMO_ACCESS_SECRET: http.env.DEMO_ACCESS_SECRET,
         DEMO_TEAM_IDS: http.env.DEMO_TEAM_IDS,
-        TEAM_CREATION_EMAIL_ENABLED: 'false',
+        TEAM_CREATION_EMAIL_MODE: 'hidden',
         MAILER_DSN: 'null://null',
       },
     }));
@@ -81,7 +83,7 @@ export default defineRailway((context) => {
         DEFAULT_URI: http.env.DEFAULT_URI,
         DATABASE_URL: database.env.DATABASE_URL,
         SYNQO_DEPLOYMENT_ENV: 'preproduction',
-        TEAM_CREATION_EMAIL_ENABLED: 'false',
+        TEAM_CREATION_EMAIL_MODE: 'hidden',
         MAILER_DSN: 'null://null',
       },
     }));

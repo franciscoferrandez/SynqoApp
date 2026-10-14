@@ -25,7 +25,7 @@ describe('TeamApi', () => {
     http = TestBed.inject(HttpTestingController);
     api = TestBed.inject(TeamApi);
     api.publicConfiguration().subscribe((configuration) => {
-      expect(configuration.teamCreationEmailEnabled).toBe(false);
+      expect(configuration.teamCreationEmailMode).toBe('hidden');
       expect(configuration.teamCreationMaxTeams).toBe(2);
       expect(configuration.teamCreationWindowMinutes).toBe(60);
     });
@@ -33,7 +33,7 @@ describe('TeamApi', () => {
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush({
-      teamCreationEmailEnabled: false,
+      teamCreationEmailMode: 'hidden',
       teamCreationMaxTeams: 2,
       teamCreationWindowMinutes: 60,
     });

@@ -33,7 +33,7 @@ $processor = new MailAttemptProcessor(
     $mailer,
     new NativeClock(),
     'http://localhost:4200',
-    true,
+    new \App\Application\Configuration\FunctionalConfiguration('test', 'send'),
 );
 $count = 0;
 while ($processor->processNext()) {

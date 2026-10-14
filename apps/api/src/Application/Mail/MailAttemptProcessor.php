@@ -16,7 +16,7 @@ final readonly class MailAttemptProcessor
         private TeamLinkMailer $mailer,
         private ClockInterface $clock,
         private string $publicUrl,
-        private bool $teamCreationEmailEnabled,
+        private \App\Application\Configuration\FunctionalConfiguration $functionalConfiguration,
     ) {}
 
     public function expireOverdue(): int
@@ -31,7 +31,7 @@ final readonly class MailAttemptProcessor
         if ($claimed === null) {
             return false;
         }
-        if (!$this->teamCreationEmailEnabled) {
+        if (!$this->functionalConfiguration->sendsEmail()) {
             $this->attempts->finish($claimed['id'], MailAttemptStatus::Failed, $this->now());
 
             return true;

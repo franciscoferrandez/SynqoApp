@@ -17,9 +17,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 final readonly class PublicConfigurationController
 {
     public function __construct(
-        private bool $teamCreationEmailEnabled,
+        private \App\Application\Configuration\FunctionalConfiguration $functionalConfiguration,
         private CreationLimitPolicy $creationLimitPolicy,
-        private string $deploymentEnvironment,
         private DemoAccessTokenDeriver $demoTokens,
         private DemoFixture $demoFixture,
         private TeamRepository $teams,
@@ -31,11 +30,11 @@ final readonly class PublicConfigurationController
     public function __invoke(): JsonResponse
     {
         $configuration = [
-            'teamCreationEmailEnabled' => $this->teamCreationEmailEnabled,
+            'teamCreationEmailMode' => $this->functionalConfiguration->emailMode,
             'teamCreationMaxTeams' => $this->creationLimitPolicy->maxTeams,
             'teamCreationWindowMinutes' => $this->creationLimitPolicy->windowMinutes,
         ];
-        if ($this->deploymentEnvironment === 'preproduction') {
+        if ($this->functionalConfiguration->demoPanelEnabled) {
             $configuration['demo'] = $this->demoMetadata();
         }
         $response = new JsonResponse($configuration);
@@ -44,12 +43,15 @@ final readonly class PublicConfigurationController
         return $response;
     }
 
-    /** @return array{nextResetAt: string, teams: list<array{name: string, accessUrl: string}>} */
+    /** @return array{nextResetAt?: string, teams: list<array{name: string, accessUrl: string}>} */
     private function demoMetadata(): array
     {
         $now = $this->clock->now()->setTimezone(new DateTimeZone('UTC'));
         $nextReset = $now->setTime((int) $now->format('H'), 0)->modify('+1 hour');
-        $result = ['nextResetAt' => $nextReset->format(DATE_ATOM), 'teams' => []];
+        $result = ['teams' => []];
+        if ($this->functionalConfiguration->demoResetScheduleEnabled) {
+            $result['nextResetAt'] = $nextReset->format(DATE_ATOM);
+        }
         if (!$this->demoTokens->isConfigured()) {
             return $result;
         }

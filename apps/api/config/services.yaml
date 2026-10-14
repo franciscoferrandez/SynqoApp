@@ -11,7 +11,9 @@ parameters:
     env(MAIL_EVENT_KEY): ''
     env(MAIL_EVENT_TTL_SECONDS): '1800'
     env(MAIL_FROM): 'Synqo <no-reply@synqo.local>'
-    env(TEAM_CREATION_EMAIL_ENABLED): 'false'
+    env(TEAM_CREATION_EMAIL_MODE): ~
+    env(DEMO_PANEL_ENABLED): ~
+    env(DEMO_RESET_SCHEDULE_ENABLED): ~
     env(SYNQO_DEPLOYMENT_ENV): 'development'
     env(TEAM_CREATION_LIMIT): ''
     env(TEAM_CREATION_WINDOW_MINUTES): ''
@@ -44,8 +46,14 @@ services:
         arguments:
             $publicUrl: '%env(APP_PUBLIC_URL)%'
             $mailAttemptTtlSeconds: '%env(int:MAIL_EVENT_TTL_SECONDS)%'
-            $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
             $creationOriginHashSecret: '%env(APP_SECRET)%'
+
+    App\Application\Configuration\FunctionalConfiguration:
+        arguments:
+            $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
+            $emailMode: '%env(TEAM_CREATION_EMAIL_MODE)%'
+            $demoPanelEnabled: '%env(DEMO_PANEL_ENABLED)%'
+            $demoResetScheduleEnabled: '%env(DEMO_RESET_SCHEDULE_ENABLED)%'
 
     App\Application\Team\CreationLimitPolicy:
         arguments:
@@ -66,8 +74,6 @@ services:
         public: true
         tags: ['controller.service_arguments']
         arguments:
-            $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
-            $deploymentEnvironment: '%env(SYNQO_DEPLOYMENT_ENV)%'
             $publicUrl: '%env(APP_PUBLIC_URL)%'
             $demoTeamIds: '%env(DEMO_TEAM_IDS)%'
 
@@ -84,7 +90,6 @@ services:
     App\Application\Mail\MailAttemptProcessor:
         arguments:
             $publicUrl: '%env(APP_PUBLIC_URL)%'
-            $teamCreationEmailEnabled: '%env(bool:TEAM_CREATION_EMAIL_ENABLED)%'
     App\Application\Mail\MailAttemptRepository: '@App\Infrastructure\Persistence\OrmMailAttemptRepository'
     App\Controller\MailAttemptController:
         public: true

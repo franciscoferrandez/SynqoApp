@@ -28,7 +28,7 @@ RUN touch .env \
 USER www-data
 RUN APP_ENV=prod APP_DEBUG=0 APP_SECRET=build-only-value APP_PUBLIC_URL=http://localhost DEFAULT_URI=http://localhost \
     DATABASE_URL='postgresql://synqo:synqo@127.0.0.1:5432/synqo?serverVersion=18&charset=utf8' \
-    MAILER_DSN=null://null TEAM_CREATION_EMAIL_ENABLED=false \
+    MAILER_DSN=null://null TEAM_CREATION_EMAIL_MODE=hidden \
     composer install --no-dev --prefer-dist --classmap-authoritative --optimize-autoloader \
       --no-interaction --no-progress
 

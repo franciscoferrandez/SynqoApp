@@ -7,21 +7,26 @@ estado: en_revision
 
 ## Requisito
 
-El sistema debe permitir que, al crear un equipo, quien lo crea indique opcionalmente una dirección de correo a la que se enviará una notificación con el enlace de acceso al equipo.
+El sistema debe permitir configurar por entorno cómo se presenta el envío opcional del enlace del equipo: oculto, en modo de demostración sin envío o disponible para envío real. Cuando está disponible para envío real, quien crea un equipo puede indicar opcionalmente una dirección de correo a la que se enviará una notificación con el enlace de acceso al equipo.
 
 ## Origen
 
-Decisión expresa de quien impulsa Synqo para conservar un acceso al equipo en el buzón de correo sin requerir registro.
+Decisión expresa de quien impulsa Synqo para conservar un acceso al equipo en el buzón sin requerir registro y poder mostrar el formulario con un aviso de demostración cuando no se vaya a enviar ningún correo.
 
 ## Precondiciones
 
-La persona está creando un equipo rápido y dispone de una dirección de correo que desea utilizar para recibir el enlace.
+La persona está creando un equipo rápido. En modo `send`, puede indicar una dirección de correo si desea recibir allí el enlace.
 
 ## Criterios de aceptación
 
-- La capacidad de enviar el enlace puede habilitarse o deshabilitarse por entorno. Cuando está deshabilitada, el formulario no presenta el campo de correo y la API no admite solicitudes que intenten usarlo.
-- Si la capacidad está deshabilitada, la API no registra eventos de notificación y el proceso de envío no envía mensajes, incluidos los eventos que ya estuvieran pendientes.
-- Si la capacidad está habilitada, se mantienen los siguientes criterios:
+- La presentación y el envío del enlace se configuran por entorno de forma independiente de otras funciones.
+- La configuración puede elegir entre tres modos: `hidden`, `demo` y `send`. Si falta se aplica el valor predeterminado documentado para el entorno; un valor inválido o ambiguo falla de forma segura y no inicia envíos reales.
+- En modo `hidden`, se conserva el comportamiento deshabilitado: el formulario no presenta el campo y la API rechaza solicitudes que intenten usarlo.
+- En modo `demo`, el formulario presenta el campo junto a un aviso claro de que su finalidad es de demostración y de que no se enviará ningún correo. La dirección escrita no se transmite a la API, no se almacena y no crea un evento de correo.
+- En modo `send`, se conserva el comportamiento habilitado descrito abajo. El transporte efectivo depende de la configuración de correo del entorno; `send` por sí solo no configura ni garantiza entrega a un proveedor externo.
+- En los modos `hidden` y `demo`, la API no registra eventos de notificación y el proceso de envío no envía mensajes, incluidos los eventos que ya estuvieran pendientes.
+- En modo `hidden`, la API rechaza solicitudes que intenten enviar una dirección.
+- Solo en modo `send` se aplican los siguientes criterios:
 - El campo de correo es opcional y no impide crear el equipo cuando queda vacío.
 - Si se informa, Synqo lo utiliza únicamente para enviar una notificación con el enlace de acceso al equipo creado.
 - Solo se considera satisfactorio el intento cuando el componente encargado del envío confirma que terminó correctamente. Cualquier otro resultado, incluida la ausencia de confirmación, se trata como envío erróneo.

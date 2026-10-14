@@ -60,7 +60,7 @@ final class TeamCreationLimitTest extends WebTestCase
         $this->client->request('GET', '/api/configuration');
         self::assertResponseIsSuccessful();
         $configuration = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertIsBool($configuration['teamCreationEmailEnabled']);
+        self::assertContains($configuration['teamCreationEmailMode'], ['hidden', 'demo', 'send']);
         self::assertSame(2, $configuration['teamCreationMaxTeams']);
         self::assertSame(1, $configuration['teamCreationWindowMinutes']);
 

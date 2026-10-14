@@ -18,7 +18,7 @@ final class PublicConfigurationControllerTest extends TestCase
     {
         $teams = $this->createMock(TeamRepository::class);
         $teams->expects(self::never())->method('findById');
-        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('development', '', ''), 'development', new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $teams, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid');
+        $controller = new PublicConfigurationController(new \App\Application\Configuration\FunctionalConfiguration('development'), new CreationLimitPolicy('development', '', ''), new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $teams, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid');
 
         $response = $controller();
         $payload = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
@@ -40,7 +40,7 @@ final class PublicConfigurationControllerTest extends TestCase
                 };
             },
         );
-        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('preproduction', '', ''), 'preproduction', $deriver, new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid', '00000000-0000-4000-8000-000000000001,00000000-0000-4000-8000-000000000002');
+        $controller = new PublicConfigurationController(new \App\Application\Configuration\FunctionalConfiguration('preproduction', demoResetScheduleEnabled: 'true'), new CreationLimitPolicy('preproduction', '', ''), $deriver, new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid', '00000000-0000-4000-8000-000000000001,00000000-0000-4000-8000-000000000002');
 
         $response = $controller();
         $payload = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
@@ -51,11 +51,24 @@ final class PublicConfigurationControllerTest extends TestCase
         self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }
 
+    public function testPanelOverrideDoesNotImplyAScheduleAndConfigurationIsNotCached(): void
+    {
+        $repository = $this->createStub(TeamRepository::class);
+        $controller = new PublicConfigurationController(new \App\Application\Configuration\FunctionalConfiguration('production', 'demo', 'true'), new CreationLimitPolicy('production', '', ''), new DemoAccessTokenDeriver(''), new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'http://localhost');
+        $response = $controller();
+        $payload = json_decode((string) $response->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame('demo', $payload['teamCreationEmailMode']);
+        self::assertSame(['teams' => []], $payload['demo']);
+        self::assertSame(5, $payload['teamCreationMaxTeams']);
+        self::assertSame(120, $payload['teamCreationWindowMinutes']);
+        self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+    }
+
     public function testMissingDemoFixtureDoesNotPublishStaleLinks(): void
     {
         $repository = $this->createStub(TeamRepository::class);
         $repository->method('findById')->willReturn(null);
-        $controller = new PublicConfigurationController(false, new CreationLimitPolicy('preproduction', '', ''), 'preproduction', new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid', '00000000-0000-4000-8000-000000000001,00000000-0000-4000-8000-000000000002');
+        $controller = new PublicConfigurationController(new \App\Application\Configuration\FunctionalConfiguration('preproduction', demoResetScheduleEnabled: 'true'), new CreationLimitPolicy('preproduction', '', ''), new DemoAccessTokenDeriver(str_repeat('s', 32)), new DemoFixture(), $repository, new MockClock('2026-10-08T10:37:00Z'), 'https://example.invalid', '00000000-0000-4000-8000-000000000001,00000000-0000-4000-8000-000000000002');
 
         $payload = json_decode((string) $controller()->getContent(), true, flags: JSON_THROW_ON_ERROR);
 

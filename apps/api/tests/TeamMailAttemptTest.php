@@ -23,9 +23,15 @@ final class TeamMailAttemptTest extends WebTestCase
     private KernelBrowser $client;
     private Connection $db;
     private MockClock $clock;
+    /** @var array{server: mixed, env: mixed, process: string|false} */
+    private array $previousEmailMode;
+
 
     protected function setUp(): void
     {
+        $this->previousEmailMode = ['server' => $_SERVER['TEAM_CREATION_EMAIL_MODE'] ?? null, 'env' => $_ENV['TEAM_CREATION_EMAIL_MODE'] ?? null, 'process' => getenv('TEAM_CREATION_EMAIL_MODE')];
+        $_SERVER['TEAM_CREATION_EMAIL_MODE'] = $_ENV['TEAM_CREATION_EMAIL_MODE'] = 'send';
+        putenv('TEAM_CREATION_EMAIL_MODE=send');
         $this->client = static::createClient(server: [], options: ['environment' => 'test']);
         $this->client->disableReboot();
         $this->db = static::getContainer()->get(Connection::class);
@@ -34,6 +40,25 @@ final class TeamMailAttemptTest extends WebTestCase
         $this->db->executeStatement('DELETE FROM team');
         $this->clock = new MockClock('now');
         static::getContainer()->set('clock', $this->clock);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        foreach (['server', 'env'] as $source) {
+            if ($source === 'server') {
+                unset($_SERVER['TEAM_CREATION_EMAIL_MODE']);
+                if ($this->previousEmailMode[$source] !== null) {
+                    $_SERVER['TEAM_CREATION_EMAIL_MODE'] = $this->previousEmailMode[$source];
+                }
+            } else {
+                unset($_ENV['TEAM_CREATION_EMAIL_MODE']);
+                if ($this->previousEmailMode[$source] !== null) {
+                    $_ENV['TEAM_CREATION_EMAIL_MODE'] = $this->previousEmailMode[$source];
+                }
+            }
+        }
+        putenv($this->previousEmailMode['process'] === false ? 'TEAM_CREATION_EMAIL_MODE' : 'TEAM_CREATION_EMAIL_MODE=' . $this->previousEmailMode['process']);
     }
 
     public function testCreationWithoutEmailCreatesNoEventAndNoAttempt(): void
@@ -53,7 +78,7 @@ final class TeamMailAttemptTest extends WebTestCase
         self::assertStringContainsString('no-store', $this->client->getResponse()->headers->get('Cache-Control'));
         self::assertSame(
             [
-                'teamCreationEmailEnabled' => filter_var($_SERVER['TEAM_CREATION_EMAIL_ENABLED'] ?? 'false', FILTER_VALIDATE_BOOL),
+                'teamCreationEmailMode' => (new \App\Application\Configuration\FunctionalConfiguration('test', $_SERVER['TEAM_CREATION_EMAIL_MODE'] ?? null))->emailMode,
                 'teamCreationMaxTeams' => 10000,
                 'teamCreationWindowMinutes' => 60,
             ],
@@ -128,7 +153,7 @@ final class TeamMailAttemptTest extends WebTestCase
             new SodiumPayloadCipher(''),
             'http://localhost:4200',
             1800,
-            true,
+            new \App\Application\Configuration\FunctionalConfiguration('test', 'send'),
             new \App\Application\Team\CreationLimitPolicy('test', '10000', '60'),
             'local-test-secret',
         );
@@ -151,7 +176,7 @@ final class TeamMailAttemptTest extends WebTestCase
             new SodiumPayloadCipher($_SERVER['MAIL_EVENT_KEY']),
             'http://localhost:4200',
             1800,
-            false,
+            new \App\Application\Configuration\FunctionalConfiguration('test', 'hidden'),
             new \App\Application\Team\CreationLimitPolicy('test', '10000', '60'),
             'local-test-secret',
         );
@@ -409,7 +434,7 @@ final class TeamMailAttemptTest extends WebTestCase
             $mailer,
             $this->clock,
             'http://localhost:4200',
-            $enabled,
+            new \App\Application\Configuration\FunctionalConfiguration('test', $enabled ? 'send' : 'hidden'),
         );
     }
 

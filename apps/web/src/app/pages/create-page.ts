@@ -26,7 +26,7 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
         <p class="eyebrow">Empezar</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight" id="create-title">Crea tu equipo</h2>
         <p class="mt-2 text-sm leading-relaxed text-muted">
-          @if (emailEnabled) {
+          @if (emailMode === 'send') {
             Crea un espacio compartido y envía el enlace a tu equipo.
           } @else {
             Crea un espacio compartido para organizarte.
@@ -51,7 +51,12 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
           >
             <h3 class="font-semibold" id="demo-title">Prueba Synqo con equipos de ejemplo</h3>
             <p class="mt-1 text-sm text-muted">
-              Estos equipos se reinician cada hora. Los cambios se borran en el siguiente reinicio.
+              @if (demo.nextResetAt) {
+                Estos equipos se reinician cada hora. Los cambios se borran en el siguiente
+                reinicio.
+              } @else {
+                Estos equipos no tienen una restauración automática programada.
+              }
             </p>
             <ul class="mt-3 space-y-2">
               @for (team of demo.teams; track team.name) {
@@ -69,9 +74,11 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
                 Los equipos de ejemplo estarán disponibles cuando termine su carga.
               </p>
             }
-            <p class="mt-3 text-sm text-muted">
-              Próximo reinicio: <app-demo-reset-timer [resetAt]="demo.nextResetAt" />
-            </p>
+            @if (demo.nextResetAt) {
+              <p class="mt-3 text-sm text-muted">
+                Próximo reinicio: <app-demo-reset-timer [resetAt]="demo.nextResetAt" />
+              </p>
+            }
           </aside>
         }
         <form class="mt-6 space-y-5" (submit)="create($event)" autocomplete="off">
@@ -115,7 +122,7 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
               </p>
             }
           </div>
-          @if (emailEnabled) {
+          @if (emailMode !== 'hidden') {
             <div class="field">
               <label for="email"
                 >Correo para recibir el enlace
@@ -137,7 +144,11 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
                 "
               />
               <p class="mt-2 text-xs leading-relaxed text-muted" id="email-help">
-                Solo se usará para enviarte el enlace de acceso al equipo.
+                @if (emailMode === 'demo') {
+                  Campo de demostración: no se enviará ningún correo ni se guardará tu dirección.
+                } @else {
+                  Solo se usará para enviarte el enlace de acceso al equipo.
+                }
               </p>
               @if (fieldErrors['email']) {
                 <p id="email-error" class="identity-error">{{ fieldErrors['email'] }}</p>
@@ -168,7 +179,7 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
   protected teamPlaceholder = '';
   protected participantPlaceholder = '';
   protected emailPlaceholder = '';
-  protected emailEnabled = false;
+  protected emailMode: PublicConfiguration['teamCreationEmailMode'] = 'hidden';
   protected creationLimit?: { maxTeams: number; windowMinutes: number };
   protected demo?: PublicConfiguration['demo'];
   protected creationLimitLoadFailed = false;
@@ -253,7 +264,9 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
   ngOnInit(): void {
     this.api.publicConfiguration().subscribe({
       next: (configuration) => {
-        this.emailEnabled = configuration.teamCreationEmailEnabled === true;
+        this.emailMode = ['demo', 'send'].includes(configuration.teamCreationEmailMode)
+          ? configuration.teamCreationEmailMode
+          : 'hidden';
         this.demo = configuration.demo;
         if (
           Number.isInteger(configuration.teamCreationMaxTeams) &&
@@ -271,7 +284,7 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
         this.changeDetector.markForCheck();
       },
       error: () => {
-        this.emailEnabled = false;
+        this.emailMode = 'hidden';
         this.creationLimitLoadFailed = true;
         this.changeDetector.markForCheck();
       },
@@ -482,7 +495,7 @@ export class CreatePage implements OnInit, AfterViewInit, OnDestroy {
       .create(
         this.teamName,
         this.participantName,
-        this.emailEnabled ? this.email.trim() : undefined,
+        this.emailMode === 'send' ? this.email.trim() : undefined,
       )
       .subscribe({
         next: (created) => {

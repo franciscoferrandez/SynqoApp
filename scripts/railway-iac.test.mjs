@@ -25,7 +25,8 @@ test('IaC describe preproduction without source transfer or active cron jobs by 
     assert.equal(http.deploy.preDeployCommand[0], 'php bin/console doctrine:migrations:migrate --no-interaction');
     assert.equal(http.variables.APP_ENV.value, 'prod');
     assert.equal(http.variables.DEFAULT_URI.value, 'https://${{RAILWAY_PUBLIC_DOMAIN}}');
-    assert.equal(http.variables.TEAM_CREATION_EMAIL_ENABLED.value, 'false');
+    assert.equal(http.variables.TEAM_CREATION_EMAIL_MODE.value, 'hidden');
+    assert.equal(http.variables.DEMO_RESET_SCHEDULE_ENABLED.value, 'false');
     assert.equal(http.variables.TEAM_CREATION_LIMIT.value, '2');
     assert.equal(http.variables.TEAM_CREATION_WINDOW_MINUTES.value, '60');
     assert.equal(http.variables.APP_SECRET.type, 'preserve');
@@ -75,6 +76,8 @@ test('IaC adds the guarded hourly reset only after its separate explicit opt-in'
     assert.equal(demo.deploy.cronSchedule, '0 * * * *');
     assert.equal(demo.deploy.startCommand, 'php bin/console app:demo:reset --force --no-interaction');
     assert.equal(demo.variables.DEMO_RESET_ENABLED.value, 'true');
+    const http = definition.resources.find(({ name }) => name === 'synqo-http');
+    assert.equal(http.variables.DEMO_RESET_SCHEDULE_ENABLED.value, 'true');
     assert.deepEqual(demo.variables.DEMO_ACCESS_SECRET, { type: 'reference', resource: 'service.synqo-http', output: 'DEMO_ACCESS_SECRET' });
     assert.deepEqual(demo.variables.DEMO_TEAM_IDS, { type: 'reference', resource: 'service.synqo-http', output: 'DEMO_TEAM_IDS' });
     assert.deepEqual(demo.variables.DEMO_DATABASE_HOST, { type: 'reference', resource: 'service.synqo-http', output: 'DEMO_DATABASE_HOST' });

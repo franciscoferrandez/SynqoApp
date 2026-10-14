@@ -42,7 +42,8 @@ docker run --rm --network "$network" \
   -e APP_ENV=prod -e APP_DEBUG=0 -e APP_SECRET=local-smoke-only-secret \
   -e APP_PUBLIC_URL=http://localhost -e DEFAULT_URI=http://localhost \
   -e "DATABASE_URL=$database_url" -e MAILER_DSN=null://null \
-  -e TEAM_CREATION_EMAIL_ENABLED=false -e SYNQO_DEPLOYMENT_ENV=preproduction \
+  -e TEAM_CREATION_EMAIL_MODE=hidden -e DEMO_PANEL_ENABLED=false \
+  -e DEMO_RESET_SCHEDULE_ENABLED=false -e SYNQO_DEPLOYMENT_ENV=preproduction \
   -e TEAM_CREATION_LIMIT=2 -e TEAM_CREATION_WINDOW_MINUTES=60 \
   "$image" php bin/console doctrine:migrations:migrate --no-interaction
 
@@ -50,7 +51,8 @@ docker run -d --name "$application" --network "$network" -p 127.0.0.1::8080 \
   -e PORT=8080 -e APP_ENV=prod -e APP_DEBUG=0 -e APP_SECRET=local-smoke-only-secret \
   -e APP_PUBLIC_URL=http://localhost -e DEFAULT_URI=http://localhost \
   -e "DATABASE_URL=$database_url" -e MAILER_DSN=null://null \
-  -e TEAM_CREATION_EMAIL_ENABLED=false -e SYNQO_DEPLOYMENT_ENV=preproduction \
+  -e TEAM_CREATION_EMAIL_MODE=hidden -e DEMO_PANEL_ENABLED=false \
+  -e DEMO_RESET_SCHEDULE_ENABLED=false -e SYNQO_DEPLOYMENT_ENV=preproduction \
   -e TEAM_CREATION_LIMIT=2 -e TEAM_CREATION_WINDOW_MINUTES=60 \
   "$image" >/dev/null
 
@@ -81,17 +83,15 @@ const configuration = await fetch(`${baseUrl}/api/configuration`);
 assert.equal(configuration.status, 200);
 const publicConfiguration = await configuration.json();
 assert.deepEqual({
-  teamCreationEmailEnabled: publicConfiguration.teamCreationEmailEnabled,
+  teamCreationEmailMode: publicConfiguration.teamCreationEmailMode,
   teamCreationMaxTeams: publicConfiguration.teamCreationMaxTeams,
   teamCreationWindowMinutes: publicConfiguration.teamCreationWindowMinutes,
 }, {
-  teamCreationEmailEnabled: false,
+  teamCreationEmailMode: 'hidden',
   teamCreationMaxTeams: 2,
   teamCreationWindowMinutes: 60,
 });
-assert.deepEqual(publicConfiguration.demo?.teams, []);
-assert.ok(Number.isFinite(Date.parse(publicConfiguration.demo?.nextResetAt)));
-assert.match(publicConfiguration.demo.nextResetAt, /(?:Z|\+00:00)$/);
+assert.equal(publicConfiguration.demo, undefined);
 assert.match(configuration.headers.get('cache-control') ?? '', /no-store/);
 
 for (const path of ['/api', '/api/']) {

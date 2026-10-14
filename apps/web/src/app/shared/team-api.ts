@@ -50,11 +50,11 @@ export interface TeamCreated {
   mailAttempt?: { status: 'pending'; receipt: string };
 }
 export interface PublicConfiguration {
-  teamCreationEmailEnabled: boolean;
+  teamCreationEmailMode: 'hidden' | 'demo' | 'send';
   teamCreationMaxTeams: number;
   teamCreationWindowMinutes: number;
   demo?: {
-    nextResetAt: string;
+    nextResetAt?: string;
     teams: { name: string; accessUrl: string }[];
   };
 }

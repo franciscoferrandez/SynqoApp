@@ -28,7 +28,7 @@ $teams = new TeamService(
     $container->get(PayloadCipher::class),
     'http://localhost:4200',
     1800,
-    true,
+    new \App\Application\Configuration\FunctionalConfiguration('test', 'send'),
     $policy,
     $_SERVER['APP_SECRET'] ?? 'local-test-secret',
 );

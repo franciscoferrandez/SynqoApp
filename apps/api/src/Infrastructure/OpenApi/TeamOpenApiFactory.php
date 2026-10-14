@@ -33,13 +33,13 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             summary: 'Read public, environment-specific capabilities',
             responses: [
                 '200' => $this->response('Effective public configuration', [
-                    'teamCreationEmailEnabled' => $this->schema('boolean'),
+                    'teamCreationEmailMode' => $this->enumSchema(['hidden', 'demo', 'send']),
                     'teamCreationMaxTeams' => $this->schema('integer'),
                     'teamCreationWindowMinutes' => $this->schema('integer'),
                     'demo' => $this->schema('object', [
                         'nextResetAt' => $this->schema('string', format: 'date-time'),
                         'teams' => $demoTeams,
-                    ], ['nextResetAt', 'teams']),
+                    ], ['teams']),
                 ], ['demo']),
             ],
         )));

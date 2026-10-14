@@ -29,7 +29,7 @@ final readonly class TeamService
         private PayloadCipher $cipher,
         private string $publicUrl,
         private int $mailAttemptTtlSeconds,
-        private bool $teamCreationEmailEnabled,
+        private \App\Application\Configuration\FunctionalConfiguration $functionalConfiguration,
         private CreationLimitPolicy $creationLimitPolicy,
         private string $creationOriginHashSecret,
     ) {}
@@ -51,7 +51,7 @@ final readonly class TeamService
             $invalidFields[] = 'firstParticipantName';
         }
         $email = $email === null || trim($email) === '' ? null : trim($email);
-        if ($email !== null && !$this->teamCreationEmailEnabled) {
+        if ($email !== null && !$this->functionalConfiguration->sendsEmail()) {
             $invalidFields[] = 'email';
         }
         if ($email !== null && !RecipientAddress::isValid($email)) {
