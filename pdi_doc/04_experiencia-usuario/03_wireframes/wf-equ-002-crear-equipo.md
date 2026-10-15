@@ -15,6 +15,8 @@ Persona sin cuenta que abre Synqo sin enlace de equipo. El formulario de creaci�
 
 ## Jerarquía
 
+Portada: mensaje principal a la izquierda; debajo, frases animadas de altura fija que alternan tres secuencias sobre ensayos, planes y decisiones. En la zona inferior izquierda aparecen «Aún con dudas, prueba Synqo con datos de ejemplo» y los enlaces demo con iconos de personas o música. No se muestran aquí el reset ni el límite de creación.
+
 ```text
 ┌──────────────────────────────────┐
 │ Crear un equipo                  │
@@ -37,6 +39,7 @@ Tras crearlo: seleccionar automáticamente al primer participante → confirmaci
 │ Equipo creado                    │
 │ Nombre del equipo                │
 │ Primer participante seleccionado │
+│ Límite y creaciones restantes     │
 │                                  │
 │ Enlace de acceso                │
 │ [Copiar] [Compartir]             │

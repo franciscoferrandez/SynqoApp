@@ -26,7 +26,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $openApi = ($this->decorated)($context);
         $paths = new Paths();
         $demoTeams = $this->schema('array');
-        $demoTeams['items'] = $this->schema('object', ['name' => $this->schema('string'), 'accessUrl' => $this->schema('string', format: 'uri')], ['name', 'accessUrl']);
+        $demoTeams['items'] = $this->schema('object', ['name' => $this->schema('string'), 'accessUrl' => $this->schema('string', format: 'uri'), 'kind' => $this->enumSchema(['social', 'music'])], ['name', 'accessUrl', 'kind']);
         $paths->addPath('/api/configuration', new PathItem(get: new Operation(
             operationId: 'getPublicConfiguration',
             tags: ['Configuration'],
@@ -60,7 +60,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 required: true,
             ),
             responses: [
-                '201' => $this->response('Created', ['id' => $this->schema('string', format: 'uuid'), 'name' => $this->schema('string'), 'timeZone' => $this->schema('string'), 'expiresAt' => $this->schema('string', format: 'date-time'), 'firstParticipant' => $this->participant(), 'accessUrl' => $this->schema('string', format: 'uri'), 'mailAttempt' => $this->mailAttempt()], optional: ['mailAttempt']),
+                '201' => $this->response('Created', ['id' => $this->schema('string', format: 'uuid'), 'name' => $this->schema('string'), 'timeZone' => $this->schema('string'), 'expiresAt' => $this->schema('string', format: 'date-time'), 'firstParticipant' => $this->participant(), 'accessUrl' => $this->schema('string', format: 'uri'), 'creationAllowance' => $this->schema('object', ['maxTeams' => $this->schema('integer'), 'windowMinutes' => $this->schema('integer'), 'remaining' => $this->schema('integer')], ['maxTeams', 'windowMinutes', 'remaining']), 'mailAttempt' => $this->mailAttempt()], optional: ['mailAttempt']),
                 '400' => $this->problem('Malformed JSON'), '422' => $this->problem('Invalid names or email', withViolations: true), '429' => $this->problem('Creation limit exceeded', 'urn:synqo:problem:creation-limit-exceeded'), '500' => $this->problem('Unexpected internal error'),
             ],
         )));

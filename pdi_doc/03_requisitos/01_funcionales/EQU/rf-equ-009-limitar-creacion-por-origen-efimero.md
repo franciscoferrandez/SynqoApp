@@ -18,7 +18,7 @@ La persona inicia una creación de equipo desde [RF-EQU-001 — Crear un equipo 
 
 ## Criterios de aceptación
 
-- Antes de la acción de creación, la pantalla informa del máximo aplicable al entorno y del período de control.
+- Después de crear un equipo, la pantalla de confirmación informa del máximo aplicable al entorno, el período de control y cuántas creaciones quedan disponibles según el menor saldo de los controles de IP y dispositivo aplicados.
 - El sistema contabiliza únicamente equipos creados satisfactoriamente; una solicitud rechazada o fallida no consume cupo.
 - En preproducción, el valor inicial del límite es dos equipos por IP y por dispositivo durante 60 minutos.
 - En desarrollo, el valor inicial del límite es dos equipos por IP y por dispositivo durante 60 minutos.

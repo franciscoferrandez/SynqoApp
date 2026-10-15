@@ -84,7 +84,7 @@ final readonly class TeamService
                 'expires_at' => $now->modify(sprintf('+%d seconds', $this->mailAttemptTtlSeconds))->format('Y-m-d H:i:sP'),
             ];
         }
-        $this->teams->createWithOriginLimit(
+        $remainingCreations = $this->teams->createWithOriginLimit(
             ['id' => $id, 'name' => $name, 'access_verifier' => hash('sha256', $accessToken), 'time_zone' => $zone, 'created_at' => $now->format('Y-m-d H:i:sP'), 'last_activity_at' => $now->format('Y-m-d H:i:sP')],
             ['id' => $participantId, 'name' => $firstParticipantName, 'name_normalized' => ParticipantName::normalize($firstParticipantName), 'created_at' => $now->format('Y-m-d H:i:sP')],
             $mailAttempt,
@@ -100,6 +100,11 @@ final readonly class TeamService
             'expiresAt' => $this->expiry->expiresAt($now, $zone)->format(DATE_ATOM),
             'firstParticipant' => ['id' => $participantId, 'name' => $firstParticipantName],
             'accessUrl' => rtrim($this->publicUrl, '/') . '/e#t=' . $accessToken,
+            'creationAllowance' => [
+                'maxTeams' => $this->creationLimitPolicy->maxTeams,
+                'windowMinutes' => $this->creationLimitPolicy->windowMinutes,
+                'remaining' => $remainingCreations,
+            ],
         ];
         if ($receipt !== null) {
             $created['mailAttempt'] = ['status' => 'pending', 'receipt' => $receipt];

@@ -1,6 +1,6 @@
 import { expect, Page, test } from '@playwright/test';
 
-test.use({ locale: 'es-ES', timezoneId: 'Europe/Madrid' });
+test.use({ locale: 'es-ES', timezoneId: 'Europe/Madrid', reducedMotion: 'reduce' });
 
 const viewports = [
   { name: 'movil-390x844', width: 390, height: 844 },
@@ -154,7 +154,13 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
         teamCreationEmailMode: options.emailMode ?? 'hidden',
         teamCreationMaxTeams: 2,
         teamCreationWindowMinutes: 60,
-        demo: { nextResetAt: '2026-10-14T13:00:00+00:00', teams: [] },
+        demo: {
+          nextResetAt: '2026-10-14T13:00:00+00:00',
+          teams: [
+            { name: 'La mesa del jueves', accessUrl: '/e#t=visual-friends', kind: 'social' },
+            { name: 'La banda del patio', accessUrl: '/e#t=visual-band', kind: 'music' },
+          ],
+        },
       },
     }),
   );
@@ -173,6 +179,7 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
         expiresAt: team.expiresAt,
         firstParticipant: { id: participantId, name: body.firstParticipantName },
         accessUrl: `http://localhost:4200/e#t=${accessToken}`,
+        creationAllowance: { maxTeams: 2, windowMinutes: 60, remaining: 1 },
         ...(body.email ? { mailAttempt: { status: 'pending', receipt: 'visual-receipt' } } : {}),
       },
     });
@@ -220,10 +227,20 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
 
 async function open(page: Page, path: string, theme: (typeof themes)[number]): Promise<void> {
   await page.goto(path);
-  const themePicker = page.getByLabel('Tema');
-  if (await themePicker.isVisible()) await themePicker.selectOption(theme);
+  await setTheme(page, theme);
   await page.evaluate(() => document.fonts.ready);
   await page.mouse.move(-1, -1);
+}
+
+async function setTheme(page: Page, theme: (typeof themes)[number]): Promise<void> {
+  const themePicker = page.getByRole('button', { name: /^Tema / });
+  if (!(await themePicker.isVisible())) return;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const label = await themePicker.getAttribute('aria-label');
+    if (label?.startsWith(`Tema ${theme === 'light' ? 'claro' : 'oscuro'}.`)) return;
+    // A captured scenario may have a modal open over the shared header.
+    await themePicker.evaluate((button: HTMLButtonElement) => button.click());
+  }
 }
 
 async function capture(
@@ -339,6 +356,44 @@ const scenarios: Scenario[] = [
       await open(page, teamUrl, 'light');
       await page.getByRole('button', { name: 'Mi disponibilidad' }).click();
       await expect(page.getByRole('heading', { name: 'Mi disponibilidad' })).toBeVisible();
+    },
+  },
+  {
+    id: 'calendario-menu-visualizacion',
+    title: 'menú de opciones del calendario',
+    run: async (page) => {
+      await open(page, teamUrl, 'light');
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await expect(page.getByRole('checkbox', { name: 'Ver semanas completas' })).toBeVisible();
+    },
+  },
+  {
+    id: 'calendario-equipo-superpuesto',
+    title: 'equipo con solapa y recuentos',
+    run: async (page) => {
+      await open(page, teamUrl, 'light');
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await page.getByRole('checkbox', { name: 'Superponer calendarios' }).check();
+      await page.getByRole('checkbox', { name: 'Mostrar recuentos del equipo' }).check();
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await expect(
+        page.locator('.calendar-day[data-date="2026-10-14"] .calendar-underlay'),
+      ).toBeVisible();
+    },
+  },
+  {
+    id: 'calendario-propio-superpuesto',
+    title: 'disponibilidad propia con solapa del equipo',
+    run: async (page) => {
+      await open(page, teamUrl, 'light');
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await page.getByRole('checkbox', { name: 'Superponer calendarios' }).check();
+      await page.getByRole('checkbox', { name: 'Mostrar recuentos del equipo' }).check();
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await page.getByRole('button', { name: 'Mi disponibilidad', exact: true }).click();
+      await expect(
+        page.locator('.calendar-day[data-date="2026-10-14"] .calendar-underlay'),
+      ).toBeVisible();
     },
   },
   {
@@ -507,7 +562,7 @@ for (const scenario of scenarios) {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await installFixtures(page, scenario.options);
         await scenario.run(page);
-        await page.getByLabel('Tema').selectOption(theme);
+        await setTheme(page, theme);
         await page.evaluate(() => document.fonts.ready);
         await page.mouse.move(-1, -1);
         await capture(page, scenario.id, viewport.name, theme, scenario.fullPage ?? true);

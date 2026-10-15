@@ -12,16 +12,58 @@ import { Router } from '@angular/router';
 import { TEAM_CREATION_CONFIRMATION } from '../shared/team-flow-config';
 import { TeamApi, type PublicConfiguration } from '../shared/team-api';
 import { ArrivalIntro } from '../shared/arrival-intro';
+import { LandingPrompts } from '../shared/landing-prompts';
 import { MailAttemptTracker } from '../shared/mail-attempt-tracker';
-import { DemoResetTimer } from '../shared/demo-reset-timer';
 
 @Component({
-  imports: [FormsModule, ArrivalIntro, DemoResetTimer],
+  imports: [FormsModule, ArrivalIntro, LandingPrompts],
   template: `
     <div
       class="grid grid-cols-[minmax(0,1fr)] flex-1 items-center gap-9 py-10 min-[769px]:grid-cols-[minmax(0,.9fr)_minmax(340px,1fr)] min-[769px]:gap-14 min-[769px]:py-16"
     >
-      <app-arrival-intro />
+      <div class="create-landing-side">
+        <app-arrival-intro />
+        <app-landing-prompts />
+        @if (demo) {
+          <aside class="create-demo-links" aria-labelledby="demo-title">
+            <p id="demo-title">Aún con dudas, prueba Synqo con datos de ejemplo</p>
+            <ul>
+              @for (team of demo.teams; track team.name) {
+                <li>
+                  <a [href]="team.accessUrl">
+                    @if (team.kind === 'music') {
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M9 18V5l11-2v13M9 18c0 1.7-1.3 3-3.5 3S2 20 2 18.5 3.3 16 5.5 16 9 16.5 9 18Zm11-2c0 1.7-1.3 3-3.5 3S13 18 13 16.5s1.3-2.5 3.5-2.5S20 14.5 20 16Z"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    } @else {
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                        <circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8" />
+                        <path
+                          d="M3 20v-2a6 6 0 0 1 12 0v2H3ZM17 5a3 3 0 0 1 0 6m1 4c2 .6 3 2 3 4v1h-4"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    }
+                    {{ team.name }}
+                  </a>
+                </li>
+              }
+            </ul>
+            @if (demo.teams.length === 0) {
+              <p class="text-sm text-muted">Los equipos de ejemplo estarán disponibles pronto.</p>
+            }
+          </aside>
+        }
+      </div>
       <section class="panel" aria-labelledby="create-title">
         <p class="eyebrow">Empezar</p>
         <h2 class="mt-2 text-2xl font-bold tracking-tight" id="create-title">Crea tu equipo</h2>
@@ -32,54 +74,10 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
             Crea un espacio compartido para organizarte.
           }
         </p>
-        @if (creationLimit) {
-          <p class="mt-3 text-sm text-muted" id="creation-limit-info">
-            Límite de creación: {{ creationLimit.maxTeams }} equipos por origen cada
-            {{ creationLimit.windowMinutes }} minutos.
-          </p>
-        } @else if (creationLimitLoadFailed) {
+        @if (creationLimitLoadFailed) {
           <p class="mt-3 text-sm text-red-700" role="alert">
             No se pudo comprobar el límite de creación. Recarga la página para intentarlo de nuevo.
           </p>
-        } @else {
-          <p class="mt-3 text-sm text-muted" role="status">Cargando el límite de creación…</p>
-        }
-        @if (demo) {
-          <aside
-            class="mt-5 rounded-lg border border-line bg-soft p-4"
-            aria-labelledby="demo-title"
-          >
-            <h3 class="font-semibold" id="demo-title">Prueba Synqo con equipos de ejemplo</h3>
-            <p class="mt-1 text-sm text-muted">
-              @if (demo.nextResetAt) {
-                Estos equipos se reinician cada hora. Los cambios se borran en el siguiente
-                reinicio.
-              } @else {
-                Estos equipos no tienen una restauración automática programada.
-              }
-            </p>
-            <ul class="mt-3 space-y-2">
-              @for (team of demo.teams; track team.name) {
-                <li>
-                  <a
-                    class="rounded-md border border-line px-3 py-2 font-semibold text-action underline-offset-2 hover:underline focus-visible:outline-2"
-                    [href]="team.accessUrl"
-                    >{{ team.name }}</a
-                  >
-                </li>
-              }
-            </ul>
-            @if (demo.teams.length === 0) {
-              <p class="mt-2 text-sm text-muted">
-                Los equipos de ejemplo estarán disponibles cuando termine su carga.
-              </p>
-            }
-            @if (demo.nextResetAt) {
-              <p class="mt-3 text-sm text-muted">
-                Próximo reinicio: <app-demo-reset-timer [resetAt]="demo.nextResetAt" />
-              </p>
-            }
-          </aside>
         }
         <form class="mt-6 space-y-5" (submit)="create($event)" autocomplete="off">
           <div class="field">

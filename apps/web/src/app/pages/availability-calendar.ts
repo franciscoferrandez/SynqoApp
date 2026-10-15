@@ -7,7 +7,7 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
+import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -30,6 +30,39 @@ export function visibleDates(year: number, month: number, extended: boolean): st
   return dates;
 }
 
+const calendarPreferenceKey = 'synqo:calendar-view:v1';
+interface CalendarPreferences {
+  extended: boolean;
+  overlay: boolean;
+  counts: boolean;
+}
+const defaultCalendarPreferences: CalendarPreferences = {
+  extended: false,
+  overlay: false,
+  counts: false,
+};
+
+export function parseCalendarPreferences(value: string | null): CalendarPreferences {
+  if (!value) return { ...defaultCalendarPreferences };
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (
+      parsed !== null &&
+      typeof parsed === 'object' &&
+      'extended' in parsed &&
+      typeof parsed.extended === 'boolean' &&
+      'overlay' in parsed &&
+      typeof parsed.overlay === 'boolean' &&
+      'counts' in parsed &&
+      typeof parsed.counts === 'boolean'
+    )
+      return { extended: parsed.extended, overlay: parsed.overlay, counts: parsed.counts };
+  } catch {
+    // Una preferencia antigua o dañada no debe impedir abrir el calendario.
+  }
+  return { ...defaultCalendarPreferences };
+}
+
 @Component({
   imports: [NgTemplateOutlet],
   template: `
@@ -43,114 +76,137 @@ export function visibleDates(year: number, month: number, extended: boolean): st
       <div class="calendar-layout">
         <div class="panel calendar-panel">
           <div class="calendar-tools">
-            <div class="monthbar">
-              <h3>{{ monthLabel }}</h3>
-              <button
-                type="button"
-                aria-label="Mes anterior"
-                title="Mes anterior"
-                (click)="move(-1)"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                aria-label="Mes siguiente"
-                title="Mes siguiente"
-                (click)="move(1)"
-              >
-                ›
-              </button>
-              @if (!dates.includes(today)) {
+            <div class="calendar-toolbar-top">
+              <div class="monthbar">
+                <h3>{{ monthLabel }}</h3>
                 <button
-                  class="icon-button"
                   type="button"
-                  aria-label="Volver a hoy"
-                  title="Volver a hoy"
-                  (click)="goToday()"
+                  aria-label="Mes anterior"
+                  title="Mes anterior"
+                  (click)="move(-1)"
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
-                  </svg>
+                  ‹
                 </button>
-              }
-            </div>
-            <div class="calendar-filters">
-              <div class="view-toggle" role="group" aria-label="Extensión del calendario">
                 <button
-                  class="icon-button"
                   type="button"
-                  aria-label="Mes natural"
-                  title="Mes natural"
-                  [attr.aria-pressed]="!extended"
-                  (click)="setExtent(false)"
+                  aria-label="Mes siguiente"
+                  title="Mes siguiente"
+                  (click)="move(1)"
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="3" y="5" width="18" height="16" rx="2" />
-                    <path d="M3 10h18M8 3v4M16 3v4" />
-                    <path d="M8 14h3v3H8z" />
-                  </svg></button
-                ><button
-                  class="icon-button"
-                  type="button"
-                  aria-label="Semanas completas"
-                  title="Semanas completas"
-                  [attr.aria-pressed]="extended"
-                  (click)="setExtent(true)"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M8 6h13M8 12h13M8 18h13" />
-                    <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
-                    <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
-                  </svg>
+                  ›
                 </button>
+                @if (!dates.includes(today)) {
+                  <button
+                    class="icon-button"
+                    type="button"
+                    aria-label="Volver a hoy"
+                    title="Volver a hoy"
+                    (click)="goToday()"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" />
+                      <circle cx="12" cy="12" r="4" />
+                      <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+                    </svg>
+                  </button>
+                }
               </div>
-              <div class="scope-toggle" role="group" aria-label="Disponibilidad mostrada">
-                <button
-                  class="icon-button"
-                  type="button"
-                  aria-label="Disponibilidad del equipo"
-                  title="Disponibilidad del equipo"
-                  [attr.aria-pressed]="!mine"
-                  (click)="mine = false"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="9" cy="8" r="3" />
-                    <path d="M3 20v-1a6 6 0 0 1 12 0v1H3z" />
-                    <circle cx="17" cy="9" r="2" />
-                    <path d="M17 15a5 5 0 0 1 4 5h-4" />
-                  </svg></button
-                ><button
-                  class="icon-button"
-                  type="button"
-                  aria-label="Mi disponibilidad"
-                  title="Mi disponibilidad"
-                  [attr.aria-pressed]="mine"
-                  (click)="mine = true"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M4 21v-2a8 8 0 0 1 16 0v2H4z" />
-                  </svg>
-                </button>
+              <div class="calendar-toolbar-actions">
+                <div class="calendar-filters">
+                  <div class="scope-toggle" role="group" aria-label="Disponibilidad mostrada">
+                    <button
+                      class="icon-button"
+                      type="button"
+                      aria-label="Disponibilidad del equipo"
+                      title="Disponibilidad del equipo"
+                      [attr.aria-pressed]="!mine"
+                      (click)="mine = false"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="9" cy="8" r="3" />
+                        <path d="M3 20v-1a6 6 0 0 1 12 0v1H3z" />
+                        <circle cx="17" cy="9" r="2" />
+                        <path d="M17 15a5 5 0 0 1 4 5h-4" />
+                      </svg></button
+                    ><button
+                      class="icon-button"
+                      type="button"
+                      aria-label="Mi disponibilidad"
+                      title="Mi disponibilidad"
+                      [attr.aria-pressed]="mine"
+                      (click)="mine = true"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 21v-2a8 8 0 0 1 16 0v2H4z" />
+                      </svg>
+                    </button>
+                  </div>
+                  <button
+                    class="icon-button create-date-button"
+                    type="button"
+                    aria-label="Crear consulta de fechas"
+                    title="Crear consulta de fechas"
+                    [disabled]="!canStartDateConsultation"
+                    [attr.aria-pressed]="creatingDateConsultation"
+                    (click)="startDateConsultation()"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="16" rx="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4M12 16h6M15 13v6" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="calendar-menu">
+                  <button
+                    #menuButton
+                    class="icon-button calendar-menu-button"
+                    type="button"
+                    aria-label="Opciones de visualización"
+                    [attr.aria-controls]="menuOpen ? 'calendar-view-options' : null"
+                    [attr.aria-expanded]="menuOpen"
+                    (click)="menuOpen = !menuOpen"
+                    (keydown.escape)="closeMenu($event)"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                  @if (menuOpen) {
+                    <div
+                      id="calendar-view-options"
+                      class="calendar-menu-panel"
+                      tabindex="-1"
+                      (keydown.escape)="closeMenu($event)"
+                    >
+                      <label
+                        ><input
+                          type="checkbox"
+                          [checked]="extended"
+                          (change)="setExtent($any($event.target).checked)"
+                        />
+                        Ver semanas completas</label
+                      >
+                      <label
+                        ><input
+                          type="checkbox"
+                          [checked]="overlay"
+                          (change)="setOverlay($any($event.target).checked)"
+                        />
+                        Superponer calendarios</label
+                      >
+                      <label
+                        ><input
+                          type="checkbox"
+                          [checked]="showCounts"
+                          (change)="setCounts($any($event.target).checked)"
+                        />
+                        Mostrar recuentos del equipo</label
+                      >
+                    </div>
+                  }
+                </div>
               </div>
-              <button
-                class="icon-button create-date-button"
-                type="button"
-                aria-label="Crear consulta de fechas"
-                title="Crear consulta de fechas"
-                [disabled]="!canStartDateConsultation"
-                [attr.aria-pressed]="creatingDateConsultation"
-                (click)="startDateConsultation()"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <rect x="3" y="5" width="18" height="16" rx="2" />
-                  <path d="M3 10h18M8 3v4M16 3v4M12 16h6M15 13v6" />
-                </svg>
-              </button>
             </div>
           </div>
           @if (loading) {
@@ -166,7 +222,7 @@ export function visibleDates(year: number, month: number, extended: boolean): st
             <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span
             ><span>Sá</span><span>Do</span>
           </div>
-          <div class="calendar-days" [attr.aria-busy]="loading">
+          <div class="calendar-days" [class.overlay-active]="overlay" [attr.aria-busy]="loading">
             @for (blank of blanks; track $index) {
               <span aria-hidden="true"></span>
             }
@@ -180,12 +236,7 @@ export function visibleDates(year: number, month: number, extended: boolean): st
                 [class.date-option-selected]="selectedDates.includes(date)"
                 [class.past]="date < today"
                 [class.today]="date === today"
-                [attr.aria-label]="
-                  label(date) +
-                  ': ' +
-                  statusLabel(displayState(date)) +
-                  (date < today ? ', pasado, solo lectura' : '')
-                "
+                [attr.aria-label]="dayLabel(date)"
                 [attr.aria-pressed]="
                   creatingDateConsultation ? selectedDates.includes(date) : selected === date
                 "
@@ -197,15 +248,57 @@ export function visibleDates(year: number, month: number, extended: boolean): st
                 [attr.data-date]="date"
                 (click)="select(date, $event)"
               >
-                <span class="day-number"
-                  >{{ number(date) }}
-                  @if (date.slice(0, 7) !== civilMonth) {
-                    <small>{{ shortMonth(date) }}</small>
-                  }</span
-                ><small class="status">{{ statusLabel(displayState(date)) }}</small>
+                <span class="calendar-day-face" aria-hidden="true">
+                  <span class="day-number"
+                    >{{ number(date) }}
+                    @if (date.slice(0, 7) !== civilMonth) {
+                      <small>{{ shortMonth(date) }}</small>
+                    }
+                  </span>
+                  @if (mine) {
+                    <small class="status">{{ calendarStatusLabel(ownState(date)) }}</small>
+                  } @else {
+                    <ng-container *ngTemplateOutlet="teamStatus; context: { date: date }" />
+                  }
+                </span>
+                @if (overlay) {
+                  <span
+                    class="calendar-underlay"
+                    [class.available]="(mine ? day(date).state : ownState(date)) === 'available'"
+                    [class.maybe]="(mine ? day(date).state : ownState(date)) === 'maybe'"
+                    [class.unavailable]="
+                      (mine ? day(date).state : ownState(date)) === 'unavailable'
+                    "
+                    [class.past]="date < today"
+                    aria-hidden="true"
+                  >
+                    @if (mine) {
+                      <ng-container
+                        *ngTemplateOutlet="teamStatus; context: { date: date, underlay: true }"
+                      />
+                    } @else {
+                      <small class="status">{{ calendarStatusLabel(ownState(date)) || '·' }}</small>
+                    }
+                  </span>
+                }
               </button>
             }
           </div>
+          <ng-template #teamStatus let-date="date" let-underlay="underlay">
+            @if (showCounts) {
+              <span class="team-counts" aria-hidden="true">
+                @for (state of states; track state) {
+                  <span class="team-count" [class.result]="day(date).state === state">
+                    {{ stateIcon(state) }}{{ day(date).counts[state] || '_' }}
+                  </span>
+                }
+              </span>
+            } @else {
+              <small class="status">{{
+                underlay && !day(date).state ? '·' : calendarStatusLabel(day(date).state)
+              }}</small>
+            }
+          </ng-template>
           <p class="calendar-legend">✓ Disponible · ? Quizá · × No disponible · · Sin marcas</p>
         </div>
         <aside
@@ -427,10 +520,12 @@ export function visibleDates(year: number, month: number, extended: boolean): st
 })
 export class AvailabilityCalendar implements OnInit, OnDestroy {
   readonly team = inject(TeamLayout);
+  private readonly document = inject(DOCUMENT);
   private readonly api = inject(TeamApi);
   private readonly router = inject(Router);
   private readonly changeDetector = inject(ChangeDetectorRef);
   @ViewChild('dayDialog') dialog?: ElementRef<HTMLDialogElement>;
+  @ViewChild('menuButton') private menuButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('dateTitleInput') private dateTitleInput?: ElementRef<HTMLInputElement>;
   @ViewChild('dateConfirmationDialog')
   set dateConfirmationDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
@@ -442,6 +537,9 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   private reloadAfterSave = false;
   readonly states: AvailabilityState[] = ['available', 'maybe', 'unavailable'];
   extended = false;
+  overlay = false;
+  showCounts = false;
+  menuOpen = false;
   mine = false;
   loading = false;
   loadFailed = false;
@@ -461,6 +559,18 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   submittingDate = false;
   showDateConfirmation = false;
   dateConfirmationKind: 'create' | 'cancel' = 'create';
+  constructor() {
+    let stored: string | null = null;
+    try {
+      stored = this.document.defaultView?.localStorage.getItem(calendarPreferenceKey) ?? null;
+    } catch {
+      // El calendario sigue funcionando sin almacenamiento local.
+    }
+    const preferences = parseCalendarPreferences(stored);
+    this.extended = preferences.extended;
+    this.overlay = preferences.overlay;
+    this.showCounts = preferences.counts;
+  }
   get effectiveTimeZone(): string {
     try {
       const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -564,7 +674,32 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   }
   setExtent(value: boolean): void {
     this.extended = value;
+    this.savePreferences();
     this.load();
+  }
+  setOverlay(value: boolean): void {
+    this.overlay = value;
+    this.savePreferences();
+  }
+  setCounts(value: boolean): void {
+    this.showCounts = value;
+    this.savePreferences();
+  }
+  closeMenu(event: Event): void {
+    event.preventDefault();
+    this.menuOpen = false;
+    this.changeDetector.detectChanges();
+    this.menuButton?.nativeElement.focus();
+  }
+  private savePreferences(): void {
+    try {
+      this.document.defaultView?.localStorage.setItem(
+        calendarPreferenceKey,
+        JSON.stringify({ extended: this.extended, overlay: this.overlay, counts: this.showCounts }),
+      );
+    } catch {
+      // La selección permanece activa durante esta visita.
+    }
   }
   goToday(): void {
     this.month = this.today.slice(0, 7);
@@ -602,6 +737,33 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   }
   displayState(date: string): AvailabilityState | null {
     return this.mine ? this.ownState(date) : this.day(date).state;
+  }
+  stateIcon(state: AvailabilityState): string {
+    return state === 'available' ? '✓' : state === 'maybe' ? '?' : '×';
+  }
+  calendarStatusLabel(state: AvailabilityState | null): string {
+    return state === 'available'
+      ? '✓ Disp.'
+      : state === 'maybe'
+        ? '? Quizá'
+        : state === 'unavailable'
+          ? '× No disp.'
+          : '';
+  }
+  dayLabel(date: string): string {
+    const main = this.mine
+      ? `Marca propia: ${this.statusLabel(this.ownState(date))}`
+      : this.teamLabel(date);
+    const opposite = this.mine
+      ? `; ${this.teamLabel(date)}`
+      : `; marca propia: ${this.statusLabel(this.ownState(date))}`;
+    return `${this.label(date)}: ${main}${this.overlay ? opposite : ''}${date < this.today ? ', pasado, solo lectura' : ''}`;
+  }
+  private teamLabel(date: string): string {
+    const day = this.day(date);
+    const result = this.statusLabel(day.state);
+    if (!this.showCounts) return `equipo: ${result}`;
+    return `equipo: ${result}; disponible ${day.counts.available}, quizá ${day.counts.maybe}, no disponible ${day.counts.unavailable}`;
   }
   group(state: AvailabilityState): AvailabilityDay['marks'] {
     return this.day(this.selected)

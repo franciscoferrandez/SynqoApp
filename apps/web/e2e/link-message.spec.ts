@@ -45,7 +45,8 @@ for (const scenario of [
     });
     expect(Math.abs(layout.centerX - layout.viewportX)).toBeLessThan(2);
     expect(layout.overflow).toBe(false);
-    await page.locator('#theme').selectOption('dark');
+    await page.getByRole('button', { name: /Tema automático/ }).click();
+    await page.getByRole('button', { name: /Tema claro/ }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.goto(scenario.route);
     await expect(page.getByRole('heading', { name: scenario.title })).toBeVisible();

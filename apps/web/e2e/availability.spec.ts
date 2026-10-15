@@ -270,11 +270,9 @@ test('navigates months, shows complete Monday-to-Sunday weeks, and returns to to
   await expect(monthHeading).not.toHaveText(initialMonth!);
   await expect(page.getByRole('button', { name: 'Volver a hoy' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Semanas completas' }).press('Enter');
-  await expect(page.getByRole('button', { name: 'Semanas completas' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await page.getByRole('button', { name: 'Opciones de visualización' }).press('Enter');
+  await page.getByRole('checkbox', { name: 'Ver semanas completas' }).check();
+  await expect(page.getByRole('checkbox', { name: 'Ver semanas completas' })).toBeChecked();
   const dates = await page
     .locator('.calendar-day')
     .evaluateAll((days) => days.map((day) => day.getAttribute('data-date')!));
@@ -284,14 +282,13 @@ test('navigates months, shows complete Monday-to-Sunday weeks, and returns to to
   await page.getByRole('button', { name: 'Volver a hoy' }).press('Enter');
   await expect(monthHeading).toHaveText(initialMonth!);
   await expect(page.locator('.calendar-day.today')).toBeVisible();
-  await page.getByLabel('Tema').selectOption('dark');
+  await page.getByRole('button', { name: /Tema automático/ }).click();
+  await page.getByRole('button', { name: /Tema claro/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(monthHeading).toBeVisible();
 });
 
-test('opens the day detail as a mobile dialog and returns focus to its day', async ({
-  page,
-}) => {
+test('opens the day detail as a mobile dialog and returns focus to its day', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const participant = { id: 'mobile-participant', name: 'Ana' };
   await page.route('**/api/teams', (route) => {

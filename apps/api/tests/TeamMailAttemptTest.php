@@ -76,14 +76,10 @@ final class TeamMailAttemptTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('no-store', $this->client->getResponse()->headers->get('Cache-Control'));
-        self::assertSame(
-            [
-                'teamCreationEmailMode' => (new \App\Application\Configuration\FunctionalConfiguration('test', $_SERVER['TEAM_CREATION_EMAIL_MODE'] ?? null))->emailMode,
-                'teamCreationMaxTeams' => 10000,
-                'teamCreationWindowMinutes' => 60,
-            ],
-            json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR),
-        );
+        $payload = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame((new \App\Application\Configuration\FunctionalConfiguration('test', $_SERVER['TEAM_CREATION_EMAIL_MODE'] ?? null))->emailMode, $payload['teamCreationEmailMode']);
+        self::assertSame(10000, $payload['teamCreationMaxTeams']);
+        self::assertSame(60, $payload['teamCreationWindowMinutes']);
     }
 
     public function testInvalidEmailIsRejectedBeforeAnythingIsStored(): void

@@ -23,11 +23,10 @@ Equipo vigente abierto bajo una identidad recordada o recién elegida. El calend
 │                                  │
 │ [Calendario]       [Consultas]   │
 │                                  │
-│ [Crear consulta de fechas]       │
 │ ┌─ Panel de calendario ────────┐ │
-│ │ Oct '26 [‹][›][◎]*       [☰] │ │
-│ │ [👥][👤]                     │ │
-│ │ Equipo/Mi disponibilidad     │ │
+│ │ Oct '26 [‹][›][◎]*           │ │
+│ │       [👥][👤][+fecha] [☰]   │ │
+│ │       Equipo/Mi disponibilidad│ │
 │ └──────────────────────────────┘ │
 │ Menú [☰]:                      │
 │ [ ] Ver semanas completas       │
@@ -35,8 +34,8 @@ Equipo vigente abierto bajo una identidad recordada o recién elegida. El calend
 │ [ ] Mostrar recuentos del equipo│
 │ [Lu] [Ma] [Mi] [Ju] [Vi] [Sa] [Do]│
 │ [día + estado principal] ...     │
-│ [solapa opuesta opcional] ...    │
-│ [pasados con tono solo lectura]  │
+│ [solapa opuesta: ancho completo, esquinas superiores rectas] ... │
+│ [ambos planos pasados en gris]   │
 │                                  │
 │ Móvil: detalle cerrado al entrar │
 │ Al elegir un día: diálogo encima │
@@ -56,9 +55,10 @@ Nota: «Hoy» solo aparece cuando la fecha actual queda fuera de los días visib
 - Copiar el enlace con un botón de solo icono reconocible; abrir el diálogo del dispositivo desde otro botón de solo icono si está disponible. Ambos tienen nombre accesible. Si compartir no está disponible, su botón permanece inactivo y copiar sigue disponible.
 - En cualquier tamaño de pantalla, ver por defecto el peor estado marcado por el equipo en cada casilla. Alternar a «Mi disponibilidad» para ver las marcas de la identidad activa, sin cambiar el desglose del equipo al activar un día. En móvil, el detalle se abre en un diálogo sobre el calendario y se puede cerrar para volver al día elegido.
 - Sin preferencia guardada, ver solo los días del mes natural; activar «Semanas completas» para mostrar ese mismo mes desde el lunes de su primera semana hasta el domingo de la última, incluidos días de meses vecinos. Anterior y siguiente recorren meses en ambos modos.
-- Dentro del panel del calendario, mostrar primero el mes abreviado y el año corto, con anterior y siguiente a su derecha; situar el menú de visualización en la esquina superior derecha y mantener visibles los botones «Equipo»/«Mi disponibilidad». El menú sustituye solo los botones de mes natural/semanas completas. Sus tres opciones independientes son «Ver semanas completas», «Superponer calendarios» y «Mostrar recuentos del equipo»; empiezan desactivadas si no hay preferencias guardadas y se restauran al volver al calendario en el mismo navegador, también en móvil. Mostrar «Hoy» junto a la navegación temporal solo cuando el día actual no esté entre las fechas visibles; volver a él sin cambiar las opciones ni el alcance.
-- Con la superposición activa, cada casilla conserva como plano principal el alcance elegido. Una solapa estrecha por debajo muestra el alcance opuesto mediante color e icono: bajo «Equipo» aparece solo si la identidad activa marcó ese día; bajo «Mi disponibilidad» muestra el resultado del equipo, incluido «Sin marcas». La casilla completa se activa como un solo día y mantiene selección, foco y tratamiento de pasado. El menú se puede abrir y usar con teclado; comunica qué opciones están activas y devuelve el foco al botón al cerrarse.
-- Con «Mostrar recuentos del equipo» activo, el plano del equipo presenta los recuentos de los estados indicados y destaca en negrita el estado resultante. Se representa igual si el equipo está delante o en la solapa bajo «Mi disponibilidad»; la marca propia se mantiene legible en el otro plano. Sin marcas, el equipo muestra el estado neutro. En móvil, la casilla crece lo necesario para mantener legibles iconos y cifras sin ocultar información.
+- Dentro del panel del calendario, mostrar primero el mes abreviado y el año corto, con anterior y siguiente a su derecha; situar el menú de visualización a la derecha y, justo a su izquierda, los botones «Equipo»/«Mi disponibilidad» y crear consulta de fechas. En móvil pueden pasar juntos a una segunda fila. El menú sustituye solo los botones de mes natural/semanas completas. Sus tres opciones independientes son «Ver semanas completas», «Superponer calendarios» y «Mostrar recuentos del equipo»; empiezan desactivadas si no hay preferencias guardadas y se restauran al volver al calendario en el mismo navegador, también en móvil. Mostrar «Hoy» junto a la navegación temporal solo cuando el día actual no esté entre las fechas visibles; volver a él sin cambiar las opciones ni el alcance.
+- Con la superposición activa, cada casilla conserva como plano principal el alcance elegido. Una solapa de su mismo ancho y altura uniforme asoma por debajo, con esquinas superiores rectas e inferiores redondeadas, y muestra el alcance opuesto en todos los días, también sin marcas: marca propia o ausencia bajo «Equipo», y resultado del equipo o neutro bajo «Mi disponibilidad». El plano inferior de los días pasados aparece gris, sin color de disponibilidad. La casilla completa se activa como un solo día: el contorno continuo de selección y el contorno discontinuo de foco rodean juntos casilla y solapa; sin superposición, el foco conserva ese mismo trazo alrededor de la casilla principal. El tratamiento de pasado se conserva. El menú se puede abrir y usar con teclado; comunica qué opciones están activas y devuelve el foco al botón al cerrarse.
+- En las casillas, abreviar los estados con marca como «Disp.», «Quizá» y «No disp.» junto a sus iconos. La ausencia de marca no lleva texto; el detalle conserva los nombres completos.
+- Con «Mostrar recuentos del equipo» activo, el plano del equipo presenta siempre Disponible, Quizá y No disponible, en ese orden y repartidos a lo ancho: cada icono lleva su cifra o «_» si no recibió votos. Destaca en negrita el estado resultante. Se representa igual si el equipo está delante o en la solapa bajo «Mi disponibilidad»; la marca propia se mantiene legible en el otro plano. Sin marcas, aparecen las tres posiciones con «_» y el equipo conserva el estado neutro. En móvil, la casilla crece lo necesario para mantener legibles iconos y cifras sin ocultar información.
 - Mostrar los días pasados con un gris claro de solo lectura y, en «Semanas completas», los días de otros meses con el fondo normal o el fondo de su estado de disponibilidad.
 - Tocar un día para abrir su detalle y ver tres tarjetas, una por estado, con recuento y participantes. Cada tarjeta conserva un borde izquierdo ancho de su color de estado; al pasar el cursor o al quedar seleccionada, usa el fondo de ese estado sin reforzar los demás bordes ni recolorear el texto. Muestra «Tú» primero, en negrita y con su acento habitual, antes que los demás nombres. En un día editable, tocar una tarjeta cambia la marca y actualiza inmediatamente recuentos y listas; tocar de nuevo la tarjeta activa retira la marca y deja al participante sin marcar.
 - Reconocer visualmente los días pasados como solo lectura y consultar su desglose sin poder cambiar ni retirar marcas.

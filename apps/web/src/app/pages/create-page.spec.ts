@@ -50,12 +50,7 @@ it('enters directly when confirmation is disabled and remembers the creator iden
   Reflect.set(fixture.componentInstance, 'examplesDisabled', true);
   fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('#email')).not.toBeNull();
-  expect(fixture.nativeElement.querySelector('#creation-limit-info')?.textContent).toContain(
-    '2 equipos',
-  );
-  expect(fixture.nativeElement.querySelector('#creation-limit-info')?.textContent).toContain(
-    '60 minutos',
-  );
+  expect(fixture.nativeElement.querySelector('#creation-limit-info')).toBeNull();
   const component = fixture.componentInstance;
   Reflect.set(component, 'teamName', 'Equipo');
   Reflect.set(component, 'participantName', 'Ana');
@@ -173,7 +168,7 @@ it('keeps email hidden when public configuration cannot be loaded', () => {
   fixture.destroy();
 });
 
-it('shows the preproduction demo links and reset notice from public configuration', () => {
+it('shows demo links below the introduction without reset details', () => {
   vi.stubGlobal('window', {
     navigator: window.navigator,
     location: window.location,
@@ -188,8 +183,16 @@ it('shows the preproduction demo links and reset notice from public configuratio
         demo: {
           nextResetAt: '2030-01-01T12:00:00+00:00',
           teams: [
-            { name: 'La mesa del jueves', accessUrl: 'https://example.invalid/e#t=friends' },
-            { name: 'La banda del patio', accessUrl: 'https://example.invalid/e#t=band' },
+            {
+              name: 'La mesa del jueves',
+              accessUrl: 'https://example.invalid/e#t=friends',
+              kind: 'social',
+            },
+            {
+              name: 'La banda del patio',
+              accessUrl: 'https://example.invalid/e#t=band',
+              kind: 'music',
+            },
           ],
         },
       }),
@@ -208,10 +211,11 @@ it('shows the preproduction demo links and reset notice from public configuratio
   fixture.detectChanges();
 
   expect(fixture.nativeElement.textContent).toContain(
-    'Los cambios se borran en el siguiente reinicio.',
+    'Aún con dudas, prueba Synqo con datos de ejemplo',
   );
-  expect(fixture.nativeElement.querySelectorAll('#demo-title + p + ul a')).toHaveLength(2);
-  expect(fixture.nativeElement.querySelector('app-demo-reset-timer')).not.toBeNull();
+  expect(fixture.nativeElement.querySelectorAll('.create-demo-links a')).toHaveLength(2);
+  expect(fixture.nativeElement.querySelectorAll('.create-demo-links svg')).toHaveLength(2);
+  expect(fixture.nativeElement.textContent).not.toContain('reinicio');
   expect(
     fixture.nativeElement.querySelector('a[href="https://example.invalid/e#t=friends"]')
       ?.textContent,
@@ -248,7 +252,7 @@ it('shows the demonstration email field but never transmits or stores its addres
   fixture.detectChanges();
   expect(fixture.nativeElement.querySelector('#email')).not.toBeNull();
   expect(fixture.nativeElement.textContent).toContain('no se enviará ningún correo');
-  expect(fixture.nativeElement.textContent).toContain('no tienen una restauración automática');
+  expect(fixture.nativeElement.textContent).not.toContain('restauración automática');
   expect(fixture.nativeElement.querySelector('app-demo-reset-timer')).toBeNull();
   Reflect.set(fixture.componentInstance, 'email', 'private@example.invalid');
   Reflect.set(fixture.componentInstance, 'teamName', 'Equipo');

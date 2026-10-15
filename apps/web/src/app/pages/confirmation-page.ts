@@ -27,6 +27,17 @@ import { TeamApi } from '../shared/team-api';
           <p class="confirmation-person">
             Primer participante: {{ team.firstParticipant.name }}. Ya podéis empezar a coordinaros.
           </p>
+          @if (team.creationAllowance; as allowance) {
+            <p class="confirmation-allowance" id="creation-limit-info">
+              Puedes crear hasta {{ allowance.maxTeams }}
+              {{ allowance.maxTeams === 1 ? 'equipo' : 'equipos' }} cada
+              {{ allowance.windowMinutes }} minutos. Ahora te
+              {{ allowance.remaining === 1 ? 'queda' : 'quedan' }}
+              <strong>{{ allowance.remaining }}</strong>
+              {{ allowance.remaining === 1 ? 'creación disponible' : 'creaciones disponibles' }}
+              en ese período.
+            </p>
+          }
           @if (team.mailAttempt) {
             <app-mail-attempt-notice
               [teamId]="team.id"

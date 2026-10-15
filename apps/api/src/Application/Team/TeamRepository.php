@@ -18,6 +18,7 @@ interface TeamRepository
      * @param array{id: string, name: string, name_normalized: string, created_at: string} $participant
      * @param array{id: string, receipt_verifier: string, payload: string, created_at: string, expires_at: string}|null $mailAttempt
      * @param list<array{type: 'ip'|'device', digest: string}> $origins
+     * @return int The smallest remaining allowance among the available origin signals.
      */
     public function createWithOriginLimit(
         array $team,
@@ -26,7 +27,7 @@ interface TeamRepository
         array $origins,
         int $maxTeams,
         int $windowSeconds,
-    ): void;
+    ): int;
 
     public function purgeExpiredCreationOrigins(\DateTimeImmutable $now, int $windowSeconds): int;
 

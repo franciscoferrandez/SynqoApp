@@ -134,7 +134,8 @@ test('opens votes, restores a failed change, retries and confirms a resolution',
   const closedCard = page.getByRole('button', { name: /¿Qué hacemos\?/ });
   await expect(closedCard).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('combobox', { name: 'Tema' }).selectOption('dark');
+  await page.getByRole('button', { name: /Tema automático/ }).click();
+  await page.getByRole('button', { name: /Tema claro/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await activate(closedCard);
   await expect(page.getByText('Opciones aceptadas')).toBeVisible();

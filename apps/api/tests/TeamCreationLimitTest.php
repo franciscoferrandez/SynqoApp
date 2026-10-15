@@ -65,8 +65,10 @@ final class TeamCreationLimitTest extends WebTestCase
         self::assertSame(1, $configuration['teamCreationWindowMinutes']);
 
         $this->create('192.0.2.1', 'origin-one');
+        self::assertSame(['maxTeams' => 2, 'windowMinutes' => 1, 'remaining' => 1], json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['creationAllowance']);
         $this->create('192.0.2.1', 'origin-two');
         self::assertResponseStatusCodeSame(201);
+        self::assertSame(['maxTeams' => 2, 'windowMinutes' => 1, 'remaining' => 0], json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['creationAllowance']);
 
         // The same IP has two successful creations with different device keys.
         $this->create('192.0.2.1', 'origin-three');

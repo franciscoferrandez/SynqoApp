@@ -43,7 +43,7 @@ final readonly class PublicConfigurationController
         return $response;
     }
 
-    /** @return array{nextResetAt?: string, teams: list<array{name: string, accessUrl: string}>} */
+    /** @return array{nextResetAt?: string, teams: list<array{name: string, accessUrl: string, kind: string}>} */
     private function demoMetadata(): array
     {
         $now = $this->clock->now()->setTimezone(new DateTimeZone('UTC'));
@@ -84,7 +84,7 @@ final readonly class PublicConfigurationController
             if ($matched === null) {
                 return $result;
             }
-            $teams[] = ['name' => $name, 'accessUrl' => rtrim($this->publicUrl, '/') . '/e#t=' . $token];
+            $teams[] = ['name' => $name, 'accessUrl' => rtrim($this->publicUrl, '/') . '/e#t=' . $token, 'kind' => $this->demoFixture->accessKey($index) === 'band' ? 'music' : 'social'];
         }
 
         $result['teams'] = $teams;

@@ -15,7 +15,7 @@ docker compose run --rm api composer test
 docker compose exec api php bin/console doctrine:schema:validate
 ```
 
-La base de prueba `synqo_test` se crea al inicializar PostgreSQL y se recrea con `composer db:reset:test`. El volumen local `synqo-equ-001_postgres-data` contiene los datos de desarrollo.
+La base de prueba `synqo_test` se crea al inicializar PostgreSQL y se recrea con `composer db:reset:test`. El volumen local `synqo-equ-001_postgres-data` contiene los datos de desarrollo. Con `APP_ENV=test`, Doctrine usa siempre `DATABASE_URL_TEST`, incluso al invocar `php bin/phpunit` directamente. PHPUnit y `composer db:reset:test` comprueban que apunta a `POSTGRES_TEST_DB` y no a la base de desarrollo; si falta o no coincide, se detienen antes de tocar datos. Ejecuta las pruebas dentro de Compose con `composer test`.
 
 Para inspeccionar la base de desarrollo desde HeidiSQL, crea una sesión de tipo PostgreSQL (TCP/IP) con servidor `127.0.0.1`, puerto `5433`, usuario `synqo`, contraseña `synqo-local` y base de datos `synqo`. Estos son los valores predeterminados de `compose.yaml`; si defines `POSTGRES_*` en `.env`, usa esos valores. El puerto `5432` es el que usa la API dentro de Docker, mientras que HeidiSQL se conecta al puerto `5433` publicado en el equipo. Las tablas funcionales incluyen `team`, `participant`, `availability`, `consultation`, `consultation_option`, `consultation_vote`, `consultation_vote_selection`, `consultation_resolution_option`, `team_mail_attempt` y el pool aislado `team_creation_origin_event`.
 

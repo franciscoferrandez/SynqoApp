@@ -47,6 +47,7 @@ export interface TeamCreated {
   expiresAt: string;
   firstParticipant: Participant;
   accessUrl: string;
+  creationAllowance?: { maxTeams: number; windowMinutes: number; remaining: number };
   mailAttempt?: { status: 'pending'; receipt: string };
 }
 export interface PublicConfiguration {
@@ -55,7 +56,7 @@ export interface PublicConfiguration {
   teamCreationWindowMinutes: number;
   demo?: {
     nextResetAt?: string;
-    teams: { name: string; accessUrl: string }[];
+    teams: { name: string; accessUrl: string; kind?: 'social' | 'music' }[];
   };
 }
 export type MailAttemptStatus = 'pending' | 'succeeded' | 'failed';

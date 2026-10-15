@@ -8,6 +8,7 @@ export class ThemeService {
   private readonly document = inject(DOCUMENT);
   private readonly media = this.document.defaultView?.matchMedia?.('(prefers-color-scheme: dark)');
   readonly preference = signal<ThemePreference>(this.readPreference());
+  readonly effectiveTheme = signal<'light' | 'dark'>('light');
 
   constructor() {
     this.apply();
@@ -36,11 +37,13 @@ export class ThemeService {
 
   private apply(): void {
     const preference = this.preference();
-    this.document.documentElement.dataset['theme'] =
+    const effectiveTheme =
       preference === 'auto' && this.media?.matches
         ? 'dark'
         : preference === 'auto'
           ? 'light'
           : preference;
+    this.effectiveTheme.set(effectiveTheme);
+    this.document.documentElement.dataset['theme'] = effectiveTheme;
   }
 }

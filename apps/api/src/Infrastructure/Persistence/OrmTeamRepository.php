@@ -51,7 +51,7 @@ final readonly class OrmTeamRepository implements TeamRepository
         array $origins,
         int $maxTeams,
         int $windowSeconds,
-    ): void {
+    ): int {
         if ($origins === []) {
             throw new CreationLimitExceeded();
         }
@@ -71,10 +71,11 @@ final readonly class OrmTeamRepository implements TeamRepository
                 'DELETE FROM team_creation_origin_event WHERE created_at <= ?',
                 [$cutoff->format('Y-m-d H:i:s.uP')],
             );
-            $connection->transactional(function () use ($connection, $manager, $team, $participant, $mailAttempt, $origins, $maxTeams, $createdAt, $cutoff): void {
+            return $connection->transactional(function () use ($connection, $manager, $team, $participant, $mailAttempt, $origins, $maxTeams, $createdAt, $cutoff): int {
                 // A single lock keeps the low-volume creation path straightforward and
                 // also covers the case where a signal has no event row yet.
                 $connection->executeQuery('SELECT pg_advisory_xact_lock(1398362447, 1)');
+                $highestCount = 0;
                 foreach ($origins as $origin) {
                     $count = (int) $connection->fetchOne(
                         'SELECT COUNT(*) FROM team_creation_origin_event WHERE signal_type = ? AND signal_digest = ? AND created_at > ?',
@@ -83,6 +84,7 @@ final readonly class OrmTeamRepository implements TeamRepository
                     if ($count >= $maxTeams) {
                         throw new CreationLimitExceeded();
                     }
+                    $highestCount = max($highestCount, $count);
                 }
 
                 $this->persistTeam($manager, $team, $participant, $mailAttempt);
@@ -94,6 +96,7 @@ final readonly class OrmTeamRepository implements TeamRepository
                         'created_at' => $createdAt->format('Y-m-d H:i:s.uP'),
                     ]);
                 }
+                return $maxTeams - $highestCount - 1;
             });
         } catch (CreationLimitExceeded $error) {
             throw $error;

@@ -47,6 +47,7 @@ final class PublicConfigurationControllerTest extends TestCase
 
         self::assertSame('2026-10-08T11:00:00+00:00', $payload['demo']['nextResetAt']);
         self::assertSame(['La mesa del jueves', 'La banda del patio'], array_column($payload['demo']['teams'], 'name'));
+        self::assertSame(['social', 'music'], array_column($payload['demo']['teams'], 'kind'));
         self::assertSame('https://example.invalid/e#t=' . $deriver->tokenFor('friends', 2), $payload['demo']['teams'][0]['accessUrl']);
         self::assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }

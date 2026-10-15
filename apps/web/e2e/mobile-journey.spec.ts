@@ -207,7 +207,8 @@ test('keeps the arrival form usable with enlarged text on mobile', async ({ page
     document.documentElement.style.fontSize = '200%';
   });
   await fitsViewport(page);
-  await page.getByRole('combobox', { name: 'Tema' }).selectOption('dark');
+  await page.getByRole('button', { name: /Tema automático/ }).click();
+  await page.getByRole('button', { name: /Tema claro/ }).click();
   await page.locator('#team-name').fill('Equipo con texto ampliado');
   await page.locator('#participant-name').fill('Ana');
   await expect(page.getByRole('button', { name: 'Crear equipo', exact: true })).toBeEnabled();

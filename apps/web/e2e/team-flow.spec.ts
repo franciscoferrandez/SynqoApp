@@ -16,12 +16,19 @@ test('creates a team, opens its link in another browser and remembers a local id
   });
 
   await page.goto('/');
+  const configuration = (await (await page.request.get('/api/configuration')).json()) as {
+    teamCreationEmailMode: string;
+  };
   await expect.poll(() => page.locator('#team-name').getAttribute('placeholder')).not.toBe('');
   await page.locator('#team-name').fill(`Equipo ${Date.now()}`);
   await expect(page.locator('#participant-name')).toHaveAttribute('placeholder', '');
-  await expect(page.locator('#email')).toHaveAttribute('placeholder', '');
+  if (configuration.teamCreationEmailMode !== 'hidden') {
+    await expect(page.locator('#email')).toHaveAttribute('placeholder', '');
+  }
   await page.locator('#participant-name').fill('Ana');
-  await page.locator('#email').fill('no-enviado@example.invalid');
+  if (configuration.teamCreationEmailMode !== 'hidden') {
+    await page.locator('#email').fill('no-enviado@example.invalid');
+  }
   await page.locator('button[type="submit"]').press('Enter');
   await expect(page.getByRole('heading', { name: /Equipo \d+/ })).toBeVisible();
   await expect(
@@ -31,13 +38,24 @@ test('creates a team, opens its link in another browser and remembers a local id
   await expect(
     page.getByText('Primer participante: Ana. Ya podéis empezar a coordinaros.'),
   ).toBeVisible();
-  await expect(
-    page.getByText(/Estamos enviando el enlace por correo|El correo con el enlace se ha enviado/),
-  ).toBeVisible();
+  if (configuration.teamCreationEmailMode === 'send') {
+    await expect(
+      page.getByText(/Estamos enviando el enlace por correo|El correo con el enlace se ha enviado/),
+    ).toBeVisible();
+  } else {
+    await expect(
+      page.getByText('no se enviará ningún correo ni se guardará tu dirección'),
+    ).toHaveCount(0);
+  }
+  await expect(page.locator('#creation-limit-info')).toContainText('creaciones disponibles');
   await expect(page.getByText('Enlace de acceso')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Compartir' })).toBeDisabled();
   expect(sentBody).toBeDefined();
-  expect(sentBody).toHaveProperty('email', 'no-enviado@example.invalid');
+  if (configuration.teamCreationEmailMode === 'send') {
+    expect(sentBody).toHaveProperty('email', 'no-enviado@example.invalid');
+  } else {
+    expect(sentBody).not.toHaveProperty('email');
+  }
 
   const accessUrl = (await page.locator('[data-access-url]').textContent())!.trim();
   expect(accessUrl).toContain('/e#t=');
@@ -146,7 +164,8 @@ test('confirmation keeps the introductory column on desktop and works in dark mo
     return { introRight: intro.right, panelLeft: panel.left };
   });
   expect(columns.introRight).toBeLessThan(columns.panelLeft);
-  await page.locator('#theme').selectOption('dark');
+  await page.getByRole('button', { name: /Tema automático/ }).click();
+  await page.getByRole('button', { name: /Tema claro/ }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.locator('[data-access-url]')).toContainText('/e#t=');
   await context.close();
