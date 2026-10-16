@@ -170,7 +170,7 @@ Después de la instalación inicial, el arranque cotidiano se hace desde la raí
 
 Los hooks se ejecutan automáticamente al hacer `git commit`; el pre-commit también puede ejecutarse manualmente con `npx lefthook run pre-commit`. Para validar un mensaje manualmente: `node scripts/check-commit-message.mjs <ruta-al-archivo-del-mensaje>`. Para revisar un rango de commits: `node scripts/check-commit-range.mjs <SHA-base-completo>`. Los scripts `check-staged-web.mjs` y `check-staged-api.mjs` son comprobaciones internas para evitar mezclar versiones staged y unstaged de un mismo archivo.
 
-GitHub Actions define el pipeline en [`.github/workflows/web.yml`](.github/workflows/web.yml): instala Node y Chromium, prepara Docker/API/PostgreSQL, migra y prueba API, ejecuta E2E, revisa mensajes de commit y corre los checks WEB. Se activa en `push` a `main` y en Pull Requests.
+GitHub Actions define el pipeline en [`.github/workflows/web.yml`](.github/workflows/web.yml). Se activa en `push` a `main` y en Pull Requests, pero selecciona los checks según los archivos cambiados: documentación sola comprueba los mensajes de commit; WEB ejecuta checks WEB, E2E, capturas e imagen de distribución; API ejecuta checks PHP, E2E e imagen, sin compilar WEB por separado. Cambios de infraestructura, scripts compartidos o del propio workflow activan los checks que pueden afectar; si no se puede identificar el commit base se ejecutan todos. El hook local `pre-push` de capturas sigue ejecutándose antes de cualquier push.
 
 ### Acceso a PostgreSQL desde HeidiSQL
 

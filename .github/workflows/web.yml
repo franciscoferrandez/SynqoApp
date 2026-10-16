@@ -23,47 +23,76 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             apps/web/package-lock.json
-      - run: npm ci
-      - run: npm --prefix apps/web ci
+      - name: Detectar checks afectados
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/ci-change-scope.mjs "$BASE_SHA"
+      - name: Probar selección de checks
+        run: node --test scripts/ci-change-scope.test.mjs
+      - name: Comprobar mensajes de commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/check-commit-range.mjs "$BASE_SHA"
+      - if: steps.scope.outputs.iac == 'true'
+        run: npm ci
+      - if: steps.scope.outputs.web == 'true' || steps.scope.outputs.e2e == 'true' || steps.scope.outputs.iac == 'true'
+        run: npm --prefix apps/web ci
       - name: Validar definición IaC local sin contactar Railway
+        if: steps.scope.outputs.iac == 'true'
         run: npm run railway:iac:check
       - name: Construir y probar la imagen de preproducción sin desplegar
+        if: steps.scope.outputs.image == 'true'
         run: npm run railway:image:smoke
       - name: Comprobar conservación de avisos de distribución
+        if: steps.scope.outputs.notices == 'true'
         run: node --test scripts/distribution-notices.test.mjs
       - name: Instalar Chromium para pruebas de navegador
+        if: steps.scope.outputs.e2e == 'true'
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
       - name: Preparar API y PostgreSQL
+        if: steps.scope.outputs.api == 'true' || steps.scope.outputs.e2e == 'true'
         run: docker compose up -d --build database
       - name: Construir imagen PHP
+        if: steps.scope.outputs.api == 'true' || steps.scope.outputs.e2e == 'true'
         run: docker compose build api
       - name: Comparar referencias visuales en entorno reproducible
+        if: steps.scope.outputs.visual == 'true'
         run: npm --prefix apps/web run test:visual
       - name: Preparar el entorno Dotenv para Symfony
+        if: steps.scope.outputs.api == 'true' || steps.scope.outputs.e2e == 'true'
         run: printf 'DEFAULT_URI=http://localhost\n' > apps/api/.env
       - name: Instalar dependencias PHP bloqueadas
+        if: steps.scope.outputs.api == 'true' || steps.scope.outputs.e2e == 'true'
         run: docker compose run --rm --no-deps api composer install --no-interaction
       - name: Revisiones estáticas PHP
+        if: steps.scope.outputs.api == 'true'
         run: docker compose run --rm --no-deps api sh -lc "composer cs:check && composer stan && composer rector:check"
       - name: Migrar base de pruebas
+        if: steps.scope.outputs.api == 'true'
         run: docker compose run --rm api composer db:reset:test
       - name: Probar API
+        if: steps.scope.outputs.api == 'true'
         run: docker compose run --rm api composer test
       - name: Preparar clave efímera para el correo E2E
+        if: steps.scope.outputs.e2e == 'true'
         run: python3 -c 'import base64, os; print("MAIL_EVENT_KEY=" + base64.b64encode(os.urandom(32)).decode())' >> "$GITHUB_ENV"
       - name: Iniciar API y correo para prueba de navegador
+        if: steps.scope.outputs.e2e == 'true'
         env:
           SYNQO_DEPLOYMENT_ENV: test
           TEAM_CREATION_LIMIT: 10000
           TEAM_CREATION_WINDOW_MINUTES: 60
         run: docker compose up -d api mailpit mail-worker
       - name: Migrar la base local de E2E
+        if: steps.scope.outputs.e2e == 'true'
         run: docker compose exec -T api php bin/console doctrine:migrations:migrate --no-interaction
       - name: Probar recorrido con dos navegadores
+        if: steps.scope.outputs.e2e == 'true'
         run: npm --prefix apps/web run test:e2e
       - name: Conservar informe y evidencias E2E
-        if: always()
+        if: always() && steps.scope.outputs.e2e == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
@@ -71,11 +100,11 @@ jobs:
             apps/web/playwright-report/
             apps/web/test-results/
           if-no-files-found: ignore
-      - name: Comprobar mensajes de commit
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: node scripts/check-commit-range.mjs "$BASE_SHA"
-      - run: npm --prefix apps/web run lint
-      - run: npm --prefix apps/web run format:check
-      - run: npm --prefix apps/web run build
-      - run: npm --prefix apps/web test
+      - if: steps.scope.outputs.web == 'true'
+        run: npm --prefix apps/web run lint
+      - if: steps.scope.outputs.web == 'true'
+        run: npm --prefix apps/web run format:check
+      - if: steps.scope.outputs.web == 'true'
+        run: npm --prefix apps/web run build
+      - if: steps.scope.outputs.web == 'true'
+        run: npm --prefix apps/web test
