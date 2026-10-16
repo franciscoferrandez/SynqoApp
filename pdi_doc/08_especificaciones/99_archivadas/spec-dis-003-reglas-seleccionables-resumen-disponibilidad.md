@@ -36,7 +36,7 @@ Change de evolución N2: modifica una regla de negocio y su presentación en el 
 - [RN-DIS-002 — Resumen diario de disponibilidad](../../03_requisitos/02_reglas-negocio/DIS/rn-dis-002-resumen-disponibilidad.md)
 - [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md)
 - [WF-DIS-001 — Calendario inicial del equipo](../../04_experiencia-usuario/03_wireframes/wf-dis-001-calendario-equipo.md)
-- [SPEC-DIS-002 — Opciones de visualización del calendario](../01_activas/spec-dis-002-opciones-visualizacion-calendario.md)
+- [SPEC-DIS-002 — Opciones de visualización del calendario](spec-dis-002-opciones-visualizacion-calendario.md)
 - [API — contrato de módulo](../../06_arquitectura/03_modulos/API/README.md)
 - [WEB — contrato de módulo](../../06_arquitectura/03_modulos/WEB/README.md)
 - [API — reglas de implementación](../../07_desarrollo/08_modulos/API/README.md)
@@ -59,7 +59,7 @@ Change de evolución N2: modifica una regla de negocio y su presentación en el 
 
 ## Impacto baseline esperado
 
-La nueva verdad se ha incorporado mediante `pdi:baseline-update` en [RN-DIS-002 — Resumen diario de disponibilidad](../../03_requisitos/02_reglas-negocio/DIS/rn-dis-002-resumen-disponibilidad.md), [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md) y [WF-DIS-001 — Calendario inicial del equipo](../../04_experiencia-usuario/03_wireframes/wf-dis-001-calendario-equipo.md). La peor marca sigue siendo la regla predeterminada. El alcance histórico de [SPEC-DIS-002 — Opciones de visualización del calendario](../01_activas/spec-dis-002-opciones-visualizacion-calendario.md) no se modifica retroactivamente.
+La nueva verdad se ha incorporado mediante `pdi:baseline-update` en [RN-DIS-002 — Resumen diario de disponibilidad](../../03_requisitos/02_reglas-negocio/DIS/rn-dis-002-resumen-disponibilidad.md), [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md) y [WF-DIS-001 — Calendario inicial del equipo](../../04_experiencia-usuario/03_wireframes/wf-dis-001-calendario-equipo.md). La peor marca sigue siendo la regla predeterminada. El alcance histórico de [SPEC-DIS-002 — Opciones de visualización del calendario](spec-dis-002-opciones-visualizacion-calendario.md) no se modifica retroactivamente.
 
 ## Questions / Assumptions
 
@@ -117,8 +117,8 @@ Implementación local (2026-10-16): `composer test` con la cuota de creación am
 
 ## Convergence
 
-**Convergencia PASS — `READY_FOR_CHANGE_CLOSE` (2026-10-16).** La implementación, la SPEC, el contrato API/WEB y [RN-DIS-002 — Resumen diario de disponibilidad](../../03_requisitos/02_reglas-negocio/DIS/rn-dis-002-resumen-disponibilidad.md), [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md) y [WF-DIS-001 — Calendario inicial del equipo](../../04_experiencia-usuario/03_wireframes/wf-dis-001-calendario-equipo.md) coinciden. Se resolvió una expectativa obsoleta del smoke de accesibilidad sobre la ubicación del contorno de foco; era un falso fallo del test, sin cambio de comportamiento. No hay drift significativo, cambios normativos nuevos ni hallazgos graves pendientes. [SPEC-DIS-002 — Opciones de visualización del calendario](../01_activas/spec-dis-002-opciones-visualizacion-calendario.md) mantiene su propio seguimiento de cierre.
+**Convergencia PASS — `READY_FOR_CHANGE_CLOSE` (2026-10-16).** La implementación, la SPEC, el contrato API/WEB y [RN-DIS-002 — Resumen diario de disponibilidad](../../03_requisitos/02_reglas-negocio/DIS/rn-dis-002-resumen-disponibilidad.md), [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md) y [WF-DIS-001 — Calendario inicial del equipo](../../04_experiencia-usuario/03_wireframes/wf-dis-001-calendario-equipo.md) coinciden. Se resolvió una expectativa obsoleta del smoke de accesibilidad sobre la ubicación del contorno de foco; era un falso fallo del test, sin cambio de comportamiento. No hay drift significativo, cambios normativos nuevos ni hallazgos graves pendientes. [SPEC-DIS-002 — Opciones de visualización del calendario](spec-dis-002-opciones-visualizacion-calendario.md) siguió su propio proceso de cierre.
 
 ## Resultado de cierre
 
-**Change cerrado localmente el 2026-10-16 — `DONE`.** Los siete criterios están en PASS, la convergencia no deja drift significativo y la persona impulsora confirmó el comportamiento. La entrega queda `VALIDADO` en [REL-003 — Estabilización de Synqo](../../01_producto/10_entregas/rel-003-estabilizacion-synqo.md). No se declara `ENTREGADO`: faltan commit, despliegue y comprobación en el entorno de destino. No existe PR ni commit específico de este Change al cierre.
+**Change cerrado localmente el 2026-10-16 — `DONE`.** Los siete criterios están en PASS, la convergencia no deja drift significativo y la persona impulsora confirmó el comportamiento. La entrega queda `VALIDADO` en [REL-003 — Estabilización de Synqo](../../01_producto/10_entregas/rel-003-estabilizacion-synqo.md). El commit específico es `d8278f1`; no se declara `ENTREGADO` porque faltan publicación y comprobación en el entorno de destino. No existe PR de este Change.

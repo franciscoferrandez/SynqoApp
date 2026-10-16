@@ -1,7 +1,7 @@
 ---
 id: SPEC-DIS-002
 nivel: N2
-estado: ready
+estado: cerrado
 release: REL-003
 ---
 
@@ -44,7 +44,7 @@ Change de evolución N2 del área de disponibilidad. Modifica la presentación y
 - [RNF-COO-003 — Uso adaptable en navegador móvil](../../03_requisitos/04_no-funcionales/COO/rnf-coo-003-uso-en-navegador-movil.md)
 - [WEB — contrato de módulo](../../06_arquitectura/03_modulos/WEB/README.md)
 - [WEB — reglas de implementación](../../07_desarrollo/08_modulos/WEB/README.md)
-- [SPEC-COO-007 — Detectar regresiones visuales en WEB](../99_archivadas/spec-coo-007-regresion-visual-web.md)
+- [SPEC-COO-007 — Detectar regresiones visuales en WEB](spec-coo-007-regresion-visual-web.md)
 
 ## Módulos afectados
 
@@ -102,7 +102,7 @@ Usar los tokens semánticos existentes para color y estados. Permitir que la alt
 
 - Pruebas de componente para combinaciones de las tres opciones, restauración tras nueva instancia, datos guardados inválidos o almacenamiento bloqueado, agregado mixto, día neutro, marca propia ausente, cambio de identidad y actualización/rollback de una marca.
 - E2E en 390, 768, 769 y 1280 CSS px para abrir/cerrar menú por teclado, alternar opciones, recargar y volver al calendario con las preferencias restauradas, recorrer meses, pulsar «Hoy», abrir detalle y seleccionar fechas de consulta; verificar nombres y estados accesibles.
-- Comparación visual en móvil/escritorio y tema claro/oscuro con la suite de [SPEC-COO-007 — Detectar regresiones visuales en WEB](../99_archivadas/spec-coo-007-regresion-visual-web.md); actualizar solo las referencias cuyo cambio sea esperado y revisar cada diff.
+- Comparación visual en móvil/escritorio y tema claro/oscuro con la suite de [SPEC-COO-007 — Detectar regresiones visuales en WEB](spec-coo-007-regresion-visual-web.md); actualizar solo las referencias cuyo cambio sea esperado y revisar cada diff.
 - Ejecutar lint, formato, build y tests WEB. Registrar herramienta/versión, alcance y resultado de la comprobación automatizada de accesibilidad exigida por [WEB — reglas de implementación](../../07_desarrollo/08_modulos/WEB/README.md).
 
 ### Evidencia de aplicación local (2026-10-14 y 2026-10-15)
@@ -114,15 +114,31 @@ Usar los tokens semánticos existentes para color y estados. Permitir que la alt
 - La selección y el foco rodean ambos planos cuando se superponen. Los 6 E2E específicos verifican la geometría del contorno y el foco discontinuo en 390, 768, 769 y 1280 CSS px.
 - El foco sin superposición usa el mismo trazo discontinuo y separación que con superposición; su contorno termina en la casilla principal. Los 6 E2E específicos comprueban ambos perímetros y el mismo estilo de foco en los cuatro anchos de referencia. El 2026-10-15 se regeneraron las referencias afectadas y pasaron las 108 comparaciones visuales en móvil y escritorio, temas claro y oscuro.
 - Con Node 22.22.2 pasan build, lint, formato y 17 pruebas unitarias WEB. Playwright 1.63.0 con Chromium emulado: 6 E2E específicos del cambio, 16 pruebas del smoke parcial de accesibilidad y 108 comparaciones visuales pasan. El smoke cubre teclado, foco, reflujo y ampliación de texto al 200 %; no acredita conformidad WCAG completa.
-- El intento de ejecutar juntos los E2E existentes de disponibilidad, consultas de fechas y accesibilidad obtuvo 8 pruebas correctas antes de recibir HTTP 429 al crear otro equipo en la API local. El límite de creación impidió terminar esa ejecución; la verificación integral con API real queda pendiente en un entorno con cupo disponible.
+- El intento anterior de ejecutar juntos los E2E existentes de disponibilidad, consultas de fechas y accesibilidad obtuvo 8 pruebas correctas antes de recibir HTTP 429 al crear otro equipo en la API local. La ejecución aislada posterior resolvió esta limitación sin usar la base de desarrollo.
+
+### Verificación final (2026-10-16)
+
+Se ejecutaron con Playwright 1.63.0 y Chromium los 36 E2E de `availability.spec.ts`, `date-consultations.spec.ts`, `calendar-options.spec.ts` y `accessibility-smoke.spec.ts`: 36 PASS. Para los casos con API real se levantó un servidor temporal con `APP_ENV=test`, conectado a `synqo_test`, cupo de creación de pruebas y origen WEB aislado; no se crearon equipos en la base de desarrollo. Se corrigieron dos expectativas del test de disponibilidad: el foco aprobado usa un contorno discontinuo en `::after`, y el enlace simulado del caso móvil debe conservar el origen de la prueba. No hubo cambio de comportamiento del producto.
+
+La comparación visual en contenedor de las 24 capturas de calendario, menú y solapas en móvil/escritorio y claro/oscuro pasó sin actualizar referencias. La comparación completa de 112 capturas, las 26 pruebas unitarias WEB y los checks de build, lint y formato ya habían pasado al cerrar [SPEC-DIS-003 — Reglas seleccionables para el resumen de disponibilidad](spec-dis-003-reglas-seleccionables-resumen-disponibilidad.md), sin cambios posteriores de producto. El smoke de accesibilidad es parcial y no acredita por sí solo conformidad WCAG completa.
+
+| Criterio de aceptación | Evidencia | Resultado |
+|---|---|---|
+| 1. Menú, opciones y controles contiguos | E2E de `calendar-options.spec.ts` en cuatro anchos; capturas de menú en dos tamaños y dos temas. | PASS |
+| 2. Semanas completas y navegación | E2E de opciones y disponibilidad recorre meses, vuelve a hoy y conserva las opciones. | PASS |
+| 3. Solapas, días pasados, selección y foco | E2E comprueba geometría, color gris, día neutro y un solo botón; el foco discontinuo y la selección rodean ambos planos. | PASS |
+| 4. Recuentos y textos de estado | E2E comprueba orden, guiones bajos, distribución, resultado destacado y nombres accesibles; capturas de ambos alcances. | PASS |
+| 5. Tamaños, temas, teclado y Escape | E2E en 390, 768, 769 y 1280 px; 16 pruebas del smoke parcial de accesibilidad; capturas en claro y oscuro. | PASS |
+| 6. Preferencias locales y respaldo seguro | E2E comprueba recarga, otro equipo, datos inválidos y almacenamiento bloqueado; pruebas unitarias WEB cubren combinaciones y restauración. | PASS |
+| 7. Compatibilidad, E2E existentes y capturas | La implementación de esta SPEC no cambió la API ni la regla; pasaron 36 E2E conjuntos y 24 comparaciones visuales actuales, además de la comparación completa previa de 112. [SPEC-DIS-003 — Reglas seleccionables para el resumen de disponibilidad](spec-dis-003-reglas-seleccionables-resumen-disponibilidad.md) evolucionó posteriormente la regla y el contrato por su propio alcance. | PASS |
 
 ## Convergence
 
-Pendiente.
+**Convergencia PASS — `READY_FOR_CHANGE_CLOSE` (2026-10-16).** La presentación y la persistencia local implementadas coinciden con esta SPEC, [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md), [WF-DIS-001 — Calendario inicial del equipo](../../04_experiencia-usuario/03_wireframes/wf-dis-001-calendario-equipo.md) y [Sistema de diseño inicial de Synqo](../../04_experiencia-usuario/05_sistema-diseno/sistema-diseno-inicial.md). El contrato y las reglas adicionales observados en el código proceden de [SPEC-DIS-003 — Reglas seleccionables para el resumen de disponibilidad](spec-dis-003-reglas-seleccionables-resumen-disponibilidad.md), no de un desvío de esta SPEC. Las dos expectativas E2E obsoletas se actualizaron y la ejecución aislada resolvió el límite de creación. No queda drift significativo ni hallazgo grave pendiente.
 
 ## Resultado de cierre
 
-Pendiente.
+**Change cerrado localmente el 2026-10-16 — `DONE`.** Los siete criterios están en PASS y la convergencia está resuelta. La entrega queda `VALIDADO` en [REL-003 — Estabilización de Synqo](../../01_producto/10_entregas/rel-003-estabilizacion-synqo.md). La implementación está en `2bac6ae`; faltan publicación y comprobación en el entorno de destino para declarar `ENTREGADO`.
 
 ## Definition of Ready
 

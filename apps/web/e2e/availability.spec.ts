@@ -102,26 +102,26 @@ test('shows distinct keyboard focus and selection on the selected day', async ({
   await expect(selectedDay).toBeFocused();
 
   const focusStyles = await selectedDay.evaluate((element) => {
-    const styles = getComputedStyle(element);
+    const ring = getComputedStyle(element, '::after');
     const focusProbe = document.createElement('span');
     focusProbe.style.color = 'var(--focus)';
     document.body.append(focusProbe);
     const focusColor = getComputedStyle(focusProbe).color;
     focusProbe.remove();
     return {
-      outlineStyle: styles.outlineStyle,
-      outlineWidth: styles.outlineWidth,
-      outlineOffset: styles.outlineOffset,
-      outlineColor: styles.outlineColor,
-      boxShadow: styles.boxShadow,
+      outlineStyle: ring.outlineStyle,
+      outlineWidth: ring.outlineWidth,
+      outlineOffset: ring.outlineOffset,
+      outlineColor: ring.outlineColor,
+      selectedBoxShadow: getComputedStyle(element.querySelector('.calendar-day-face')!).boxShadow,
       focusColor,
     };
   });
-  expect(focusStyles.outlineStyle).toBe('solid');
-  expect(focusStyles.outlineWidth).toBe('3px');
-  expect(focusStyles.outlineOffset).toBe('3px');
+  expect(focusStyles.outlineStyle).toBe('dashed');
+  expect(focusStyles.outlineWidth).toBe('1px');
+  expect(focusStyles.outlineOffset).toBe('1px');
   expect(focusStyles.outlineColor).toBe(focusStyles.focusColor);
-  expect(focusStyles.boxShadow).toContain('inset');
+  expect(focusStyles.selectedBoxShadow).toContain('inset');
 });
 
 test('marks today and reads the confirmed state after reloading the team link', async ({
@@ -301,7 +301,7 @@ test('opens the day detail as a mobile dialog and returns focus to its day', asy
         timeZone: 'Europe/Madrid',
         expiresAt: '2027-01-05T00:00:00+00:00',
         firstParticipant: participant,
-        accessUrl: 'http://localhost:4200/e#t=mobile-token',
+        accessUrl: `${new URL(route.request().url()).origin}/e#t=mobile-token`,
       },
     });
   });
