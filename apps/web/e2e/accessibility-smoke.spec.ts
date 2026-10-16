@@ -49,11 +49,13 @@ async function keyboardFocus(control: Locator): Promise<void> {
   await expect(control).toBeFocused();
   const focus = await control.evaluate((element) => {
     const style = getComputedStyle(element);
+    const pseudo = getComputedStyle(element, '::after');
+    const ring = style.outlineStyle === 'none' ? pseudo : style;
     return {
       visible: element.matches(':focus-visible'),
-      outline: style.outlineStyle,
-      width: parseFloat(style.outlineWidth),
-      color: style.outlineColor,
+      outline: ring.outlineStyle,
+      width: parseFloat(ring.outlineWidth),
+      color: ring.outlineColor,
     };
   });
   expect(focus.visible).toBe(true);

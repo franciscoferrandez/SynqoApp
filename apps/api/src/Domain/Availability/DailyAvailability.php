@@ -27,7 +27,7 @@ final class DailyAvailability
 
     /**
      * @param list<array{participantId: string, participantName: string, state: string}> $marks
-     * @return array{date: string, state: ?string, counts: array<string, int>, marks: list<array{participantId: string, participantName: string, state: string}>}
+     * @return array{date: string, state: ?string, summaryStates: array{worst: ?string, median: ?string, mostFrequent: ?string}, counts: array<string, int>, marks: list<array{participantId: string, participantName: string, state: string}>}
      */
     public static function day(string $date, array $marks): array
     {
@@ -41,6 +41,28 @@ final class DailyAvailability
                 $state = $candidate;
             }
         }
-        return ['date' => $date, 'state' => $state, 'counts' => $counts, 'marks' => $marks];
+        $total = count($marks);
+        $median = null;
+        $mostFrequent = null;
+        if ($total > 0) {
+            $ordered = [];
+            foreach (array_reverse(self::STATES) as $candidate) {
+                for ($index = 0; $index < $counts[$candidate]; ++$index) {
+                    $ordered[] = $candidate;
+                }
+            }
+            $lower = $ordered[intdiv($total - 1, 2)];
+            $upper = $ordered[intdiv($total, 2)];
+            $median = $lower === 'unavailable' && $upper === 'available' ? 'maybe' : $upper;
+
+            $highestCount = max($counts);
+            foreach (self::STATES as $candidate) {
+                if ($counts[$candidate] === $highestCount) {
+                    $mostFrequent = $candidate;
+                    break;
+                }
+            }
+        }
+        return ['date' => $date, 'state' => $state, 'summaryStates' => ['worst' => $state, 'median' => $median, 'mostFrequent' => $mostFrequent], 'counts' => $counts, 'marks' => $marks];
     }
 }

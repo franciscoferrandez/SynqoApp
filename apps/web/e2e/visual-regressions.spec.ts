@@ -66,6 +66,12 @@ function availabilityDays(from: string, to: string) {
           : marks.length
             ? 'available'
             : null,
+      summaryStates:
+        key === '2026-10-14'
+          ? { worst: 'unavailable', median: 'maybe', mostFrequent: 'available' }
+          : key === '2026-10-15'
+            ? { worst: 'maybe', median: 'maybe', mostFrequent: 'maybe' }
+            : { worst: null, median: null, mostFrequent: null },
       counts,
       marks,
     });
@@ -365,6 +371,21 @@ const scenarios: Scenario[] = [
       await open(page, teamUrl, 'light');
       await page.getByRole('button', { name: 'Opciones de visualización' }).click();
       await expect(page.getByRole('checkbox', { name: 'Ver semanas completas' })).toBeVisible();
+    },
+  },
+  {
+    id: 'calendario-mediana-superpuesto',
+    title: 'mediana del equipo con solapa y recuentos',
+    run: async (page) => {
+      await open(page, teamUrl, 'light');
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await page.getByRole('checkbox', { name: 'Superponer calendarios' }).check();
+      await page.getByRole('checkbox', { name: 'Mostrar recuentos del equipo' }).check();
+      await page.getByRole('radio', { name: 'Mediana de las marcas' }).check();
+      await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+      await expect(
+        page.locator('.calendar-day[data-date="2026-10-14"] .team-count.result'),
+      ).toHaveText('?1');
     },
   },
   {

@@ -894,6 +894,19 @@ html[data-theme='dark'] {
   height: 1rem;
   accent-color: var(--blue-strong);
 }
+.calendar-rule-options {
+  min-width: 0;
+  margin: 0.3rem 0 0;
+  padding: 0.45rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.calendar-rule-options legend {
+  padding: 0 0.55rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 .calendar-filters {
   display: flex;
   align-items: center;

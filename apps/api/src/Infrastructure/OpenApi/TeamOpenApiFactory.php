@@ -209,7 +209,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $aggregate['nullable'] = true;
         $marks = $this->schema('array');
         $marks['items'] = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'participantName' => $this->schema('string'), 'state' => $state], ['participantId', 'participantName', 'state']);
-        return $this->schema('object', ['date' => $this->schema('string', format: 'date'), 'state' => $aggregate, 'counts' => $this->schema('object', ['available' => $this->schema('integer'), 'maybe' => $this->schema('integer'), 'unavailable' => $this->schema('integer')], ['available', 'maybe', 'unavailable']), 'marks' => $marks], ['date', 'state', 'counts', 'marks']);
+        return $this->schema('object', ['date' => $this->schema('string', format: 'date'), 'state' => $aggregate, 'summaryStates' => $this->schema('object', ['worst' => $aggregate, 'median' => $aggregate, 'mostFrequent' => $aggregate], ['worst', 'median', 'mostFrequent']), 'counts' => $this->schema('object', ['available' => $this->schema('integer'), 'maybe' => $this->schema('integer'), 'unavailable' => $this->schema('integer')], ['available', 'maybe', 'unavailable']), 'marks' => $marks], ['date', 'state', 'summaryStates', 'counts', 'marks']);
     }
 
     private function consultation(): Schema

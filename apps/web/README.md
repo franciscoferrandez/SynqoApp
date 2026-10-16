@@ -33,7 +33,7 @@ La pantalla de creación obtiene de `/api/configuration` los límites vigentes y
 
 ### Comparación visual
 
-`npm --prefix apps/web run test:visual` compara 108 capturas en Chromium: veintisiete pantallas/casuísticas en 390×844 y 1280×800, cada una en claro y oscuro. Usa respuestas API fijas y una fecha/zona horaria controladas; no necesita API, correo ni PostgreSQL. El navegador corre dentro de la imagen oficial Playwright `v1.63.0-noble`, igual que en CI. La primera ejecución descarga esa imagen y puede tardar más.
+`npm --prefix apps/web run test:visual` compara 112 capturas en Chromium: veintiocho pantallas/casuísticas en 390×844 y 1280×800, cada una en claro y oscuro. Usa respuestas API fijas y una fecha/zona horaria controladas; no necesita API, correo ni PostgreSQL. El navegador corre dentro de la imagen oficial Playwright `v1.63.0-noble`, igual que en CI. La primera ejecución descarga esa imagen y puede tardar más.
 
 Las referencias están en `e2e/visual-regressions.spec.ts-snapshots/`. Para regenerarlas intencionadamente, ejecuta `npm --prefix apps/web run test:visual:update`. Revisa el diff de todas las imágenes antes de conservarlo; la actualización genera candidatos, no los aprueba. Vuelve a ejecutar `test:visual` en modo normal. Playwright deja el informe y las imágenes `actual`, `expected` y `diff` en `playwright-report/` y `test-results/` cuando hay diferencias. Los argumentos se pueden acotar, por ejemplo `npm --prefix apps/web run test:visual -- --grep "calendario"`.
 

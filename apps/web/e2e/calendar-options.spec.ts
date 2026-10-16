@@ -35,12 +35,14 @@ for (const viewport of viewports) {
             {
               date: '2026-10-13',
               state: 'available',
+              summaryStates: { worst: 'available', median: 'available', mostFrequent: 'available' },
               counts: { available: 1, maybe: 0, unavailable: 0 },
               marks: [{ participantId: 'ana', participantName: 'Ana', state: 'available' }],
             },
             {
               date: '2026-10-14',
               state: 'unavailable',
+              summaryStates: { worst: 'unavailable', median: 'maybe', mostFrequent: 'available' },
               counts: { available: 1, maybe: 0, unavailable: 1 },
               marks: [
                 { participantId: 'ana', participantName: 'Ana', state: 'available' },
@@ -68,9 +70,13 @@ for (const viewport of viewports) {
     const weeks = page.getByRole('checkbox', { name: 'Ver semanas completas' });
     const overlay = page.getByRole('checkbox', { name: 'Superponer calendarios' });
     const counts = page.getByRole('checkbox', { name: 'Mostrar recuentos del equipo' });
+    const worst = page.getByRole('radio', { name: 'Peor disponibilidad' });
+    const median = page.getByRole('radio', { name: 'Mediana de las marcas' });
+    const frequent = page.getByRole('radio', { name: 'Estado más frecuente' });
     await expect(weeks).not.toBeChecked();
     await expect(overlay).not.toBeChecked();
     await expect(counts).not.toBeChecked();
+    await expect(worst).toBeChecked();
     await weeks.check();
     const dates = await page
       .locator('.calendar-day')
@@ -127,6 +133,15 @@ for (const viewport of viewports) {
     expect(countSpacing.left).toBeLessThanOrEqual(2);
     expect(countSpacing.right).toBeLessThanOrEqual(2);
     await expect(day.locator('.team-count.result')).toHaveText('×1');
+    await median.check();
+    await expect(day.locator('.team-count.result')).toHaveText('?_');
+    await expect(day).toHaveClass(/maybe/);
+    await expect(day).toHaveAttribute('aria-label', /equipo: \? Quizá/);
+    await frequent.check();
+    await expect(day.locator('.team-count.result')).toHaveText('✓1');
+    await expect(day).toHaveClass(/available/);
+    await worst.check();
+    await menu.click();
     await expect(day.locator('.calendar-underlay .status')).toContainText('Disp.');
     const [faceBox, underlayBox] = await Promise.all([
       day.locator('.calendar-day-face').boundingBox(),
@@ -243,6 +258,7 @@ for (const viewport of viewports) {
     ).toBeVisible();
     await page.getByRole('button', { name: 'Disponibilidad del equipo' }).click();
     await expect(unmarkedDay.locator('.calendar-underlay')).toBeVisible();
+    await menu.click();
     await counts.press('Escape');
     await expect(menu).toBeFocused();
     await page.reload();
@@ -273,7 +289,7 @@ for (const viewport of viewports) {
 
 test('invalid local storage falls back without blocking the menu', async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem('synqo:calendar-view:v1', '{invalid');
+    localStorage.setItem('synqo:calendar-view:v2', '{invalid');
     localStorage.setItem('synqo-participant-options-team', 'ana');
   });
   await page.route('**/api/teams/current', (route) =>
@@ -294,6 +310,7 @@ test('invalid local storage falls back without blocking the menu', async ({ page
   await page.getByRole('button', { name: 'Opciones de visualización' }).click();
   const overlay = page.getByRole('checkbox', { name: 'Superponer calendarios' });
   await expect(overlay).not.toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Peor disponibilidad' })).toBeChecked();
   await overlay.check();
   await expect(overlay).toBeChecked();
 });
@@ -304,11 +321,13 @@ test('blocked local storage keeps options usable during the visit', async ({ pag
     const getItem = Storage.prototype.getItem;
     const setItem = Storage.prototype.setItem;
     Storage.prototype.getItem = function (key) {
-      if (key === 'synqo:calendar-view:v1') throw new Error('Storage blocked');
+      if (key === 'synqo:calendar-view:v1' || key === 'synqo:calendar-view:v2')
+        throw new Error('Storage blocked');
       return getItem.call(this, key);
     };
     Storage.prototype.setItem = function (key, value) {
-      if (key === 'synqo:calendar-view:v1') throw new Error('Storage blocked');
+      if (key === 'synqo:calendar-view:v1' || key === 'synqo:calendar-view:v2')
+        throw new Error('Storage blocked');
       return setItem.call(this, key, value);
     };
   });
@@ -332,4 +351,162 @@ test('blocked local storage keeps options usable during the visit', async ({ pag
   await expect(overlay).not.toBeChecked();
   await overlay.check();
   await expect(overlay).toBeChecked();
+  await page.getByRole('radio', { name: 'Mediana de las marcas' }).check();
+  await expect(page.getByRole('radio', { name: 'Mediana de las marcas' })).toBeChecked();
+});
+
+test('old calendar preferences migrate without losing the three options', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('synqo-participant-options-team', 'ana');
+    localStorage.setItem(
+      'synqo:calendar-view:v1',
+      JSON.stringify({ extended: true, overlay: true, counts: true }),
+    );
+  });
+  await page.route('**/api/teams/current', (route) =>
+    route.fulfill({
+      json: {
+        id: 'options-team',
+        name: 'Equipo',
+        timeZone: 'Europe/Madrid',
+        expiresAt: '2027-01-01T00:00:00Z',
+        participants: [{ id: 'ana', name: 'Ana' }],
+      },
+    }),
+  );
+  await page.route('**/api/teams/current/availability**', (route) =>
+    route.fulfill({ json: { days: [] } }),
+  );
+  await page.goto('/e/calendario#t=options-token');
+  await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+  await expect(page.getByRole('checkbox', { name: 'Ver semanas completas' })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Superponer calendarios' })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Mostrar recuentos del equipo' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Peor disponibilidad' })).toBeChecked();
+  await expect
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem('synqo:calendar-view:v2') ?? '{}')),
+    )
+    .toEqual({
+      extended: true,
+      overlay: true,
+      counts: true,
+      rule: 'worst',
+    });
+});
+
+test('the chosen rule is shared by teams opened on this device', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('synqo-participant-first-team', 'ana');
+    localStorage.setItem('synqo-participant-second-team', 'ana');
+  });
+  await page.route('**/api/teams/current', (route) => {
+    const id = route.request().headers()['authorization']?.includes('second-token')
+      ? 'second-team'
+      : 'first-team';
+    return route.fulfill({
+      json: {
+        id,
+        name: id,
+        timeZone: 'Europe/Madrid',
+        expiresAt: '2027-01-01T00:00:00Z',
+        participants: [{ id: 'ana', name: 'Ana' }],
+      },
+    });
+  });
+  await page.route('**/api/teams/current/availability**', (route) =>
+    route.fulfill({ json: { days: [] } }),
+  );
+  await page.goto('/e/calendario#t=first-token');
+  await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+  await page.getByRole('radio', { name: 'Estado más frecuente' }).check();
+  await page.goto('/');
+  await page.goto('/e/calendario#t=second-token');
+  await expect(page.getByRole('heading', { name: 'second-team' })).toBeVisible();
+  await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+  await expect(page.getByRole('radio', { name: 'Estado más frecuente' })).toBeChecked();
+});
+
+test('an alternate rule updates provisionally and restores the complete day after a failed write', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.clock.setFixedTime(new Date('2026-10-14T12:00:00+02:00'));
+  await page.addInitScript(() => localStorage.setItem('synqo-participant-summary-team', 'ana'));
+  await page.route('**/api/teams/current', (route) =>
+    route.fulfill({
+      json: {
+        id: 'summary-team',
+        name: 'Equipo',
+        timeZone: 'Europe/Madrid',
+        expiresAt: '2027-01-01T00:00:00Z',
+        participants: [
+          { id: 'ana', name: 'Ana' },
+          { id: 'bea', name: 'Bea' },
+        ],
+      },
+    }),
+  );
+  let releaseWrite = () => {};
+  const firstWrite = new Promise<void>((resolve) => {
+    releaseWrite = resolve;
+  });
+  let writeCount = 0;
+  await page.route('**/api/teams/current/availability**', async (route) => {
+    if (route.request().method() === 'GET')
+      return route.fulfill({
+        json: {
+          days: [
+            {
+              date: '2026-10-14',
+              state: 'unavailable',
+              summaryStates: { worst: 'unavailable', median: 'maybe', mostFrequent: 'available' },
+              counts: { available: 1, maybe: 0, unavailable: 1 },
+              marks: [
+                { participantId: 'ana', participantName: 'Ana', state: 'available' },
+                { participantId: 'bea', participantName: 'Bea', state: 'unavailable' },
+              ],
+            },
+          ],
+        },
+      });
+    writeCount++;
+    if (writeCount === 1) {
+      await firstWrite;
+      return route.fulfill({
+        json: {
+          day: {
+            date: '2026-10-14',
+            state: 'unavailable',
+            summaryStates: { worst: 'unavailable', median: 'maybe', mostFrequent: 'maybe' },
+            counts: { available: 0, maybe: 1, unavailable: 1 },
+            marks: [
+              { participantId: 'ana', participantName: 'Ana', state: 'maybe' },
+              { participantId: 'bea', participantName: 'Bea', state: 'unavailable' },
+            ],
+          },
+          expiresAt: '2027-01-01T00:00:00Z',
+        },
+      });
+    }
+    return route.fulfill({ status: 500, contentType: 'application/problem+json', body: '{}' });
+  });
+  await page.goto('/e/calendario#t=summary-token');
+  await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+  await page.getByRole('radio', { name: 'Estado más frecuente' }).check();
+  await page.getByRole('button', { name: 'Opciones de visualización' }).click();
+  const day = page.locator('.calendar-day[data-date="2026-10-14"]');
+  await expect(day).toHaveClass(/available/);
+  await day.click();
+  const maybe = page.locator('.calendar-detail .state-row.maybe');
+  await maybe.click();
+  await expect(day).toHaveClass(/maybe/);
+  await expect(day).toHaveAttribute('aria-label', /equipo: \? Quizá/);
+  releaseWrite();
+  await expect(page.getByRole('status').last()).toHaveText('Disponibilidad guardada.');
+  await expect(maybe).toContainText('Tú');
+  await maybe.click();
+  await expect(page.getByRole('alert')).toContainText('Hemos recuperado la marca anterior');
+  await expect(day).toHaveClass(/maybe/);
+  await expect(maybe).toContainText('Tú');
 });

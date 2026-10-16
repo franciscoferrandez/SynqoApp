@@ -33,12 +33,14 @@ final class AvailabilityApiTest extends WebTestCase
         $initial = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
         self::assertSame(['available' => 0, 'maybe' => 0, 'unavailable' => 0], $initial['days'][0]['counts']);
         self::assertNull($initial['days'][0]['state']);
+        self::assertSame(['worst' => null, 'median' => null, 'mostFrequent' => null], $initial['days'][0]['summaryStates']);
 
         $path = '/api/teams/current/availability/2026-01-15/participants/' . $participantId;
         $client->jsonRequest('PUT', $path, ['state' => 'maybe', 'timeZone' => 'Europe/Madrid'], server: $headers);
         self::assertResponseStatusCodeSame(200);
         $saved = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
         self::assertSame('maybe', $saved['day']['state']);
+        self::assertSame(['worst' => 'maybe', 'median' => 'maybe', 'mostFrequent' => 'maybe'], $saved['day']['summaryStates']);
         self::assertSame(1, $saved['day']['counts']['maybe']);
         self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM availability'));
         $activityAfterSave = $db->fetchOne('SELECT last_activity_at FROM team WHERE id = ?', [$created['id']]);
@@ -187,6 +189,7 @@ final class AvailabilityApiTest extends WebTestCase
         self::assertResponseStatusCodeSame(200);
         $day = json_decode($client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['days'][0];
         self::assertSame('unavailable', $day['state']);
+        self::assertSame(['worst' => 'unavailable', 'median' => 'maybe', 'mostFrequent' => 'available'], $day['summaryStates']);
         self::assertSame(['available' => 1, 'maybe' => 1, 'unavailable' => 1], $day['counts']);
     }
 

@@ -3,9 +3,11 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 export type AvailabilityState = 'available' | 'maybe' | 'unavailable';
+export type AvailabilitySummaryRule = 'worst' | 'median' | 'mostFrequent';
 export interface AvailabilityDay {
   date: string;
   state: AvailabilityState | null;
+  summaryStates: Record<AvailabilitySummaryRule, AvailabilityState | null>;
   counts: Record<AvailabilityState, number>;
   marks: { participantId: string; participantName: string; state: AvailabilityState }[];
 }

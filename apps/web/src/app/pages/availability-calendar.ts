@@ -11,7 +11,13 @@ import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { AvailabilityDay, AvailabilityState, TeamApi } from '../shared/team-api';
+import {
+  AvailabilityDay,
+  AvailabilityState,
+  AvailabilitySummaryRule,
+  TeamApi,
+} from '../shared/team-api';
+import { summarizeAvailability } from '../shared/availability-summary';
 import { TeamLayout } from './team-layout';
 
 export function civilDate(date: Date): string {
@@ -30,16 +36,19 @@ export function visibleDates(year: number, month: number, extended: boolean): st
   return dates;
 }
 
-const calendarPreferenceKey = 'synqo:calendar-view:v1';
-interface CalendarPreferences {
+const calendarPreferenceKey = 'synqo:calendar-view:v2';
+const previousCalendarPreferenceKey = 'synqo:calendar-view:v1';
+export interface CalendarPreferences {
   extended: boolean;
   overlay: boolean;
   counts: boolean;
+  rule: AvailabilitySummaryRule;
 }
 const defaultCalendarPreferences: CalendarPreferences = {
   extended: false,
   overlay: false,
   counts: false,
+  rule: 'worst',
 };
 
 export function parseCalendarPreferences(value: string | null): CalendarPreferences {
@@ -56,7 +65,16 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
       'counts' in parsed &&
       typeof parsed.counts === 'boolean'
     )
-      return { extended: parsed.extended, overlay: parsed.overlay, counts: parsed.counts };
+      return {
+        extended: parsed.extended,
+        overlay: parsed.overlay,
+        counts: parsed.counts,
+        rule:
+          'rule' in parsed &&
+          (parsed.rule === 'worst' || parsed.rule === 'median' || parsed.rule === 'mostFrequent')
+            ? parsed.rule
+            : 'worst',
+      };
   } catch {
     // Una preferencia antigua o dañada no debe impedir abrir el calendario.
   }
@@ -203,6 +221,36 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
                         />
                         Mostrar recuentos del equipo</label
                       >
+                      <fieldset class="calendar-rule-options">
+                        <legend>Regla del resumen del equipo</legend>
+                        <label
+                          ><input
+                            type="radio"
+                            name="calendar-summary-rule"
+                            [checked]="rule === 'worst'"
+                            (change)="setRule('worst')"
+                          />
+                          Peor disponibilidad</label
+                        >
+                        <label
+                          ><input
+                            type="radio"
+                            name="calendar-summary-rule"
+                            [checked]="rule === 'median'"
+                            (change)="setRule('median')"
+                          />
+                          Mediana de las marcas</label
+                        >
+                        <label
+                          ><input
+                            type="radio"
+                            name="calendar-summary-rule"
+                            [checked]="rule === 'mostFrequent'"
+                            (change)="setRule('mostFrequent')"
+                          />
+                          Estado más frecuente</label
+                        >
+                      </fieldset>
                     </div>
                   }
                 </div>
@@ -264,10 +312,10 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
                 @if (overlay) {
                   <span
                     class="calendar-underlay"
-                    [class.available]="(mine ? day(date).state : ownState(date)) === 'available'"
-                    [class.maybe]="(mine ? day(date).state : ownState(date)) === 'maybe'"
+                    [class.available]="(mine ? teamState(date) : ownState(date)) === 'available'"
+                    [class.maybe]="(mine ? teamState(date) : ownState(date)) === 'maybe'"
                     [class.unavailable]="
-                      (mine ? day(date).state : ownState(date)) === 'unavailable'
+                      (mine ? teamState(date) : ownState(date)) === 'unavailable'
                     "
                     [class.past]="date < today"
                     aria-hidden="true"
@@ -288,14 +336,14 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
             @if (showCounts) {
               <span class="team-counts" aria-hidden="true">
                 @for (state of states; track state) {
-                  <span class="team-count" [class.result]="day(date).state === state">
+                  <span class="team-count" [class.result]="teamState(date) === state">
                     {{ stateIcon(state) }}{{ day(date).counts[state] || '_' }}
                   </span>
                 }
               </span>
             } @else {
               <small class="status">{{
-                underlay && !day(date).state ? '·' : calendarStatusLabel(day(date).state)
+                underlay && !teamState(date) ? '·' : calendarStatusLabel(teamState(date))
               }}</small>
             }
           </ng-template>
@@ -464,9 +512,7 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
             </button>
           }
         </div>
-        <p class="calendar-note">
-          El estado resume la peor marca registrada; las ausencias se ignoran.
-        </p>
+        <p class="calendar-note">{{ ruleDescription }} las ausencias se ignoran.</p>
         <p class="choice-help">
           {{
             selected < today
@@ -539,6 +585,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   extended = false;
   overlay = false;
   showCounts = false;
+  rule: AvailabilitySummaryRule = 'worst';
   menuOpen = false;
   mine = false;
   loading = false;
@@ -563,6 +610,10 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     let stored: string | null = null;
     try {
       stored = this.document.defaultView?.localStorage.getItem(calendarPreferenceKey) ?? null;
+      if (stored === null) {
+        stored =
+          this.document.defaultView?.localStorage.getItem(previousCalendarPreferenceKey) ?? null;
+      }
     } catch {
       // El calendario sigue funcionando sin almacenamiento local.
     }
@@ -570,6 +621,8 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.extended = preferences.extended;
     this.overlay = preferences.overlay;
     this.showCounts = preferences.counts;
+    this.rule = preferences.rule;
+    if (stored !== null) this.savePreferences();
   }
   get effectiveTimeZone(): string {
     try {
@@ -685,6 +738,17 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.showCounts = value;
     this.savePreferences();
   }
+  setRule(rule: AvailabilitySummaryRule): void {
+    this.rule = rule;
+    this.savePreferences();
+  }
+  get ruleDescription(): string {
+    return this.rule === 'worst'
+      ? 'El estado resume la peor marca registrada;'
+      : this.rule === 'median'
+        ? 'El estado resume la mediana de las marcas;'
+        : 'El estado resume la marca más frecuente;';
+  }
   closeMenu(event: Event): void {
     event.preventDefault();
     this.menuOpen = false;
@@ -695,7 +759,12 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     try {
       this.document.defaultView?.localStorage.setItem(
         calendarPreferenceKey,
-        JSON.stringify({ extended: this.extended, overlay: this.overlay, counts: this.showCounts }),
+        JSON.stringify({
+          extended: this.extended,
+          overlay: this.overlay,
+          counts: this.showCounts,
+          rule: this.rule,
+        }),
       );
     } catch {
       // La selección permanece activa durante esta visita.
@@ -725,6 +794,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
       this.data[date] ?? {
         date,
         state: null,
+        summaryStates: { worst: null, median: null, mostFrequent: null },
         counts: { available: 0, maybe: 0, unavailable: 0 },
         marks: [],
       }
@@ -736,7 +806,11 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     );
   }
   displayState(date: string): AvailabilityState | null {
-    return this.mine ? this.ownState(date) : this.day(date).state;
+    return this.mine ? this.ownState(date) : this.teamState(date);
+  }
+  teamState(date: string): AvailabilityState | null {
+    const day = this.day(date);
+    return day.summaryStates?.[this.rule] ?? (this.rule === 'worst' ? day.state : null);
   }
   stateIcon(state: AvailabilityState): string {
     return state === 'available' ? '✓' : state === 'maybe' ? '?' : '×';
@@ -761,7 +835,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   }
   private teamLabel(date: string): string {
     const day = this.day(date);
-    const result = this.statusLabel(day.state);
+    const result = this.statusLabel(this.teamState(date));
     if (!this.showCounts) return `equipo: ${result}`;
     return `equipo: ${result}; disponible ${day.counts.available}, quizá ${day.counts.maybe}, no disponible ${day.counts.unavailable}`;
   }
@@ -820,8 +894,14 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
       });
     const counts = { available: 0, maybe: 0, unavailable: 0 };
     for (const mark of marks) counts[mark.state]++;
-    const state = this.states.filter((s) => counts[s] > 0).at(-1) ?? null;
-    this.data[action.date] = { date: action.date, state, counts, marks };
+    const summaryStates = summarizeAvailability(counts);
+    this.data[action.date] = {
+      date: action.date,
+      state: summaryStates.worst,
+      summaryStates,
+      counts,
+      marks,
+    };
     this.saving = true;
     this.saveFailed = false;
     this.retryAction = action;
