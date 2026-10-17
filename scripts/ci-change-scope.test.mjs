@@ -88,10 +88,11 @@ test("multiple changes combine their checks", () => {
 });
 
 test("a missing base commit runs every check instead of skipping validation", () => {
+  const { GITHUB_OUTPUT: _githubOutput, ...testEnvironment } = process.env;
   const result = spawnSync(
     process.execPath,
     ["scripts/ci-change-scope.mjs", "0".repeat(40)],
-    { encoding: "utf8" },
+    { encoding: "utf8", env: testEnvironment },
   );
   assert.equal(result.status, 0);
   for (const name of [
