@@ -45,6 +45,8 @@ test("API changes run PHPUnit and integration checks without WEB build", () => {
 
 test("infrastructure and shared files run the required checks", () => {
   assert.deepEqual(enabled([".railway/railway.ts"]), ["iac"]);
+  assert.deepEqual(enabled(["railway-toolkit.sh"]), ["iac"]);
+  assert.deepEqual(enabled(["scripts/railway/toolkit.mjs"]), ["iac"]);
   assert.deepEqual(enabled(["LICENSE"]), ["web", "image", "notices"]);
   assert.deepEqual(enabled(["apps/web/package-lock.json"]), [
     "web",

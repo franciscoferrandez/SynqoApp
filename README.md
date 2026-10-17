@@ -122,6 +122,8 @@ Después de la instalación inicial, el arranque cotidiano se hace desde la raí
 
 ### Scripts y comandos de desarrollo
 
+Para operar la preproducción Railway desde este clon, usa `./railway-toolkit.sh --help` y la [guía del toolkit](pdi_doc/09_operacion/01_despliegue/railway-toolkit.md). Incluye estado, IaC, logs, ejecución puntual de Cron y procedimientos para pausar, reanudar o reconstruir el entorno; no actúa sobre Railway al mostrar la ayuda.
+
 **Raíz del repositorio:** `npm ci` instala Lefthook y ejecuta `npm run prepare`, que instala los hooks Git. `npm run prepare` permite reinstalarlos si hace falta. No hay scripts de build o test definidos en el `package.json` raíz.
 
 **WEB** (`apps/web/package.json`):

@@ -24,6 +24,8 @@ export function checksForPath(path) {
     add("image", "notices");
   } else if (path.startsWith(".railway/")) {
     add("iac");
+  } else if (path === "railway-toolkit.sh" || path.startsWith("scripts/railway/")) {
+    add("iac");
   } else if (path === "apps/api/Caddyfile.railway") {
     add("image");
   } else if (path === "apps/api/Dockerfile") {
