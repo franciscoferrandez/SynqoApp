@@ -82,6 +82,7 @@ jobs:
         if: steps.scope.outputs.e2e == 'true'
         env:
           SYNQO_DEPLOYMENT_ENV: test
+          TEAM_CREATION_EMAIL_MODE: send
           TEAM_CREATION_LIMIT: 10000
           TEAM_CREATION_WINDOW_MINUTES: 60
         run: docker compose up -d api mailpit mail-worker

@@ -78,6 +78,10 @@ for (const viewport of viewports) {
     await expect(counts).not.toBeChecked();
     await expect(worst).toBeChecked();
     await weeks.check();
+    await expect.poll(() => page.locator('.calendar-day').count()).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await page.locator('.calendar-day').count()) % 7)
+      .toBe(0);
     const dates = await page
       .locator('.calendar-day')
       .evaluateAll((days) => days.map((day) => day.getAttribute('data-date')!));
