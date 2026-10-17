@@ -75,23 +75,20 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
   const completedSteps: string[] = [];
   let currentStep = 'Crear equipo y acceder como P1';
   let receiptStatus = 'unverified';
-  const receiptResponses: Promise<void>[] = [];
   let mailFailed = false;
   const observeReceipt = (response: Response) => {
     if (new URL(response.url()).pathname !== '/api/mail-attempts/current') return;
-    receiptResponses.push(
-      (async () => {
-        if (!response.ok()) {
-          mailFailed = true;
-          return;
-        }
-        const result = (await response.json()) as { status: string };
-        receiptStatus = result.status;
-        if (result.status === 'failed') mailFailed = true;
-      })().catch(() => {
+    void (async () => {
+      if (!response.ok()) {
         mailFailed = true;
-      }),
-    );
+        return;
+      }
+      const result = (await response.json()) as { status: string };
+      receiptStatus = result.status;
+      if (result.status === 'failed') mailFailed = true;
+    })().catch(() => {
+      // A navigation can cancel a response body after a later poll has succeeded.
+    });
   };
   page.on('response', observeReceipt);
   let finishedAt: number | undefined;
@@ -212,7 +209,6 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
       await expect
         .poll(() => (mailFailed ? 'failed' : receiptStatus), { timeout: 30_000 })
         .toBe('succeeded');
-      await Promise.all(receiptResponses);
       expect(mailFailed, 'El recibo real del navegador no debe informar error').toBe(false);
       await expect(page.locator('[data-mail-failed]')).toHaveCount(0);
       receiptStatus = 'succeeded';
