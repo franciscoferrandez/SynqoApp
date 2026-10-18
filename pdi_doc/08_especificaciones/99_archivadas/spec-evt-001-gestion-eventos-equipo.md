@@ -1,7 +1,7 @@
 ---
 id: SPEC-EVT-001
 nivel: N2
-estado: ready_for_change_apply
+estado: cerrado
 release: REL-004
 ---
 
@@ -113,19 +113,44 @@ Estas decisiones se incorporaron también a [FLUJO-EVT-001 — Consultar y gesti
 
 ## Evidencia / Validation
 
-- PHPUnit/PostgreSQL: límites de título/notas, fecha opcional/pasada, estado por defecto y coherencia, pertenencia de identidad/evento/equipo, Bearer ausente/incorrecto, equipo caducado, cambios y reintentos, agrupaciones y orden en límites de fecha/zona, transición rechazar/recuperar, fecha conservada y estado provisional tras recuperar, rollback ante fallo y cascada al borrar el equipo.
-- Verificar `doctrine:migrations:migrate`, `doctrine:schema:validate`, análisis estático API y exportación OpenAPI contra los contratos probados.
-- Playwright: crear, listar, abrir ficha, editar, cancelar/guardar, rechazar y recuperar; recargar y abrir desde otro contexto; verificar respuestas fallidas sin perder borradores relevantes ni mostrar cambios como confirmados.
-- Revisar visualmente móvil/escritorio y tema claro/oscuro; ejecutar test visual normal y actualizar capturas solo tras aceptar la composición. Documentar herramienta automatizada de accesibilidad, versión, alcance y resultado, además de la revisión manual de teclado/foco.
-- Comandos de referencia: `docker compose exec api composer test`, `composer cs:check`, `composer stan`, `composer rector:check`, `php bin/console lint:container`, `php bin/console doctrine:schema:validate`, `npm --prefix apps/web test`, `npm --prefix apps/web run test:e2e`, `npm --prefix apps/web run test:visual`, `npm --prefix apps/web run lint`, `npm --prefix apps/web run format:check` y `npm --prefix apps/web run build`.
+- PHPUnit/PostgreSQL: `docker compose exec -T api composer test` — 144 pruebas y 1.208 aserciones. Incluye límites, fecha pasada y provisional por defecto, pertenencia, Bearer, caducidad, grupos y desempates de orden, conflictos de ciclo de vida, rollback ante una restricción de base y cascada al borrar el equipo.
+- Migración y esquema: el recorrido E2E aplicó las nueve migraciones en `synqo_test`; `doctrine:schema:validate --env=test` confirmó que el esquema coincide. `lint:container --env=test`, `composer cs:check`, `composer stan` y `composer rector:check` pasaron. El test de OpenAPI verifica las rutas de eventos.
+- Playwright con API y PostgreSQL reales: `npm --prefix apps/web run test:e2e:real` — 1/1. Creó el equipo por API, gestionó el evento desde la WEB y verificó persistencia después de recargar y en una petición API independiente. El servicio `api-e2e` usa exclusivamente `synqo_test`; su URL de conexión no-test apunta a una base inexistente para que un entorno mal configurado falle cerrado. El script recrea solo la base de pruebas y detiene el servicio E2E al terminar.
+- Playwright con API simulada: los flujos de interfaz de eventos y reintento pasaron. El smoke parcial de accesibilidad pasó 23/23 con Playwright 1.63.0 en anchos 390, 768, 769 y 1280 px; comprueba controles nombrados, teclado, foco, reflow y zoom de texto. Es un smoke parcial, no una auditoría WCAG global. La persona impulsora confirmó la prueba manual local de la funcionalidad.
+- Regresión visual: 136/136 capturas en Chromium después de actualizar las referencias afectadas por la nueva pestaña de Eventos y guardar las 24 referencias de Eventos aprobadas. La comparación normal posterior pasó sin diferencias. Incluye 34 casos en 390×844 y 1280×800, claro y oscuro.
+- WEB: 26/26 pruebas unitarias, `lint`, `format:check` y build pasaron. También pasó `git diff --check` antes del cierre documental; se repite tras reparar enlaces.
+
+### Matriz de aceptación
+
+| Criterio | Evidencia | Resultado |
+|---|---|---|
+| 1. Crear con título, notas, fecha opcional y límites definidos | `EventRulesTest`, `EventApiTest` (título/notas inválidos, fecha inválida) y recorrido E2E real de creación | PASS |
+| 2. Estado provisional por defecto, fecha pasada, edición y recuperación provisional conservando la fecha | `EventApiTest` y `events-real.spec.ts` | PASS |
+| 3. Lista, ficha, autoría y última modificación solo tras cambios | `EventApiTest` comprueba autoría/valores iniciales; E2E real edita, recarga y abre la ficha | PASS |
+| 4. Grupos por fecha actual de la zona del equipo; hoy pertenece a futuros | `testTodayUsesTeamTimeZoneAndInvalidOrForeignMutationsDoNotPersist` | PASS |
+| 5. Orden por fecha y por modificación/creación cuando hay empate | `testTodayUsesTeamTimeZone...`, `testSameDateEventsPutMostRecentlyModifiedFirst` y `testUnfinalizedAndRejectedGroupsUseMostRecentModificationOrCreation` | PASS |
+| 6. Rechazo conserva datos y bloquea edición | API verifica rechazo de definitivo y conflicto al editar; E2E real rechaza un provisional | PASS |
+| 7. Recuperación conserva fecha y pasa a provisional | API y E2E real | PASS |
+| 8. Sin borrado individual; cascada al borrar equipo | Migración con FK `ON DELETE CASCADE` y `testDeletingTeamCascadesItsEvents` | PASS |
+| 9. Acceso, vigencia, identidad y atomicidad | API cubre Bearer ausente, equipo caducado, actor ajeno, rollback y actividad intacta | PASS |
+| 10. Conflictos `409`, recursos ajenos `404` y campos inválidos `422` | API cubre editar rechazado, transiciones repetidas, evento/participante ajenos y validaciones | PASS |
+| 11. Flujos WEB adaptables, teclado, foco, error y recuperación | E2E real, E2E de errores/reintento, smoke parcial y 136 capturas visuales; revisión manual local confirmada por la persona impulsora | PASS |
+| 12. Contrato OpenAPI, errores y autenticación coinciden con las operaciones | `TeamApiTest`, `EventApiTest` y validación API completa | PASS |
 
 ## Convergence
 
-- Verificar que cada criterio dentro de scope apunta a requisitos y a evidencia; dejar explícito que la navegación de consultas y la campanita requieren Changes posteriores.
-- Comprobar contrato, restricciones de base de datos, cascada de caducidad, matrices de pruebas y capturas visuales; resolver cualquier diferencia de baseline antes de cerrar.
-- Actualizar REL-004 y el índice de trazabilidad al cerrar este Change conforme al gate PDI.
+| Comprobación | Evidencia | Resultado |
+|---|---|---|
+| Los criterios dentro del alcance están vinculados a requisitos y evidencia ejecutada. | Matriz de aceptación anterior; API, E2E real, pruebas WEB y capturas. | PASS |
+| Persistencia, contrato API, autorización, errores, orden y cascada concuerdan con el comportamiento probado. | `EventApiTest`, `EventRulesTest`, `TeamApiTest`, migración aplicada y validación de esquema. | PASS |
+| La prueba de navegador usa una base aislada y demuestra persistencia tras recarga. | `npm --prefix apps/web run test:e2e:real`; conexión exclusiva a `synqo_test`. | PASS |
+| Las referencias visuales afectadas se actualizaron con aprobación y la comparación normal queda limpia. | `npm --prefix apps/web run test:visual`, 136/136. | PASS |
+| Las funciones fuera de este Change siguen identificadas como pendientes. | Calendario: SPEC-EVT-002. Vínculos con consultas: SPEC-EVT-003. | PASS |
+| No hay cambios normativos pendientes ni desviaciones conocidas dentro del alcance. | Revisión de SPEC, requisitos y código; no requiere actualización de baseline. | PASS |
 
-## Gate DoR
+**Convergence: PASS — READY_FOR_CHANGE_CLOSE.** La gestión independiente de eventos está implementada y validada localmente. No se ha desplegado ni se afirma entrega en producción; la actualización de REL refleja solo la evidencia local.
+
+## Gate DoR (registro histórico de preparación)
 
 | Condición | Resultado | Evidencia |
 |---|---|---|
@@ -138,4 +163,4 @@ Estas decisiones se incorporaron también a [FLUJO-EVT-001 — Consultar y gesti
 | Dependencias y cobertura parcial se comunican sin declarar requisitos completos por inferencia. | PASS | Navegación a consultas y caso de rechazo con consulta abierta quedan para SPEC-EVT-003; campanita, para SPEC-EVT-002. |
 | Se requiere un ADR o una decisión de arquitectura nueva. | NO | El diseño aplica arquitectura API/WEB y transacciones ya establecidas; no añade dependencia ni cambia módulos. |
 
-**Resultado: READY_FOR_CHANGE_APPLY.** Esta SPEC cubre el ciclo propio de creación, edición, consulta, rechazo y recuperación del evento. No acredita todavía los criterios condicionados a vínculos de consulta ni su aparición en el calendario.
+**Resultado: DONE — Change cerrado y archivado localmente el 2026-10-18.** Esta SPEC acredita la gestión independiente de eventos validada en local. No acredita despliegue. Los vínculos con consultas y la aparición en el calendario continúan en SPEC-EVT-003 y SPEC-EVT-002.

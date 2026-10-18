@@ -6,6 +6,7 @@ import { TeamLayout } from './pages/team-layout';
 import { AvailabilityCalendar } from './pages/availability-calendar';
 import { ConsultationsPage } from './pages/consultations-page';
 import { LinkMessagePage } from './pages/link-message-page';
+import { EventsPage } from './pages/events-page';
 
 export const routes: Routes = [
   { path: '', component: CreatePage, title: 'Crear equipo · Synqo' },
@@ -26,6 +27,12 @@ export const routes: Routes = [
         component: ConsultationsPage,
         data: { section: 'consultas' },
         title: 'Consultas · Synqo',
+      },
+      {
+        path: 'eventos',
+        component: EventsPage,
+        data: { section: 'eventos' },
+        title: 'Eventos · Synqo',
       },
     ],
   },

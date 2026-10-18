@@ -139,6 +139,62 @@ const resolvedConsultation = {
     acceptedOptionIds: ['visual-option-cafe'],
   },
 };
+const eventGroups = {
+  unfinalized: [
+    {
+      id: 'visual-event-provisional',
+      title: 'Ensayo general',
+      date: '2026-10-24',
+      status: 'provisional',
+      lastModifiedAt: null,
+      version: 1,
+    },
+  ],
+  future: [
+    {
+      id: 'visual-event-future',
+      title: 'Concierto de otoño',
+      date: '2026-10-30',
+      status: 'definitive',
+      lastModifiedAt: '2026-10-14T11:00:00+02:00',
+      version: 2,
+    },
+  ],
+  past: [
+    {
+      id: 'visual-event-past',
+      title: 'Actuación en la plaza',
+      date: '2026-10-10',
+      status: 'definitive',
+      lastModifiedAt: null,
+      version: 1,
+    },
+  ],
+  rejected: [
+    {
+      id: 'visual-event-rejected',
+      title: 'Plan descartado',
+      date: null,
+      status: 'rejected',
+      lastModifiedAt: '2026-10-14T11:30:00+02:00',
+      version: 2,
+    },
+  ],
+};
+const eventDetail = {
+  ...eventGroups.unfinalized[0],
+  notes: 'Repasar las canciones nuevas antes del ensayo.',
+  createdBy: participants[0],
+  createdAt: '2026-10-12T10:00:00+02:00',
+  lastModifiedBy: null,
+};
+const rejectedEventDetail = {
+  ...eventGroups.rejected[0],
+  notes: null,
+  createdBy: participants[0],
+  createdAt: '2026-10-12T10:00:00+02:00',
+  lastModifiedBy: participants[1],
+};
 
 async function installFixtures(page: Page, options: ScenarioOptions = {}): Promise<void> {
   await page.clock.setFixedTime(new Date('2026-10-14T12:00:00+02:00'));
@@ -226,6 +282,16 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
               : textConsultation,
     });
   });
+  await page.route('**/api/teams/current/events', (route) => route.fulfill({ json: eventGroups }));
+  await page.route(/\/api\/teams\/current\/events\/[^/]+$/, (route) =>
+    route.fulfill({
+      json: {
+        event: route.request().url().endsWith('visual-event-rejected')
+          ? rejectedEventDetail
+          : eventDetail,
+      },
+    }),
+  );
   await page.route('**/api/mail-attempts/current', (route) =>
     route.fulfill({ json: { status: 'failed' } }),
   );
@@ -448,6 +514,73 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/consultas#t=${accessToken}`, 'light');
       await expect(page.getByRole('heading', { name: 'Aún no hay consultas' })).toBeVisible();
+    },
+  },
+  {
+    id: 'eventos-lista-agrupada',
+    title: 'eventos organizados por estado y fecha',
+    run: async (page) => {
+      await open(page, `/e/eventos#t=${accessToken}`, 'light');
+      await expect(page.getByRole('heading', { name: 'Sin fecha definitiva' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Futuros' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Pasados' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Rechazados' })).toBeVisible();
+    },
+  },
+  {
+    id: 'eventos-ficha',
+    title: 'ficha de evento',
+    fullPage: false,
+    run: async (page) => {
+      await open(page, `/e/eventos#t=${accessToken}`, 'light');
+      await page.locator('[data-event-id="visual-event-provisional"]').click();
+      await expect(page.getByRole('heading', { name: 'Ensayo general' })).toBeVisible();
+      await expect(page.getByText('Repasar las canciones nuevas antes del ensayo.')).toBeVisible();
+    },
+  },
+  {
+    id: 'eventos-crear-formulario',
+    title: 'formulario de creación de evento',
+    fullPage: false,
+    run: async (page) => {
+      await open(page, `/e/eventos#t=${accessToken}`, 'light');
+      await page.getByRole('button', { name: '+ Crear evento' }).click();
+      await expect(page.getByRole('dialog', { name: 'Crea un evento' })).toBeVisible();
+      await expect(page.locator('#event-title')).toBeFocused();
+    },
+  },
+  {
+    id: 'eventos-editar-formulario',
+    title: 'formulario de edición de evento',
+    fullPage: false,
+    run: async (page) => {
+      await open(page, `/e/eventos#t=${accessToken}`, 'light');
+      await page.locator('[data-event-id="visual-event-provisional"]').click();
+      await page.getByRole('button', { name: 'Editar evento' }).click();
+      await expect(page.getByRole('dialog', { name: 'Edita el evento' })).toBeVisible();
+      await expect(page.locator('#event-title')).toHaveValue('Ensayo general');
+    },
+  },
+  {
+    id: 'eventos-confirmar-rechazo',
+    title: 'confirmación para rechazar evento',
+    fullPage: false,
+    run: async (page) => {
+      await open(page, `/e/eventos#t=${accessToken}`, 'light');
+      await page.locator('[data-event-id="visual-event-provisional"]').click();
+      await page.getByRole('button', { name: 'Rechazar evento' }).click();
+      await expect(page.getByRole('dialog', { name: '¿Rechazar este evento?' })).toBeVisible();
+    },
+  },
+  {
+    id: 'eventos-confirmar-recuperacion',
+    title: 'confirmación para recuperar evento',
+    fullPage: false,
+    run: async (page) => {
+      await open(page, `/e/eventos#t=${accessToken}`, 'light');
+      await page.locator('[data-event-id="visual-event-rejected"]').click();
+      await page.getByRole('button', { name: 'Recuperar evento' }).click();
+      await expect(page.getByRole('dialog', { name: '¿Recuperar este evento?' })).toBeVisible();
     },
   },
   {

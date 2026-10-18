@@ -12,6 +12,7 @@
     "format:check": "prettier --check 'src/**/*.{ts,html,css}' 'angular.json' 'package.json' 'tsconfig*.json' 'eslint.config.js' '.prettierrc' '.postcssrc.json'",
     "format:fix": "prettier --write 'src/**/*.{ts,html,css}' 'angular.json' 'package.json' 'tsconfig*.json' 'eslint.config.js' '.prettierrc' '.postcssrc.json'",
     "test:e2e": "playwright test '^(?!.*visual-regressions\\.spec\\.ts$).*'",
+    "test:e2e:real": "bash ../../scripts/run-web-real-e2e.sh",
     "test:visual": "bash ../../scripts/run-web-visual-e2e.sh",
     "test:visual:update": "bash ../../scripts/run-web-visual-e2e.sh --update-snapshots"
   },

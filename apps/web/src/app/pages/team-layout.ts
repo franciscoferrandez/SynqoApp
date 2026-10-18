@@ -102,6 +102,14 @@ import { DemoResetTimer } from '../shared/demo-reset-timer';
               ariaCurrentWhenActive="page"
               >Consultas</a
             >
+            <a
+              class="section-tab"
+              routerLink="eventos"
+              preserveFragment
+              routerLinkActive="section-tab-active"
+              ariaCurrentWhenActive="page"
+              >Eventos</a
+            >
           </nav>
           <router-outlet />
         }

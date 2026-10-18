@@ -24,6 +24,7 @@ npm --prefix apps/web run format:check
 npm --prefix apps/web run build
 npm --prefix apps/web test
 npm --prefix apps/web run test:e2e
+npm --prefix apps/web run test:e2e:real
 npm --prefix apps/web run test:visual
 ```
 
@@ -33,7 +34,9 @@ La pantalla de creación obtiene de `/api/configuration` los límites vigentes y
 
 ### Comparación visual
 
-`npm --prefix apps/web run test:visual` compara 112 capturas en Chromium: veintiocho pantallas/casuísticas en 390×844 y 1280×800, cada una en claro y oscuro. Usa respuestas API fijas y una fecha/zona horaria controladas; no necesita API, correo ni PostgreSQL. El navegador corre dentro de la imagen oficial Playwright `v1.63.0-noble`, igual que en CI. La primera ejecución descarga esa imagen y puede tardar más.
+`npm --prefix apps/web run test:visual` compara 136 capturas en Chromium: treinta y cuatro pantallas/casuísticas en 390×844 y 1280×800, cada una en claro y oscuro. Usa respuestas API fijas y una fecha/zona horaria controladas; no necesita API, correo ni PostgreSQL. El navegador corre dentro de la imagen oficial Playwright `v1.63.0-noble`, igual que en CI. La primera ejecución descarga esa imagen y puede tardar más.
+
+`npm --prefix apps/web run test:e2e:real` prueba el flujo de Eventos en un navegador contra Symfony y PostgreSQL reales. Antes recrea solo `synqo_test`, verificada por `composer db:reset:test`; el servicio `api-e2e` del perfil Compose `e2e` solo puede conectarse a esa base. No borra ni escribe en la base de desarrollo `synqo`. Al terminar, detiene `api-e2e` y deja PostgreSQL disponible.
 
 Las referencias están en `e2e/visual-regressions.spec.ts-snapshots/`. Para regenerarlas intencionadamente, ejecuta `npm --prefix apps/web run test:visual:update`. Revisa el diff de todas las imágenes antes de conservarlo; la actualización genera candidatos, no los aprueba. Vuelve a ejecutar `test:visual` en modo normal. Playwright deja el informe y las imágenes `actual`, `expected` y `diff` en `playwright-report/` y `test-results/` cuando hay diferencias. Los argumentos se pueden acotar, por ejemplo `npm --prefix apps/web run test:visual -- --grep "calendario"`.
 

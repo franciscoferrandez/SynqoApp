@@ -116,6 +116,11 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
+    App\Application\Event\EventRepository: '@App\Infrastructure\Persistence\OrmEventRepository'
+    App\Controller\EventController:
+        public: true
+        tags: ['controller.service_arguments']
+
     App\Domain\Team\TeamDeletionPolicy:
         arguments:
             $retentionDays: '%env(TEAM_DELETION_RETENTION_DAYS)%'

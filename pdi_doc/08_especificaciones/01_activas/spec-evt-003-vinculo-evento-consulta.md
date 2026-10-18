@@ -26,14 +26,14 @@ Permitir que una persona relacione una consulta de fechas abierta con un evento 
 ## Fuera de scope
 
 - El marcador de evento en el calendario y el detalle del día, que corresponden a [RF-EVT-004 — Mostrar eventos en el calendario](../../03_requisitos/01_funcionales/EVT/rf-evt-004-mostrar-eventos-calendario.md) y [SPEC-EVT-002 — Mostrar eventos en el calendario](spec-evt-002-eventos-en-calendario.md).
-- La creación, edición, lista, ficha, rechazo y recuperación como capacidades independientes del evento, que corresponden a [SPEC-EVT-001 — Gestión de eventos del equipo](spec-evt-001-gestion-eventos-equipo.md). Esta SPEC depende de esa capacidad y solo añade las relaciones con consultas.
+- La creación, edición, lista, ficha, rechazo y recuperación como capacidades independientes del evento, que corresponden a [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md). Esta SPEC depende de esa capacidad y solo añade las relaciones con consultas.
 - Las consultas de opciones de texto y su resolución.
 - Historial de cambios de vínculo mientras una consulta permanece abierta. Solo se conserva el vínculo vigente al cierre y las relaciones cerradas que decida el producto.
 - Una referencia de evento en disponibilidad individual o en opciones de la consulta.
 
 ## Dependencias y orden
 
-- Para iniciar la implementación de esta SPEC debe estar implementada y disponible [SPEC-EVT-001 — Gestión de eventos del equipo](spec-evt-001-gestion-eventos-equipo.md): entidad, ficha y operaciones de evento. La integración se implementa después de ese Change.
+- Para iniciar la implementación de esta SPEC debe estar implementada y disponible [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md): entidad, ficha y operaciones de evento. La integración se implementa después de ese Change.
 - Puede implementarse antes o después de [SPEC-EVT-002 — Mostrar eventos en el calendario](spec-evt-002-eventos-en-calendario.md); no comparte sus criterios de aceptación.
 - La especificación puede prepararse en paralelo. No se altera el calendario ni se presupone que el Change de eventos ya esté entregado.
 
@@ -166,4 +166,4 @@ Realización de reglas y requisitos existentes. La regla de que un evento rechaz
 
 ## Resultado de preparación
 
-**READY_FOR_CHANGE_APPLY.** El alcance, diseño, dependencia, estructura, slices y evidencia están definidos. No quedan decisiones funcionales bloqueantes; el evento rechazado debe recuperarse antes de ser ofrecido como vínculo nuevo, y la excepción del vínculo previo se mantiene. La implementación debe esperar a que SPEC-EVT-001 esté entregada. El calendario sigue fuera de este Change.
+**READY_FOR_CHANGE_APPLY.** El alcance, diseño, dependencia, estructura, slices y evidencia están definidos. No quedan decisiones funcionales bloqueantes; el evento rechazado debe recuperarse antes de ser ofrecido como vínculo nuevo, y la excepción del vínculo previo se mantiene. La implementación puede comenzar cuando SPEC-EVT-001 esté implementada y validada; esa validación local ya consta en REL-004. El despliegue de la release no es requisito previo. El calendario sigue fuera de este Change.

@@ -1,0 +1,12 @@
+{
+  "/api": {
+    "target": "http://api-e2e:8000",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/__brandboard": {
+    "target": "http://127.0.0.1:4201",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

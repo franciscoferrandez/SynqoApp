@@ -1,0 +1,23 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Application\Event;
+
+interface EventRepository
+{
+    /** @return list<array<string, mixed>> */
+    public function listForTeam(string $teamId): array;
+
+    /** @return array<string, mixed>|null */
+    public function detailForTeam(string $teamId, string $eventId): ?array;
+
+    /** @return array<string, mixed> */
+    public function create(string $teamId, string $participantId, string $eventId, string $title, ?string $notes, ?string $date, string $status, string $at, string $activityAt): array;
+
+    public function update(string $teamId, string $eventId, string $participantId, string $title, ?string $notes, ?string $date, string $status, string $at, string $activityAt): bool;
+
+    public function reject(string $teamId, string $eventId, string $participantId, string $at, string $activityAt): bool;
+
+    public function recover(string $teamId, string $eventId, string $participantId, string $at, string $activityAt): bool;
+}

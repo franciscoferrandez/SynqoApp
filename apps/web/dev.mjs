@@ -9,6 +9,7 @@ const brandboard = spawn(node, [path.join(webRoot, 'brandboard-dev-server.mjs')]
   stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
 });
 const angularCli = path.join(webRoot, 'node_modules/@angular/cli/bin/ng.js');
+const proxyConfig = process.env['WEB_PROXY_CONFIG'] ?? 'proxy.conf.json';
 let angular;
 let stopping = false;
 let readyTimeout;
@@ -42,7 +43,7 @@ function startAngular() {
   clearTimeout(readyTimeout);
   angular = spawn(
     node,
-    [angularCli, 'serve', '--proxy-config', 'proxy.conf.json', ...process.argv.slice(2)],
+    [angularCli, 'serve', '--proxy-config', proxyConfig, ...process.argv.slice(2)],
     { cwd: webRoot, stdio: 'inherit' },
   );
   angular.on('error', (error) => {

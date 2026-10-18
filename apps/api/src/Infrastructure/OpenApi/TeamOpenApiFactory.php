@@ -173,6 +173,60 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'status' => $this->enumSchema(['resolved', 'rejected']), 'acceptedOptionIds' => $accepted], ['participantId', 'status', 'acceptedOptionIds']))]), required: true),
             responses: ['200' => $this->response('Confirmed resolution and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Different resolution already recorded', 'urn:synqo:problem:consultation-closed'), '422' => $this->problem('Invalid resolution', withViolations: true)] + $decisionErrors,
         )));
+        $event = $this->eventSummary();
+        $eventList = $this->schema('array');
+        $eventList['items'] = $event;
+        $eventErrors = ['400' => $this->problem('Malformed JSON'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team, event or participant not found'), '409' => $this->problem('Event state does not allow this operation', 'urn:synqo:problem:event-conflict'), '410' => $this->problem('Team expired'), '422' => $this->problem('Invalid event fields', withViolations: true), '500' => $this->problem('Unexpected internal error')];
+        $eventRequest = $this->eventRequest(false);
+        $paths->addPath('/api/teams/current/events', new PathItem(
+            get: new Operation(
+                operationId: 'listTeamEvents',
+                tags: ['Events'],
+                summary: 'List team events grouped by planning state',
+                security: $security,
+                responses: ['200' => $this->response('Events grouped and sorted for the team', ['unfinalized' => $eventList, 'future' => $eventList, 'past' => $eventList, 'rejected' => $eventList])] + $eventErrors,
+            ),
+            post: new Operation(
+                operationId: 'createTeamEvent',
+                tags: ['Events'],
+                summary: 'Create an event',
+                security: $security,
+                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $eventRequest)]), required: true),
+                responses: ['201' => $this->response('Created event', ['event' => $this->eventDetail(), 'expiresAt' => $this->schema('string', format: 'date-time')])] + $eventErrors,
+            ),
+        ));
+        $eventId = new Parameter(name: 'eventId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid']);
+        $paths->addPath('/api/teams/current/events/{eventId}', new PathItem(
+            get: new Operation(
+                operationId: 'readTeamEvent',
+                tags: ['Events'],
+                summary: 'Read event details',
+                security: $security,
+                parameters: [$eventId],
+                responses: ['200' => $this->response('Event detail', ['event' => $this->eventDetail()])] + $eventErrors,
+            ),
+            put: new Operation(
+                operationId: 'updateTeamEvent',
+                tags: ['Events'],
+                summary: 'Replace event fields',
+                security: $security,
+                parameters: [$eventId],
+                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->eventRequest(true))]), required: true),
+                responses: ['200' => $this->response('Updated event', ['event' => $this->eventDetail(), 'expiresAt' => $this->schema('string', format: 'date-time')])] + $eventErrors,
+            ),
+        ));
+        $participantAction = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid')], ['participantId']);
+        foreach (['rejection' => 'rejectTeamEvent', 'recovery' => 'recoverTeamEvent'] as $action => $operationId) {
+            $paths->addPath('/api/teams/current/events/{eventId}/' . $action, new PathItem(put: new Operation(
+                operationId: $operationId,
+                tags: ['Events'],
+                summary: $action === 'rejection' ? 'Reject an event' : 'Recover a rejected event',
+                security: $security,
+                parameters: [$eventId],
+                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $participantAction)]), required: true),
+                responses: ['200' => $this->response('Changed event lifecycle state', ['event' => $this->eventDetail(), 'expiresAt' => $this->schema('string', format: 'date-time')])] + $eventErrors,
+            )));
+        }
         $components = $openApi->getComponents()->withSecuritySchemes(new \ArrayObject(['teamBearer' => new SecurityScheme(type: 'http', description: 'Access token from the URL fragment', scheme: 'bearer'), 'mailReceipt' => new SecurityScheme(type: 'apiKey', description: 'Opaque receipt returned when the team was created with an email', name: 'X-Mail-Receipt', in: 'header')]));
         return $openApi->withPaths($paths)->withComponents($components);
     }
@@ -282,6 +336,58 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $options['items'] = $this->schema('string', maxLength: 50);
 
         return $options;
+    }
+
+    private function eventSummary(): Schema
+    {
+        $date = $this->schema('string', format: 'date');
+        $date['nullable'] = true;
+        $lastModifiedAt = $this->schema('string', format: 'date-time');
+        $lastModifiedAt['nullable'] = true;
+        $version = $this->schema('integer');
+        $version['minimum'] = 1;
+        return $this->schema('object', [
+            'id' => $this->schema('string', format: 'uuid'),
+            'title' => $this->schema('string', maxLength: 250),
+            'date' => $date,
+            'status' => $this->enumSchema(['provisional', 'definitive', 'rejected']),
+            'lastModifiedAt' => $lastModifiedAt,
+            'version' => $version,
+        ], ['id', 'title', 'date', 'status', 'lastModifiedAt', 'version']);
+    }
+
+    private function eventDetail(): Schema
+    {
+        $event = $this->eventSummary();
+        $notes = $this->schema('string', maxLength: 5000);
+        $notes['nullable'] = true;
+        $lastModifiedBy = $this->participant();
+        $lastModifiedBy['nullable'] = true;
+        $event['properties']['notes'] = $notes;
+        $event['properties']['createdBy'] = $this->participant();
+        $event['properties']['createdAt'] = $this->schema('string', format: 'date-time');
+        $event['properties']['lastModifiedBy'] = $lastModifiedBy;
+        $event['required'] = [...$event['required'], 'notes', 'createdBy', 'createdAt', 'lastModifiedBy'];
+        return $event;
+    }
+
+    private function eventRequest(bool $updating): Schema
+    {
+        $notes = $this->schema('string', maxLength: 5000);
+        $notes['nullable'] = true;
+        $date = $this->schema('string', format: 'date');
+        $date['nullable'] = true;
+        $status = $this->enumSchema(['provisional', 'definitive']);
+        if (!$updating) {
+            $status['description'] = 'Optional; defaults to provisional. An event without a date is always provisional.';
+        }
+        return $this->schema('object', [
+            'participantId' => $this->schema('string', format: 'uuid'),
+            'title' => $this->schema('string', maxLength: 250),
+            'notes' => $notes,
+            'date' => $date,
+            'status' => $status,
+        ], $updating ? ['participantId', 'title', 'status'] : ['participantId', 'title']);
     }
 
     private function participant(): Schema

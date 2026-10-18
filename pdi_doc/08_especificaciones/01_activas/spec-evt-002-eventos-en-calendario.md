@@ -15,13 +15,13 @@ Permitir reconocer desde el calendario los días con eventos activos y consultar
 
 ## Scope
 
-- Realizar [RF-EVT-004 — Mostrar eventos en el calendario](../../03_requisitos/01_funcionales/EVT/rf-evt-004-mostrar-eventos-calendario.md) una vez disponibles los datos de evento de [SPEC-EVT-001 — Gestión de eventos del equipo](spec-evt-001-gestion-eventos-equipo.md).
+- Realizar [RF-EVT-004 — Mostrar eventos en el calendario](../../03_requisitos/01_funcionales/EVT/rf-evt-004-mostrar-eventos-calendario.md) una vez disponibles los datos de evento de [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md).
 - Añadir el indicador de eventos y su cantidad cuando corresponda a las casillas del calendario.
 - Presentar en el detalle del día los eventos activos fechados en ese día, sin afectar la disponibilidad ni sus opciones de visualización.
 
 ## Fuera de scope
 
-- Crear, editar, rechazar o recuperar eventos; pertenece a [SPEC-EVT-001 — Gestión de eventos del equipo](spec-evt-001-gestion-eventos-equipo.md).
+- Crear, editar, rechazar o recuperar eventos; pertenece a [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md).
 - Vincular consultas de fechas a eventos; pertenece a [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../../03_requisitos/02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md) y su Change propio.
 - Modificar el cálculo, las marcas o la presentación de disponibilidad ya definidos en [RF-DIS-002 — Consultar el visor de disponibilidad](../../03_requisitos/01_funcionales/DIS/rf-dis-002-consultar-visor.md).
 
@@ -33,12 +33,12 @@ Permitir reconocer desde el calendario los días con eventos activos y consultar
 
 ## Dependencias
 
-- [SPEC-EVT-001 — Gestión de eventos del equipo](spec-evt-001-gestion-eventos-equipo.md) debe estar implementada y validada: proporciona persistencia y datos de evento con fecha y estado.
+- [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md) debe estar implementada y validada: proporciona persistencia y datos de evento con fecha y estado.
 - La integración se realiza en el calendario existente, que ya carga los datos del período visible y abre un detalle diario distinto en escritorio y móvil.
 
 ## Módulos afectados
 
-- API: lectura autorizada de eventos por intervalo visible, reutilizando el modelo de [SPEC-EVT-001 — Gestión de eventos del equipo](spec-evt-001-gestion-eventos-equipo.md).
+- API: lectura autorizada de eventos por intervalo visible, reutilizando el modelo de [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md).
 - WEB: casillas y detalle diario existentes, sin alterar la edición de disponibilidad.
 
 ## Criterios de aceptación

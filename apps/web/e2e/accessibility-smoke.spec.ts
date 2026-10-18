@@ -84,12 +84,40 @@ for (const viewport of viewports) {
       });
     });
     test.beforeEach(async ({ page }) => {
+      await page.route('**/api/configuration', (route) =>
+        route.fulfill({
+          json: {
+            teamCreationEmailMode: 'demo',
+            teamCreationMaxTeams: 10,
+            teamCreationWindowMinutes: 60,
+          },
+        }),
+      );
       await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
       await page.route('**/api/teams/current/availability**', (route) =>
         route.fulfill({ json: { days: [] } }),
       );
       await page.route('**/api/teams/current/consultations', (route) =>
         route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+      );
+      await page.route('**/api/teams/current/events', (route) =>
+        route.fulfill({
+          json: {
+            unfinalized: [
+              {
+                id: 'smoke-event',
+                title: 'Ensayo del equipo',
+                date: null,
+                status: 'provisional',
+                lastModifiedAt: null,
+                version: 1,
+              },
+            ],
+            future: [],
+            past: [],
+            rejected: [],
+          },
+        }),
       );
     });
     test('creation, confirmation and link messages keep named controls keyboard accessible', async ({
@@ -189,6 +217,27 @@ for (const viewport of viewports) {
       await reflow(page);
       await keyboardFocus(editor.getByRole('button', { name: 'Cancelar', exact: true }));
       await page.keyboard.press('Enter');
+      await expect(editor).toBeHidden();
+      await expect(create).toBeFocused();
+    });
+    test('events list and editor preserve keyboard focus and reflow', async ({ page }) => {
+      await page.addInitScript(() =>
+        localStorage.setItem('synqo-participant-smoke-team', 'smoke-person'),
+      );
+      await page.goto('/e/eventos#t=smoke-token');
+      await expect(page.getByRole('heading', { name: 'Sin fecha definitiva' })).toBeVisible();
+      await reflow(page);
+
+      const create = page.locator('.section-heading').getByRole('button', { name: /Crear evento/ });
+      await keyboardFocus(create);
+      await page.keyboard.press('Enter');
+      const editor = page.getByRole('dialog', { name: 'Crea un evento' });
+      await expect(editor.locator('#event-title')).toBeFocused();
+      await keyboardFocus(editor.locator('#event-title'));
+      await reachable(editor.locator('#event-notes'));
+      await reachable(editor.locator('#event-date'));
+      await reflow(page);
+      await page.keyboard.press('Escape');
       await expect(editor).toBeHidden();
       await expect(create).toBeFocused();
     });
