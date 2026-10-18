@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Requisito
 
-El sistema debe permitir que un usuario con acceso al equipo resuelva una consulta abierta bajo una identidad de participante, aceptando una o varias opciones propuestas o rechazando la consulta.
+El sistema debe permitir que un usuario con acceso al equipo resuelva una consulta abierta bajo una identidad de participante, aceptando una o varias opciones propuestas o rechazando la consulta. Si una consulta de fechas se vincula a un evento, la aceptación se limita a una fecha.
 
 ## Origen
 
@@ -22,6 +22,13 @@ La consulta está abierta; el usuario tiene acceso al equipo y actúa bajo una i
 ## Criterios de aceptación
 
 - Puede registrarse una resolución que acepte una o varias opciones de la consulta o que la rechace.
+- Una consulta de fechas vinculada a un evento sin fecha o con fecha provisional solo permite aceptar una fecha; al confirmarla, esa fecha queda definitiva en el evento. Una consulta sin evento vinculado conserva la posibilidad de aceptar varias opciones.
+- Cuando la resolución asigna una fecha al evento, la identidad de participante que resolvió la consulta figura como autora de la última modificación del evento.
+- Al resolver una consulta de fechas todavía abierta se puede seleccionar un evento elegible aunque no estuviera vinculado al crear la consulta. Mientras esté abierta, el vínculo se puede cambiar o retirar. Como vínculo nuevo no se ofrecen eventos definitivos, rechazados ni vinculados a otra consulta abierta; un evento rechazado debe recuperarse primero. Si el evento ya vinculado se rechaza antes de resolver, se aplica la excepción descrita en [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../../02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md).
+- Cambiar solo el vínculo de una consulta abierta no cuenta como última modificación del evento. Un evento puede vincularse a otra consulta cuando las anteriores ya estén cerradas; las consultas cerradas vinculadas siguen accesibles desde su ficha.
+- Si un evento vinculado previamente ya tiene fecha definitiva, se avisa **antes de confirmar** que la resolución de la consulta no cambiará esa fecha. La consulta puede resolverse, conserva la relación visible con el evento y la fecha del evento se puede modificar desde su ficha.
+- Rechazar una consulta vinculada no altera el evento.
+- Al resolver o rechazar una consulta vinculada, la relación con el evento se conserva visible y navegable desde la ficha de ambos. La ficha del evento permite navegar a todas sus consultas vinculadas que ya estén cerradas.
 - La consulta puede resolverse sin haber recibido votos.
 - La resolución queda atribuida a la identidad de participante seleccionada.
 - En la consulta cerrada se muestra la identidad de participante que registró la resolución.
@@ -31,9 +38,11 @@ La consulta está abierta; el usuario tiene acceso al equipo y actúa bajo una i
 
 ## Casos límite
 
-Si se cancela la confirmación, la consulta permanece abierta y no se registra la resolución. En esta fase una consulta resuelta no se reabre. Rechazar después una resolución registrada es solo una propuesta futura.
+Si se cancela la confirmación, la consulta permanece abierta y no se registra la resolución. En esta fase una consulta resuelta no se reabre. Rechazar después una resolución registrada es solo una propuesta futura. Si, de forma excepcional, un evento rechazado continúa vinculado al resolver, se ofrece desvincularlo y aceptar la fecha o rechazar también la consulta; cancelar el aviso deja ambos sin cambios.
 
 ## Relaciones
 
 - [RN-CON-002 — Resolución de una consulta abierta](../../02_reglas-negocio/CON/rn-con-002-resolucion-consulta.md)
 - [RD-CON-002 — Resultado de la resolución](../../03_datos/CON/rd-con-002-resolucion.md)
+- [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../../02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md)
+- [RD-EVT-002 — Autoría y momentos del evento](../../03_datos/EVT/rd-evt-002-autoria-momentos-evento.md)

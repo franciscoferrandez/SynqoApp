@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Regla
 
-En la primera entrega, un equipo rápido caduca tras tres meses naturales sin modificaciones. Crear el equipo inicia el plazo. Toda modificación de participantes, disponibilidades, votos, consultas o resoluciones reinicia el plazo. El mero acceso mediante el enlace no es actividad y no lo reinicia.
+Un equipo rápido caduca tras tres meses naturales sin modificaciones. Crear el equipo inicia el plazo. Toda modificación de participantes, disponibilidades, votos, consultas, resoluciones o eventos del equipo reinicia el plazo. El mero acceso mediante el enlace no es actividad y no lo reinicia.
 
 Una vez caducado, el equipo no puede recuperarse en esta fase. Su fecha prevista de caducidad equivale al vencimiento del plazo vigente si no se realizan nuevas modificaciones.
 
@@ -26,8 +26,9 @@ Los equipos rápidos deben permitir coordinación inmediata sin registro y mostr
 - Marcar o desmarcar disponibilidad cuenta como modificación; cambiar un voto abierto también.
 - Un intento de modificación que falla y no se guarda no reinicia el plazo.
 - Crear o modificar los datos de un participante del equipo cuenta como modificación.
+- Crear, editar, rechazar o recuperar un evento del equipo cuenta como modificación.
 - Seleccionar otra identidad activa guardada solo en el navegador no modifica el equipo ni reinicia el plazo.
-- Leer el equipo, el visor o las consultas no cuenta como modificación.
+- Leer el equipo, el visor, las consultas o los eventos no cuenta como modificación.
 - Una modificación el 31 de agosto vence el 1 de diciembre: noviembre tiene 30 días y el día sobrante pasa a diciembre.
 - Una modificación el 30 de noviembre vence el 2 de marzo si el febrero de destino tiene 28 días, o el 1 de marzo si tiene 29.
 - La zona horaria del dispositivo no cambia la caducidad calculada para el equipo, solo su presentación.
@@ -43,3 +44,4 @@ Decisión expresa de quien impulsa Synqo sobre equipos rápidos, plazo de tres m
 - [RF-EQU-004 — Mostrar la fecha prevista de caducidad](../../01_funcionales/EQU/rf-equ-004-mostrar-caducidad.md)
 - [RD-EQU-002 — Fecha prevista de caducidad del equipo](../../03_datos/EQU/rd-equ-002-caducidad-equipo.md)
 - [RN-EQU-003 — Borrado de equipos caducados](rn-equ-003-borrado-equipo.md)
+- [RD-EVT-001 — Datos del evento](../../03_datos/EVT/rd-evt-001-datos-evento.md)

@@ -20,6 +20,7 @@ El usuario tiene acceso al equipo y actúa bajo una identidad de participante de
 ## Criterios de aceptación
 
 - La consulta creada pertenece al equipo y puede recibir votos.
+- Al crear una consulta de fechas se puede elegir, de forma opcional, un evento del mismo equipo que no esté rechazado, que no tenga fecha o cuya fecha sea provisional, y que no esté vinculado a otra consulta abierta. Un evento rechazado no se ofrece; primero hay que recuperarlo. La consulta queda vinculada como máximo a un evento. Una consulta anterior ya cerrada no impide vincular ese evento a una nueva consulta abierta.
 - La persona escribe un título breve al crear la consulta y ese título la identifica en la lista del equipo.
 - El título admite hasta 250 caracteres según [RD-CON-003 — Título de la consulta](../../03_datos/CON/rd-con-003-titulo-consulta.md).
 - La consulta puede crearse con una a diez opciones de fecha según [RN-CON-003 — Mínimo de una opción por consulta](../../02_reglas-negocio/CON/rn-con-003-minimo-opciones-consulta.md) y [RN-CON-007 — Máximo de diez opciones por consulta](../../02_reglas-negocio/CON/rn-con-007-maximo-opciones-consulta.md). El panel de creación indica visualmente el máximo.
@@ -32,7 +33,7 @@ El usuario tiene acceso al equipo y actúa bajo una identidad de participante de
 
 ## Casos límite
 
-El mínimo es una opción para cualquier tipo de consulta y el máximo de esta entrega es diez. Si se intenta añadir una fecha ya presente, no se añade una segunda opción con esa fecha. Si alguna fecha ha pasado al confirmar la creación, la consulta no se crea hasta corregirla.
+El mínimo es una opción para cualquier tipo de consulta y el máximo de esta entrega es diez. Si se intenta añadir una fecha ya presente, no se añade una segunda opción con esa fecha. Si alguna fecha ha pasado al confirmar la creación, la consulta no se crea hasta corregirla. El vínculo con el evento puede cambiarse o retirarse mientras la consulta siga abierta. Cambiar solo ese vínculo no cuenta como última modificación del evento.
 
 ## Relaciones
 
@@ -41,3 +42,5 @@ El mínimo es una opción para cualquier tipo de consulta y el máximo de esta e
 - [RN-CON-004 — Fecha única entre opciones de una consulta](../../02_reglas-negocio/CON/rn-con-004-fecha-unica-consulta.md)
 - [RN-CON-005 — Fechas propuestas desde hoy](../../02_reglas-negocio/CON/rn-con-005-fechas-desde-hoy.md)
 - [RD-CON-003 — Título de la consulta](../../03_datos/CON/rd-con-003-titulo-consulta.md)
+- [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../../02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md)
+- [RD-EVT-002 — Autoría y momentos del evento](../../03_datos/EVT/rd-evt-002-autoria-momentos-evento.md)
