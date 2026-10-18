@@ -95,6 +95,17 @@ class TeamEventRecord
         ];
     }
 
+    /** @return array{id: string, date: string|null, title: string, status: string} */
+    public function toCalendarItem(): array
+    {
+        return [
+            'id' => $this->id,
+            'date' => $this->date?->format('Y-m-d'),
+            'title' => $this->title,
+            'status' => $this->status,
+        ];
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
@@ -103,6 +114,23 @@ class TeamEventRecord
     public function team(): TeamRecord
     {
         return $this->team;
+    }
+
+    public function status(): string
+    {
+        return $this->status;
+    }
+
+    public function date(): ?DateTimeImmutable
+    {
+        return $this->date;
+    }
+
+    public function finalize(DateTimeImmutable $date, ParticipantRecord $actor, DateTimeImmutable $at): void
+    {
+        $this->date = $date;
+        $this->status = 'definitive';
+        $this->markModified($actor, $at);
     }
 
     /** @return array<string, mixed> */

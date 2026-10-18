@@ -12,6 +12,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'consultation')]
+#[ORM\Index(name: 'IDX_964685A671F7E88B', columns: ['event_id'])]
+#[ORM\UniqueConstraint(name: 'consultation_open_event_unique', columns: ['open_event_id'])]
 #[ORM\Index(name: 'consultation_team_created_idx', columns: ['team_id', 'created_at'])]
 class ConsultationRecord
 {
@@ -34,6 +36,10 @@ class ConsultationRecord
     #[ORM\Column(name: 'resolved_at', type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
     private ?DateTimeImmutable $resolvedAt = null;
 
+    #[ORM\ManyToOne(targetEntity: TeamEventRecord::class)]
+    #[ORM\JoinColumn(name: 'open_event_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?TeamEventRecord $openEvent = null;
+
     public function __construct(
         #[ORM\Id]
         #[ORM\Column(type: Types::GUID)]
@@ -52,9 +58,13 @@ class ConsultationRecord
         private string $state,
         #[ORM\Column(name: 'created_at', type: Types::DATETIMETZ_IMMUTABLE)]
         private DateTimeImmutable $createdAt,
+        #[ORM\ManyToOne(targetEntity: TeamEventRecord::class)]
+        #[ORM\JoinColumn(name: 'event_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+        private ?TeamEventRecord $event = null,
     ) {
         $this->options = new ArrayCollection();
         $this->acceptedOptions = new ArrayCollection();
+        $this->openEvent = $event;
     }
 
     public function addOption(ConsultationOptionRecord $option): void
@@ -70,6 +80,22 @@ class ConsultationRecord
     public function state(): string
     {
         return $this->state;
+    }
+
+    public function event(): ?TeamEventRecord
+    {
+        return $this->event;
+    }
+
+    public function openEvent(): ?TeamEventRecord
+    {
+        return $this->openEvent;
+    }
+
+    public function setEvent(?TeamEventRecord $event): void
+    {
+        $this->event = $event;
+        $this->openEvent = $event;
     }
 
     /** @param list<string> $optionIds */
@@ -88,6 +114,7 @@ class ConsultationRecord
         $this->state = $state;
         $this->resolvedBy = $participant;
         $this->resolvedAt = $at;
+        $this->openEvent = null;
         foreach ($acceptedOptions as $option) {
             $this->acceptedOptions->add($option);
         }
@@ -113,6 +140,9 @@ class ConsultationRecord
             'createdBy' => $this->createdBy->toListItem(),
             'options' => $options,
         ];
+        if ($this->event !== null) {
+            $item['event'] = $this->event->toSummary();
+        }
         if ($this->resolvedBy !== null) {
             $item['resolution'] = [
                 'participant' => $this->resolvedBy->toListItem(),

@@ -70,6 +70,28 @@ final class ConsultationApiTest extends WebTestCase
         self::assertSame([], $list['rejected']);
     }
 
+    public function testDateConsultationCanLinkOneEligibleEventAndReturnsTheRelationship(): void
+    {
+        $this->client->disableReboot();
+        static::getContainer()->set('clock', new MockClock('2026-10-18T12:00:00+00:00'));
+        $team = $this->createTeam('Vera');
+        $this->client->jsonRequest('POST', '/api/teams/current/events', ['participantId' => $team['participantId'], 'title' => 'Plan provisional', 'date' => '2026-10-20'], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(201);
+        $event = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['event'];
+
+        $this->client->jsonRequest('POST', '/api/teams/current/consultations', ['type' => 'date', 'participantId' => $team['participantId'], 'title' => 'Elegir fecha', 'options' => ['2026-10-20'], 'timeZone' => 'UTC', 'eventId' => $event['id']], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(201);
+        $created = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
+        self::assertSame($event['id'], $created['consultation']['event']['id']);
+
+        $this->client->request('GET', '/api/teams/current/consultations/' . $created['consultation']['id'], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertSame($event['id'], json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['event']['id']);
+
+        $this->client->jsonRequest('PUT', '/api/teams/current/consultations/' . $created['consultation']['id'] . '/event', ['eventId' => null], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(200);
+        self::assertArrayNotHasKey('event', json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation']);
+    }
+
     public function testInvalidOrUnauthorizedRequestsDoNotPersistOrRenewActivity(): void
     {
         $this->client->disableReboot();

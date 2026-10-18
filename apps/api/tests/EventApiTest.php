@@ -305,6 +305,44 @@ final class EventApiTest extends WebTestCase
         self::assertSame(['Rechazado segundo', 'Rechazado primero'], array_column($groups['rejected'], 'title'));
     }
 
+    public function testCalendarReturnsDatedActiveEventsInTabOrderAndExcludesRejectedOrUndatedEvents(): void
+    {
+        $this->client->disableReboot();
+        static::getContainer()->set('clock', new MockClock('2026-10-18T12:00:00+00:00'));
+        $team = $this->createTeam('Lola');
+        $this->createEvent($team, ['title' => 'Sin fecha']);
+        $first = $this->createEvent($team, ['title' => 'Primero', 'date' => '2026-10-20', 'status' => 'provisional']);
+        $second = $this->createEvent($team, ['title' => 'Segundo', 'date' => '2026-10-20', 'status' => 'definitive']);
+        $rejected = $this->createEvent($team, ['title' => 'Oculto', 'date' => '2026-10-20', 'status' => 'definitive']);
+        $this->client->jsonRequest('PUT', '/api/teams/current/events/' . $rejected['id'] . '/rejection', ['participantId' => $team['participantId']], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(200);
+
+        $this->client->request('GET', '/api/teams/current/events/calendar?from=2026-10-19&to=2026-10-21', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(200);
+        self::assertSame([
+            ['id' => $first['id'], 'date' => '2026-10-20', 'title' => 'Primero', 'status' => 'provisional'],
+            ['id' => $second['id'], 'date' => '2026-10-20', 'title' => 'Segundo', 'status' => 'definitive'],
+        ], json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['events']);
+    }
+
+    public function testCalendarValidatesRangeAndRequiresLiveAccess(): void
+    {
+        $this->client->disableReboot();
+        static::getContainer()->set('clock', new MockClock('2026-10-18T12:00:00+00:00'));
+        $team = $this->createTeam('Marta');
+
+        $this->client->request('GET', '/api/teams/current/events/calendar?from=2026-01-01&to=2026-02-12', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(422);
+        $this->client->request('GET', '/api/teams/current/events/calendar?from=2026-02-30&to=2026-02-30', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(422);
+        $this->client->request('GET', '/api/teams/current/events/calendar?from=2026-01-01&to=2026-01-01');
+        self::assertResponseStatusCodeSame(401);
+
+        static::getContainer()->get(Connection::class)->update('team', ['last_activity_at' => '2000-01-01 00:00:00+00'], ['id' => $team['id']]);
+        $this->client->request('GET', '/api/teams/current/events/calendar?from=2026-01-01&to=2026-01-01', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        self::assertResponseStatusCodeSame(410);
+    }
+
     /** @param array{title: string, notes?: string|null, date?: string|null, status?: string} $payload
      * @return array<string, mixed>
      */

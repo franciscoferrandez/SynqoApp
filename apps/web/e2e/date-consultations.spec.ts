@@ -19,6 +19,12 @@ test('creates a date consultation from the calendar and keeps selections across 
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
   );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await page.route(/\/api\/teams\/current\/events$/, (route) =>
+    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+  );
   await page.route('**/api/teams/current/consultations', async (route) => {
     if (route.request().method() === 'GET') {
       return route.fulfill({ json: { open: consultations, resolved: [], rejected: [] } });
@@ -106,6 +112,12 @@ test('creates a date consultation from the calendar and keeps selections across 
   await otherContext.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
   );
+  await otherContext.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await otherContext.route(/\/api\/teams\/current\/events$/, (route) =>
+    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+  );
   await otherContext.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({ json: { open: consultations, resolved: [], rejected: [] } }),
   );
@@ -135,6 +147,15 @@ test('shows the composer below the calendar on mobile and keeps a draft when can
   );
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
+  );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await page.route(/\/api\/teams\/current\/events$/, (route) =>
+    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+  );
+  await page.route('**/api/teams/current/consultations', (route) =>
+    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
   );
   await page.goto('/e/calendario#t=mobile-token');
   const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
@@ -193,6 +214,12 @@ test('announces create errors and preserves the date-consultation draft', async 
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
   );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await page.route(/\/api\/teams\/current\/events$/, (route) =>
+    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+  );
   await page.route('**/api/teams/current/consultations', (route) =>
     route.request().method() === 'GET'
       ? route.fulfill({ json: { open: [], resolved: [], rejected: [] } })
@@ -234,6 +261,15 @@ test('limits date selection to ten and makes room after removing a selected day'
   );
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
+  );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await page.route(/\/api\/teams\/current\/events$/, (route) =>
+    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+  );
+  await page.route('**/api/teams/current/consultations', (route) =>
+    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
   );
 
   await page.goto('/e/calendario#t=limit-token');

@@ -26,12 +26,19 @@ export interface TeamEvent extends TeamEventSummary {
   createdBy: Participant;
   createdAt: string;
   lastModifiedBy: Participant | null;
+  consultations?: { id: string; title: string; state: ConsultationState }[];
 }
 export interface TeamEventGroups {
   unfinalized: TeamEventSummary[];
   future: TeamEventSummary[];
   past: TeamEventSummary[];
   rejected: TeamEventSummary[];
+}
+export interface CalendarEvent {
+  id: string;
+  date: string;
+  title: string;
+  status: Exclude<EventStatus, 'rejected'>;
 }
 export type ConsultationOption = {
   id: string;
@@ -45,6 +52,7 @@ export interface Consultation {
   createdAt: string;
   createdBy: Participant;
   options: ConsultationOption[];
+  event?: TeamEventSummary;
   resolution?: {
     participant: Participant;
     resolvedAt: string;
@@ -131,6 +139,11 @@ export class TeamApi {
       params: { from, to },
     });
   }
+  calendarEvents(from: string, to: string): Observable<{ events: CalendarEvent[] }> {
+    return this.http.get<{ events: CalendarEvent[] }>('/api/teams/current/events/calendar', {
+      params: { from, to },
+    });
+  }
   mark(
     date: string,
     participantId: string,
@@ -164,10 +177,11 @@ export class TeamApi {
     participantId: string,
     status: 'resolved' | 'rejected',
     acceptedOptionIds: string[],
+    event?: { eventId?: string | null; expectedEventVersion?: number },
   ): Observable<{ consultation: ConsultationDetail; expiresAt: string }> {
     return this.http.put<{ consultation: ConsultationDetail; expiresAt: string }>(
       `/api/teams/current/consultations/${consultationId}/resolution`,
-      { participantId, status, acceptedOptionIds },
+      { participantId, status, acceptedOptionIds, ...event },
     );
   }
   events(): Observable<TeamEventGroups> {
@@ -206,10 +220,11 @@ export class TeamApi {
   rejectEvent(
     id: string,
     participantId: string,
+    disposition?: 'unlink' | 'reject_both',
   ): Observable<{ event: TeamEvent; expiresAt: string }> {
     return this.http.put<{ event: TeamEvent; expiresAt: string }>(
       `/api/teams/current/events/${id}/rejection`,
-      { participantId },
+      { participantId, ...(disposition ? { disposition } : {}) },
     );
   }
   recoverEvent(
@@ -236,10 +251,27 @@ export class TeamApi {
     title: string,
     dates: string[],
     timeZone: string,
+    eventId?: string,
   ): Observable<{ consultation: Consultation; expiresAt: string }> {
     return this.http.post<{ consultation: Consultation; expiresAt: string }>(
       '/api/teams/current/consultations',
-      { type: 'date', participantId, title, options: dates, timeZone },
+      {
+        type: 'date',
+        participantId,
+        title,
+        options: dates,
+        timeZone,
+        ...(eventId ? { eventId } : {}),
+      },
+    );
+  }
+  setConsultationEvent(
+    consultationId: string,
+    eventId: string | null,
+  ): Observable<{ consultation: Consultation; expiresAt: string }> {
+    return this.http.put<{ consultation: Consultation; expiresAt: string }>(
+      `/api/teams/current/consultations/${consultationId}/event`,
+      { eventId },
     );
   }
   current(): Observable<TeamData> {

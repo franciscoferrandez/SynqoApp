@@ -14,6 +14,7 @@ use App\Controller\ConsultationController;
     new Get(uriTemplate: '/teams/current/consultations', controller: ConsultationController::class . '::list', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
     new Post(uriTemplate: '/teams/current/consultations', controller: ConsultationController::class . '::create', input: false, output: false, read: false, deserialize: false, validate: false, write: false, status: 201),
     new Get(uriTemplate: '/teams/current/consultations/{consultationId}', controller: ConsultationController::class . '::detail', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
+    new Put(uriTemplate: '/teams/current/consultations/{consultationId}/event', controller: ConsultationController::class . '::setEvent', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
     new Put(uriTemplate: '/teams/current/consultations/{consultationId}/votes/{participantId}/options/{optionId}', controller: ConsultationController::class . '::vote', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
     new Put(uriTemplate: '/teams/current/consultations/{consultationId}/resolution', controller: ConsultationController::class . '::resolve', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
 ])]

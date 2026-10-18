@@ -97,6 +97,9 @@ for (const viewport of viewports) {
       await page.route('**/api/teams/current/availability**', (route) =>
         route.fulfill({ json: { days: [] } }),
       );
+      await page.route('**/api/teams/current/events/calendar**', (route) =>
+        route.fulfill({ json: { events: [] } }),
+      );
       await page.route('**/api/teams/current/consultations', (route) =>
         route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
       );

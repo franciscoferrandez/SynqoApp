@@ -6,12 +6,15 @@ namespace App\Infrastructure\Persistence;
 
 use App\Application\Consultation\ConsultationRepository;
 use App\Application\Exception\ConsultationClosed;
+use App\Application\Exception\EventConflict;
 use App\Application\Exception\TeamNotFound;
+use App\Application\Exception\InvalidConsultationInput;
 use App\Infrastructure\Persistence\Entity\ConsultationOptionRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationVoteRecord;
 use App\Infrastructure\Persistence\Entity\ParticipantRecord;
 use App\Infrastructure\Persistence\Entity\TeamRecord;
+use App\Infrastructure\Persistence\Entity\TeamEventRecord;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
@@ -61,7 +64,7 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
      * @param list<string> $options
      * @return array<string, mixed>
      */
-    public function create(string $teamId, string $participantId, string $title, string $type, array $options, string $createdAt, string $activityAt): array
+    public function create(string $teamId, string $participantId, string $title, string $type, array $options, ?string $eventId, string $createdAt, string $activityAt): array
     {
         $manager = $this->manager();
         $team = $manager->find(TeamRecord::class, $teamId);
@@ -72,6 +75,10 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
         if (!$participant instanceof ParticipantRecord || $participant->team() !== $team) {
             throw new \LogicException('The consultation creator must belong to the locked team.');
         }
+        $event = null;
+        if ($eventId !== null) {
+            $event = $this->eligibleEvent($team, $eventId);
+        }
         $team->setLastActivityAt(new DateTimeImmutable($activityAt));
         $record = new ConsultationRecord(
             \Symfony\Component\Uid\Uuid::v7()->toRfc4122(),
@@ -81,6 +88,7 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
             $title,
             'open',
             new DateTimeImmutable($createdAt),
+            $event,
         );
         foreach ($options as $position => $value) {
             $option = $type === 'date'
@@ -91,6 +99,51 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
         $manager->persist($record);
 
         return $record->toItem();
+    }
+
+    private function hasOpenEventConsultation(TeamEventRecord $event): bool
+    {
+        return $this->manager()->getRepository(ConsultationRecord::class)->count(['event' => $event, 'state' => 'open']) > 0;
+    }
+
+    private function eligibleEvent(TeamRecord $team, string $eventId): TeamEventRecord
+    {
+        $event = $this->manager()->find(TeamEventRecord::class, $eventId);
+        if (!$event instanceof TeamEventRecord || $event->team() !== $team) {
+            throw new TeamNotFound();
+        }
+        if ($event->status() !== 'provisional' || $this->hasOpenEventConsultation($event)) {
+            throw new EventConflict();
+        }
+
+        return $event;
+    }
+
+    public function setEvent(string $teamId, string $consultationId, ?string $eventId, string $activityAt): bool
+    {
+        $manager = $this->manager();
+        $consultation = $manager->find(ConsultationRecord::class, $consultationId);
+        if (!$consultation instanceof ConsultationRecord || $consultation->team()->toRow()['id'] !== $teamId) {
+            throw new TeamNotFound();
+        }
+        if ($consultation->state() !== 'open') {
+            throw new ConsultationClosed();
+        }
+        if ($consultation->toItem()['type'] !== 'date') {
+            throw new InvalidConsultationInput(['eventId']);
+        }
+        if (($consultation->event()?->toSummary()['id'] ?? null) === $eventId) {
+            return false;
+        }
+        $event = null;
+        if ($eventId !== null) {
+            $event = $this->eligibleEvent($consultation->team(), $eventId);
+        }
+        $consultation->setEvent($event);
+        $consultation->team()->setLastActivityAt(new DateTimeImmutable($activityAt));
+        $manager->flush();
+
+        return true;
     }
 
     /** @return array<string, mixed>|null */
@@ -150,7 +203,7 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
         return true;
     }
 
-    public function resolve(string $teamId, string $consultationId, string $participantId, string $state, array $acceptedOptionIds, string $resolvedAt, string $activityAt): bool
+    public function resolve(string $teamId, string $consultationId, string $participantId, string $state, array $acceptedOptionIds, string $resolvedAt, string $activityAt, bool $changeEvent = false, ?string $eventId = null, ?int $expectedEventVersion = null): bool
     {
         $manager = $this->manager();
         [$consultation, $participant] = $this->actors($teamId, $consultationId, $participantId);
@@ -163,11 +216,43 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
             $acceptedOptions[] = $option;
         }
         if ($consultation->state() !== 'open') {
-            if ($consultation->resolutionMatches($state, $participant, $acceptedOptionIds)) {
+            if ($consultation->resolutionMatches($state, $participant, $acceptedOptionIds) && (!$changeEvent || ($consultation->event()?->toSummary()['id'] ?? null) === $eventId)) {
                 return false;
             }
             throw new ConsultationClosed();
         }
+        $event = $consultation->event();
+        $wasRejected = $event?->status() === 'rejected';
+        if ($changeEvent) {
+            if ($consultation->toItem()['type'] !== 'date') {
+                throw new InvalidConsultationInput(['eventId']);
+            }
+            if (($event?->toSummary()['id'] ?? null) !== $eventId) {
+                $event = $eventId === null ? null : $this->eligibleEvent($consultation->team(), $eventId);
+            }
+        }
+        if ($state === 'resolved' && ($event !== null || $wasRejected) && count($acceptedOptions) !== 1) {
+            throw new InvalidConsultationInput(['acceptedOptionIds']);
+        }
+        if ($wasRejected && (($state === 'resolved' && (!$changeEvent || $eventId !== null)) || ($state === 'rejected' && $event !== $consultation->event()))) {
+            throw new EventConflict();
+        }
+        if ($state === 'resolved') {
+            if ($expectedEventVersion !== null && ($event === null || $event->toSummary()['version'] !== $expectedEventVersion)) {
+                throw new EventConflict();
+            }
+            if ($event?->status() === 'definitive' && $expectedEventVersion === null) {
+                throw new EventConflict();
+            }
+        }
+        if ($event !== null && $state === 'resolved' && $event->status() === 'provisional') {
+            $date = $acceptedOptions[0]->date();
+            if ($date === null) {
+                throw new InvalidConsultationInput(['acceptedOptionIds']);
+            }
+            $event->finalize($date, $participant, new DateTimeImmutable($resolvedAt));
+        }
+        $consultation->setEvent($event);
         $consultation->resolve($state, $participant, new DateTimeImmutable($resolvedAt), $acceptedOptions);
         $consultation->team()->setLastActivityAt(new DateTimeImmutable($activityAt));
         $manager->flush();

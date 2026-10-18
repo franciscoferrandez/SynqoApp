@@ -6,9 +6,11 @@ namespace App\Infrastructure\Persistence;
 
 use App\Application\Event\EventRepository;
 use App\Application\Exception\EventConflict;
+use App\Application\Exception\InvalidEventInput;
 use App\Application\Exception\TeamNotFound;
 use App\Infrastructure\Persistence\Entity\ParticipantRecord;
 use App\Infrastructure\Persistence\Entity\TeamEventRecord;
+use App\Infrastructure\Persistence\Entity\ConsultationRecord;
 use App\Infrastructure\Persistence\Entity\TeamRecord;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -29,6 +31,32 @@ final readonly class OrmEventRepository implements EventRepository
         return array_map(static fn(TeamEventRecord $record): array => [...$record->toSummary(), '_createdAt' => $record->createdAt()->format(DATE_ATOM)], $records);
     }
 
+    public function calendarForTeam(string $teamId, string $from, string $to): array
+    {
+        $manager = $this->manager();
+        $records = $manager->getRepository(TeamEventRecord::class)->createQueryBuilder('event')
+            ->andWhere('IDENTITY(event.team) = :team')
+            ->andWhere('event.status <> :rejected')
+            ->andWhere('event.date BETWEEN :from AND :to')
+            ->setParameter('team', $teamId)
+            ->setParameter('rejected', 'rejected')
+            ->setParameter('from', new DateTimeImmutable($from, new DateTimeZone('UTC')))
+            ->setParameter('to', new DateTimeImmutable($to, new DateTimeZone('UTC')))
+            ->getQuery()
+            ->getResult();
+
+        usort($records, static function (TeamEventRecord $left, TeamEventRecord $right): int {
+            $leftSummary = $left->toSummary();
+            $rightSummary = $right->toSummary();
+            return strcmp((string) $leftSummary['date'], (string) $rightSummary['date'])
+                ?: ((int) ($leftSummary['status'] !== 'provisional') <=> (int) ($rightSummary['status'] !== 'provisional'))
+                ?: strcmp((string) ($rightSummary['lastModifiedAt'] ?? $right->createdAt()->format(DATE_ATOM)), (string) ($leftSummary['lastModifiedAt'] ?? $left->createdAt()->format(DATE_ATOM)))
+                ?: strcmp($leftSummary['id'], $rightSummary['id']);
+        });
+
+        return array_map(static fn(TeamEventRecord $record): array => $record->toCalendarItem(), $records);
+    }
+
     public function detailForTeam(string $teamId, string $eventId): ?array
     {
         if (!Uuid::isValid($eventId)) {
@@ -38,7 +66,20 @@ final readonly class OrmEventRepository implements EventRepository
         $team = $manager->getReference(TeamRecord::class, $teamId);
         $event = $manager->getRepository(TeamEventRecord::class)->findOneBy(['id' => $eventId, 'team' => $team]);
 
-        return $event instanceof TeamEventRecord ? $event->toDetail() : null;
+        if (!$event instanceof TeamEventRecord) {
+            return null;
+        }
+        $detail = $event->toDetail();
+        $consultations = $manager->getRepository(ConsultationRecord::class)->findBy(['event' => $event], ['createdAt' => 'DESC']);
+        if ($consultations !== []) {
+            $detail['consultations'] = array_map(static fn(ConsultationRecord $consultation): array => [
+                'id' => $consultation->toItem()['id'],
+                'title' => $consultation->toItem()['title'],
+                'state' => $consultation->toItem()['state'],
+            ], $consultations);
+        }
+
+        return $detail;
     }
 
     public function create(string $teamId, string $participantId, string $eventId, string $title, ?string $notes, ?string $date, string $status, string $at, string $activityAt): array
@@ -68,9 +109,21 @@ final readonly class OrmEventRepository implements EventRepository
         return $changed;
     }
 
-    public function reject(string $teamId, string $eventId, string $participantId, string $at, string $activityAt): bool
+    public function reject(string $teamId, string $eventId, string $participantId, ?string $disposition, string $at, string $activityAt): bool
     {
+        $manager = $this->manager();
         [$event, $participant] = $this->eventAndActor($teamId, $eventId, $participantId);
+        $openConsultations = $manager->getRepository(ConsultationRecord::class)->findBy(['event' => $event, 'state' => 'open']);
+        if ($openConsultations !== [] && $disposition === null) {
+            throw new InvalidEventInput(['disposition']);
+        }
+        foreach ($openConsultations as $consultation) {
+            if ($disposition === 'reject_both') {
+                $consultation->resolve('rejected', $participant, new DateTimeImmutable($at), []);
+            } else {
+                $consultation->setEvent(null);
+            }
+        }
         if (!$event->reject($participant, new DateTimeImmutable($at))) {
             throw new EventConflict();
         }

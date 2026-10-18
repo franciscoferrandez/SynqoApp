@@ -8,6 +8,8 @@ import {
   ViewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import {
   TeamApi,
@@ -22,6 +24,7 @@ type EventGroupKey = keyof TeamEventGroups;
 type LifecycleAction = 'reject' | 'recover';
 
 @Component({
+  imports: [RouterLink],
   template: `
     <section [attr.aria-labelledby]="selectedEventId ? null : 'events-heading'">
       @if (!selectedEventId) {
@@ -81,6 +84,27 @@ type LifecycleAction = 'reject' | 'recover';
                   <p>{{ item.notes }}</p>
                 </section>
               }
+              @if (item.consultations?.length) {
+                <section class="event-notes" aria-labelledby="event-consultations-heading">
+                  <h3 id="event-consultations-heading">Consultas vinculadas</h3>
+                  <ul>
+                    @for (consultation of item.consultations; track consultation.id) {
+                      <li>
+                        <a [routerLink]="['/e/consultas', consultation.id]" preserveFragment>{{
+                          consultation.title
+                        }}</a>
+                        <small>{{
+                          consultation.state === 'open'
+                            ? 'Abierta'
+                            : consultation.state === 'resolved'
+                              ? 'Resuelta'
+                              : 'Rechazada'
+                        }}</small>
+                      </li>
+                    }
+                  </ul>
+                </section>
+              }
               <dl class="event-metadata">
                 <div>
                   <dt>Creado por</dt>
@@ -100,6 +124,7 @@ type LifecycleAction = 'reject' | 'recover';
                 @if (item.status !== 'rejected') {
                   <button class="outline" type="button" (click)="openEdit()">Editar evento</button>
                   <button
+                    #lifecycleButton
                     class="outline danger"
                     type="button"
                     [disabled]="actionPending"
@@ -109,6 +134,7 @@ type LifecycleAction = 'reject' | 'recover';
                   </button>
                 } @else {
                   <button
+                    #lifecycleButton
                     class="primary"
                     type="button"
                     [disabled]="actionPending"
@@ -295,6 +321,20 @@ type LifecycleAction = 'reject' | 'recover';
                 : 'El evento volverá a Provisional y conservará la fecha que tenía.'
             }}
           </p>
+          @if (lifecycleAction === 'reject' && hasOpenConsultation) {
+            <label class="text-query-field" for="event-rejection-disposition"
+              >Consulta abierta</label
+            >
+            <select
+              id="event-rejection-disposition"
+              class="text-query-input"
+              [value]="rejectionDisposition"
+              (change)="rejectionDisposition = $any($event.target).value"
+            >
+              <option value="unlink">Rechazar evento y desvincular consulta</option>
+              <option value="reject_both">Rechazar evento y consulta</option>
+            </select>
+          }
           @if (actionError) {
             <p class="event-error" role="alert">{{ actionError }}</p>
           }
@@ -332,8 +372,11 @@ export class EventsPage implements OnInit, OnDestroy {
   readonly team = inject(TeamLayout);
   private readonly api = inject(TeamApi);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   @ViewChild('createButton') private createButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('titleInput') private titleInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('lifecycleButton') private lifecycleButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('editorDialog')
   set editorDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
     if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
@@ -365,6 +408,7 @@ export class EventsPage implements OnInit, OnDestroy {
   showLifecycleConfirmation = false;
   editingEventId?: string;
   lifecycleAction: LifecycleAction = 'reject';
+  rejectionDisposition: 'unlink' | 'reject_both' = 'unlink';
   title = '';
   notes = '';
   date = '';
@@ -378,13 +422,24 @@ export class EventsPage implements OnInit, OnDestroy {
   private originalDraft = '';
   private focusReturnId?: string;
   private request?: Subscription;
+  private routeRequest?: Subscription;
 
   ngOnInit(): void {
-    this.load();
+    this.routeRequest = this.route.paramMap.subscribe((params) => {
+      this.selectedEventId = params.get('eventId') ?? undefined;
+      this.event = undefined;
+      if (this.selectedEventId) {
+        this.loading = false;
+        this.loadDetail();
+      } else {
+        this.load();
+      }
+    });
   }
 
   ngOnDestroy(): void {
     this.request?.unsubscribe();
+    this.routeRequest?.unsubscribe();
   }
 
   get isEmpty(): boolean {
@@ -463,6 +518,7 @@ export class EventsPage implements OnInit, OnDestroy {
     this.selectedEventId = undefined;
     this.event = undefined;
     this.load();
+    void this.router.navigate(['/e/eventos'], { preserveFragment: true });
   }
 
   openCreate(): void {
@@ -582,6 +638,7 @@ export class EventsPage implements OnInit, OnDestroy {
   askLifecycle(action: LifecycleAction): void {
     this.lifecycleAction = action;
     this.actionError = '';
+    this.rejectionDisposition = 'unlink';
     this.showLifecycleConfirmation = true;
     this.changeDetector.markForCheck();
   }
@@ -591,6 +648,7 @@ export class EventsPage implements OnInit, OnDestroy {
     if (this.actionPending) return;
     this.showLifecycleConfirmation = false;
     this.changeDetector.markForCheck();
+    setTimeout(() => this.lifecycleButton?.nativeElement.focus());
   }
 
   confirmLifecycle(): void {
@@ -599,7 +657,11 @@ export class EventsPage implements OnInit, OnDestroy {
     this.actionError = '';
     const operation =
       this.lifecycleAction === 'reject'
-        ? this.api.rejectEvent(this.event.id, this.team.participantId)
+        ? this.api.rejectEvent(
+            this.event.id,
+            this.team.participantId,
+            this.hasOpenConsultation ? this.rejectionDisposition : undefined,
+          )
         : this.api.recoverEvent(this.event.id, this.team.participantId);
     this.request = operation.subscribe({
       next: ({ event, expiresAt }) => {
@@ -610,6 +672,7 @@ export class EventsPage implements OnInit, OnDestroy {
         this.message =
           this.lifecycleAction === 'reject' ? 'Evento rechazado.' : 'Evento recuperado.';
         this.load();
+        setTimeout(() => this.lifecycleButton?.nativeElement.focus());
       },
       error: (error: HttpErrorResponse) => {
         this.actionPending = false;
@@ -619,9 +682,23 @@ export class EventsPage implements OnInit, OnDestroy {
           return;
         }
         this.actionError =
-          error.status === 409
+          error.status === 409 || error.status === 422
             ? 'El estado del evento ha cambiado. Actualiza la ficha e inténtalo de nuevo.'
             : 'No se pudo guardar el cambio. Inténtalo de nuevo.';
+        if ((error.status === 409 || error.status === 422) && this.event) {
+          this.request = this.api.event(this.event.id).subscribe({
+            next: ({ event }) => {
+              this.event = event;
+              this.actionError =
+                'El estado ha cambiado. Revisa la ficha actualizada y vuelve a confirmar.';
+              this.changeDetector.markForCheck();
+            },
+            error: (reloadError: HttpErrorResponse) => {
+              this.team.handleAccessError(reloadError);
+              this.changeDetector.markForCheck();
+            },
+          });
+        }
         this.changeDetector.markForCheck();
       },
     });
@@ -633,6 +710,12 @@ export class EventsPage implements OnInit, OnDestroy {
       : status === 'rejected'
         ? 'Rechazado'
         : 'Provisional';
+  }
+
+  get hasOpenConsultation(): boolean {
+    return (
+      this.event?.consultations?.some((consultation) => consultation.state === 'open') ?? false
+    );
   }
 
   eventDate(item: TeamEventSummary): string {

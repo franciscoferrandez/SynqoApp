@@ -1,7 +1,7 @@
 ---
 id: SPEC-EVT-002
 nivel: N2
-estado: ready_for_change_apply
+estado: cerrado
 release: REL-004
 ---
 
@@ -109,4 +109,28 @@ Las decisiones anteriores se incorporaron al flujo y wireframe de esta SPEC. La 
 | Dependencia de aplicación respecto a SPEC-EVT-001 está documentada. | PASS | No se puede aplicar hasta que el modelo de evento y la ficha estén disponibles. |
 | Se necesita cambiar la arquitectura o tomar una decisión de arquitectura nueva. | NO | Se conserva la separación actual de recursos API y la vista WEB existente. |
 
-**Resultado: READY_FOR_CHANGE_APPLY.** Implementar después de SPEC-EVT-001. No depende de SPEC-EVT-003 y puede desarrollarse antes o después de la integración con consultas.
+## Validation / Convergence
+
+| Criterio | Evidencia | Resultado |
+|---|---|---|
+| 1. Indicador en días con eventos activos | `calendar-events.spec.ts` comprueba la campanita en la casilla | PASS |
+| 2. Cantidad cuando hay varios eventos | `calendar-events.spec.ts` comprueba `2 eventos` y el contador visual | PASS |
+| 3. Provisionales/definitivos incluidos y rechazados excluidos | `EventApiTest` y endpoint de calendario filtran estados; cobertura WEB muestra estados activos | PASS |
+| 4. Detalle conserva disponibilidad y abre la ficha | `calendar-events.spec.ts` en escritorio y navegación a `/e/eventos/:eventId` | PASS |
+| 5. No altera disponibilidad, resumen, superposición, recuentos ni selección | `calendar-events.spec.ts`, `calendar-options.spec.ts` y smoke de calendario | PASS |
+| 6. Selección de consulta de fechas conservada | `calendar-events.spec.ts` comprueba selección con el indicador presente | PASS |
+| 7. Ratón, teclado y móvil | Smoke de accesibilidad en 390, 768, 769 y 1280 px; caso de diálogo móvil focalizado | PASS |
+| 8. Orden y desplazamiento de múltiples eventos | API ordena la respuesta y el detalle usa lista desplazable; caso de dos eventos cubierto | PASS |
+| 9. Sin sección vacía y reintento aislado | `calendar-events.spec.ts` comprueba error, disponibilidad visible y segundo intento de eventos | PASS |
+| 10. Pruebas API e interfaz | PHPUnit focalizado `18 tests, 206 assertions`; WEB `4/4` E2E específicos | PASS |
+
+### Evidencia técnica
+
+- API completa: `146 tests, 1222 assertions`.
+- WEB unitarias: `26 passed`; lint, formato y build correctos con Node `24.21.0`.
+- E2E específico de calendario: `4 passed`.
+- Smoke de accesibilidad del calendario: `4 passed`.
+- Regresión visual: `omitido_activamente`; se ajustará antes del cierre de la release, sin cambiar la aceptación funcional de este Change.
+- No hay cambios de baseline ni ADR nuevos.
+
+**Resultado: DONE — Change cerrado y archivado localmente el 2026-10-18.** La integración API/WEB del calendario queda validada localmente. La release REL-004 no se declara entregada: quedan pendientes la actualización deliberada de capturas visuales y SPEC-EVT-003.

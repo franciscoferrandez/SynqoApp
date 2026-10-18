@@ -283,7 +283,10 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
     });
   });
   await page.route('**/api/teams/current/events', (route) => route.fulfill({ json: eventGroups }));
-  await page.route(/\/api\/teams\/current\/events\/[^/]+$/, (route) =>
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await page.route(/\/api\/teams\/current\/events\/(?!calendar(?:\?|$))[^/]+$/, (route) =>
     route.fulfill({
       json: {
         event: route.request().url().endsWith('visual-event-rejected')

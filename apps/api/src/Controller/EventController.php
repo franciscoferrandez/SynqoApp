@@ -23,6 +23,19 @@ final readonly class EventController
         return $this->execute($request, fn(): JsonResponse => $this->success($this->events->list($this->bearerToken($request))));
     }
 
+    public function calendar(Request $request): JsonResponse
+    {
+        return $this->execute($request, function () use ($request): JsonResponse {
+            $from = $request->query->get('from');
+            $to = $request->query->get('to');
+            if (!is_string($from) || !is_string($to)) {
+                throw new InvalidEventInput(['from', 'to']);
+            }
+
+            return $this->success($this->events->calendar($this->bearerToken($request), $from, $to));
+        });
+    }
+
     public function detail(Request $request, string $eventId): JsonResponse
     {
         return $this->execute($request, fn(): JsonResponse => $this->success($this->events->detail($this->bearerToken($request), $eventId)));
@@ -83,7 +96,7 @@ final readonly class EventController
                 return $this->problem(400, 'JSON mal formado.');
             }
             $result = $action === 'reject'
-                ? $this->events->reject($this->bearerToken($request), $eventId, $body['participantId'] ?? null)
+                ? $this->events->reject($this->bearerToken($request), $eventId, $body['participantId'] ?? null, $body['disposition'] ?? null)
                 : $this->events->recover($this->bearerToken($request), $eventId, $body['participantId'] ?? null);
             return $this->success($result);
         });

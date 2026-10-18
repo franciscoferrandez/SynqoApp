@@ -13,6 +13,7 @@ use App\Application\Team\IdentifierGenerator;
 use App\Application\Team\TeamRepository;
 use App\Application\Team\TeamService;
 use App\Domain\Event\EventRules;
+use App\Domain\Availability\DailyAvailability;
 use App\Domain\Team\ExpiryCalculator;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -61,6 +62,17 @@ final readonly class EventService
         return $groups;
     }
 
+    /** @return array{events: list<array{id: string, date: string|null, title: string, status: string}>} */
+    public function calendar(?string $token, string $from, string $to): array
+    {
+        $team = $this->access->current($token);
+        if (!DailyAvailability::validDate($from) || !DailyAvailability::validDate($to) || $from > $to || new DateTimeImmutable($from)->diff(new DateTimeImmutable($to))->days > 41) {
+            throw new InvalidEventInput(['from', 'to']);
+        }
+
+        return ['events' => $this->events->calendarForTeam($team['id'], $from, $to)];
+    }
+
     /** @return array{event: array<string, mixed>} */
     public function detail(?string $token, string $eventId): array
     {
@@ -100,9 +112,12 @@ final readonly class EventService
     }
 
     /** @return array{event: array<string, mixed>, expiresAt: string} */
-    public function reject(?string $token, string $eventId, mixed $participantId): array
+    public function reject(?string $token, string $eventId, mixed $participantId, mixed $disposition = null): array
     {
-        return $this->lifecycle($token, $eventId, $participantId, 'reject');
+        if ($disposition !== null && (!is_string($disposition) || !in_array($disposition, ['unlink', 'reject_both'], true))) {
+            throw new InvalidEventInput(['disposition']);
+        }
+        return $this->lifecycle($token, $eventId, $participantId, 'reject', $disposition);
     }
 
     /** @return array{event: array<string, mixed>, expiresAt: string} */
@@ -112,14 +127,14 @@ final readonly class EventService
     }
 
     /** @return array{event: array<string, mixed>, expiresAt: string} */
-    private function lifecycle(?string $token, string $eventId, mixed $participantId, string $action): array
+    private function lifecycle(?string $token, string $eventId, mixed $participantId, string $action, ?string $disposition = null): array
     {
         if (!is_string($participantId) || !\Symfony\Component\Uid\Uuid::isValid($participantId)) {
             throw new InvalidEventInput(['participantId']);
         }
-        return $this->mutate($token, function (array $team, DateTimeImmutable $now, DateTimeImmutable $activity) use ($eventId, $participantId, $action): array {
+        return $this->mutate($token, function (array $team, DateTimeImmutable $now, DateTimeImmutable $activity) use ($eventId, $participantId, $action, $disposition): array {
             if ($action === 'reject') {
-                $changed = $this->events->reject($team['id'], $eventId, $participantId, $now->format(DATE_ATOM), $activity->format(DATE_ATOM));
+                $changed = $this->events->reject($team['id'], $eventId, $participantId, $disposition, $now->format(DATE_ATOM), $activity->format(DATE_ATOM));
             } else {
                 $changed = $this->events->recover($team['id'], $eventId, $participantId, $now->format(DATE_ATOM), $activity->format(DATE_ATOM));
             }

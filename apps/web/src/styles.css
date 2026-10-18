@@ -440,6 +440,15 @@ a {
   background: var(--surface);
   padding: 0.45rem;
 }
+.calendar-event-indicator {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.4rem;
+  z-index: 2;
+  color: var(--blue-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
 .calendar-day:hover .calendar-day-face {
   border-color: var(--blue-strong);
 }
@@ -489,6 +498,41 @@ a {
   border-radius: 10px;
   background: var(--soft);
   padding: 0.75rem;
+}
+.calendar-events {
+  margin: 1rem 0;
+  border-top: 1px solid var(--line);
+  padding-top: 0.8rem;
+}
+.calendar-events h4 {
+  margin: 0 0 0.55rem;
+}
+.calendar-events-list {
+  display: grid;
+  max-height: 190px;
+  gap: 0.45rem;
+  overflow-y: auto;
+}
+.calendar-event-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+}
+.calendar-event-row:hover {
+  border-color: var(--blue-strong);
+}
+.calendar-event-row small,
+.calendar-events-status {
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 .consultations-empty {
   display: flex;

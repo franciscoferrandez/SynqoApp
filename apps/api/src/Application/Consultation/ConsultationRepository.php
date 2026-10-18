@@ -13,7 +13,9 @@ interface ConsultationRepository
      * @param list<string> $options
      * @return array<string, mixed>
      */
-    public function create(string $teamId, string $participantId, string $title, string $type, array $options, string $createdAt, string $activityAt): array;
+    public function create(string $teamId, string $participantId, string $title, string $type, array $options, ?string $eventId, string $createdAt, string $activityAt): array;
+
+    public function setEvent(string $teamId, string $consultationId, ?string $eventId, string $activityAt): bool;
 
     /** @return array<string, mixed>|null */
     public function detail(string $teamId, string $consultationId): ?array;
@@ -24,5 +26,5 @@ interface ConsultationRepository
     /** @param list<string> $acceptedOptionIds
      * @return bool Whether the resolution was first recorded.
      */
-    public function resolve(string $teamId, string $consultationId, string $participantId, string $state, array $acceptedOptionIds, string $resolvedAt, string $activityAt): bool;
+    public function resolve(string $teamId, string $consultationId, string $participantId, string $state, array $acceptedOptionIds, string $resolvedAt, string $activityAt, bool $changeEvent = false, ?string $eventId = null, ?int $expectedEventVersion = null): bool;
 }

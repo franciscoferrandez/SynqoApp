@@ -11,14 +11,16 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
-import { ConsultationDetail, Participant, TeamApi } from '../shared/team-api';
+import { forkJoin, Subscription } from 'rxjs';
+import { RouterLink } from '@angular/router';
+import { ConsultationDetail, Participant, TeamApi, TeamEventSummary } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
 
 type Decision = 'resolved' | 'rejected';
 
 @Component({
   selector: 'app-consultation-detail',
+  imports: [RouterLink],
   template: `
     <div class="consultation-detail-view">
       <button #backButton class="consultation-back" type="button" (click)="back.emit()">
@@ -61,6 +63,39 @@ type Decision = 'resolved' | 'rejected';
               }}
             </span>
           </div>
+          @if (item.state === 'open' && item.type === 'date') {
+            <section aria-label="Evento vinculado">
+              @if (item.event) {
+                <p>
+                  Evento vinculado:
+                  <a [routerLink]="['/e/eventos', item.event.id]" preserveFragment>{{
+                    item.event.title
+                  }}</a>
+                </p>
+              } @else {
+                <p>Sin evento vinculado.</p>
+              }
+              <button
+                #eventButton
+                class="outline"
+                type="button"
+                [disabled]="saving"
+                (click)="openEventEditor()"
+              >
+                {{ item.event ? 'Cambiar evento' : 'Elegir evento' }}
+              </button>
+              @if (item.event) {
+                <button
+                  class="outline"
+                  type="button"
+                  [disabled]="saving"
+                  (click)="openEventEditor(true)"
+                >
+                  Quitar vínculo
+                </button>
+              }
+            </section>
+          }
           @if (item.resolution; as resolution) {
             <div class="consultation-resolution-summary">
               <strong>{{
@@ -70,6 +105,14 @@ type Decision = 'resolved' | 'rejected';
                 <p>{{ acceptedSummary(item) }}</p>
               } @else {
                 <p>Ninguna opción aceptada.</p>
+              }
+              @if (item.event) {
+                <p class="calendar-note">
+                  Evento vinculado:
+                  <a [routerLink]="['/e/eventos', item.event.id]" preserveFragment>{{
+                    item.event.title
+                  }}</a>
+                </p>
               }
               <small>Resolución registrada por {{ resolution.participant.name }}.</small>
             </div>
@@ -181,9 +224,53 @@ type Decision = 'resolved' | 'rejected';
           </button>
         </div>
         <p>Resolverás como {{ team.activeParticipantName }}.</p>
+        @if (resolutionLoading) {
+          <p role="status">Comprobando el estado actual…</p>
+        }
+        @if (resolveError) {
+          <p class="field-error" role="alert">{{ resolveError }}</p>
+          @if (!confirming) {
+            <button class="outline" type="button" (click)="refreshResolution()">Reintentar</button>
+          }
+        }
         @if (!confirming) {
+          @if (item.type === 'date') {
+            <label for="resolution-event">Evento (opcional)</label>
+            <select
+              id="resolution-event"
+              class="text-query-input"
+              [value]="draftEventId ?? ''"
+              [disabled]="
+                eventsLoading || resolutionLoading || resolutionEvent?.status === 'rejected'
+              "
+              (change)="selectResolutionEvent($any($event.target).value)"
+            >
+              <option value="">Sin evento</option>
+              @if (item.event && !currentEventIsEligible) {
+                <option [value]="item.event.id">{{ item.event.title }} (vínculo actual)</option>
+              }
+              @for (event of eligibleEvents; track event.id) {
+                <option [value]="event.id">{{ event.title }}</option>
+              }
+            </select>
+            @if (eventsLoading) {
+              <p role="status">Cargando eventos…</p>
+            }
+            @if (eventsError) {
+              <p role="alert">No se pudieron cargar los eventos.</p>
+              <button type="button" class="outline" (click)="loadEvents()">
+                Reintentar eventos
+              </button>
+            } @else if (!eventsLoading && !eligibleEvents.length) {
+              <p>No hay eventos elegibles. Puedes continuar sin vínculo.</p>
+            }
+          }
           <p>
-            Elige las opciones aceptadas. La selección empieza vacía y es independiente de tu voto.
+            {{
+              draftEventId
+                ? 'Elige exactamente una fecha para el evento vinculado.'
+                : 'Elige las opciones aceptadas. La selección empieza vacía y es independiente de tu voto.'
+            }}
           </p>
           <div class="consultation-vote-grid">
             @for (option of item.options; track option.id) {
@@ -230,18 +317,35 @@ type Decision = 'resolved' | 'rejected';
           </div>
           <div class="consultation-resolve-actions">
             <button class="outline" type="button" (click)="closeResolution()">Cancelar</button>
-            <button class="outline danger" type="button" (click)="beginConfirmation('rejected')">
+            <button
+              class="outline danger"
+              type="button"
+              [disabled]="resolutionLoading"
+              (click)="beginConfirmation('rejected')"
+            >
               Rechazar consulta
             </button>
             <button
               class="primary"
               type="button"
-              [disabled]="accepted.size === 0"
+              [disabled]="
+                accepted.size === 0 || resolutionLoading || (!!draftEventId && accepted.size !== 1)
+              "
               (click)="beginConfirmation('resolved')"
             >
-              Aceptar seleccionadas
+              {{
+                resolutionEvent?.status === 'rejected'
+                  ? 'Desvincular y resolver aceptando fecha'
+                  : 'Aceptar seleccionadas'
+              }}
             </button>
           </div>
+          @if (resolutionEvent?.status === 'rejected') {
+            <p role="alert">
+              El evento está rechazado. Puedes desvincularlo y aceptar una fecha, o rechazar la
+              consulta conservando el vínculo histórico.
+            </p>
+          }
         } @else {
           <div class="consultation-resolution-summary">
             <strong>{{
@@ -251,10 +355,22 @@ type Decision = 'resolved' | 'rejected';
               {{ decision === 'resolved' ? selectedSummary() : 'Ninguna opción será aceptada.' }}
             </p>
           </div>
-          <p>Al confirmar, la consulta dejará de admitir votos y no se reabrirá.</p>
-          @if (resolveError) {
-            <p class="field-error" role="alert">{{ resolveError }}</p>
+          @if (decision === 'resolved' && resolutionEvent) {
+            @if (resolutionEvent.status === 'definitive') {
+              <p role="alert">
+                El evento ya tiene fecha definitiva. Resolver esta consulta no cambiará su fecha. El
+                vínculo se conservará.
+              </p>
+            } @else if (resolutionEvent.status === 'rejected') {
+              <p>El evento se desvinculará y la consulta se resolverá aceptando una fecha.</p>
+            } @else {
+              <p>
+                La fecha aceptada quedará asignada como definitiva al evento
+                {{ resolutionEvent.title }}.
+              </p>
+            }
           }
+          <p>Al confirmar, la consulta dejará de admitir votos y no se reabrirá.</p>
           <div class="consultation-resolve-actions">
             <button
               class="outline"
@@ -276,6 +392,64 @@ type Decision = 'resolved' | 'rejected';
         }
       </dialog>
     }
+    @if (showEventEditor) {
+      <dialog
+        #eventDialog
+        class="consultation-dialog consultation-confirmation"
+        aria-labelledby="consultation-event-title"
+        (cancel)="closeEventEditor($event)"
+      >
+        <h2 id="consultation-event-title">Evento vinculado</h2>
+        <label for="consultation-event">Evento (opcional)</label>
+        <select
+          id="consultation-event"
+          class="text-query-input"
+          [value]="draftEventId ?? ''"
+          [disabled]="eventsLoading || eventSaving"
+          (change)="draftEventId = $any($event.target).value || null"
+        >
+          <option value="">Sin evento</option>
+          @if (consultation?.event && !currentEventIsEligible) {
+            <option [value]="consultation!.event!.id">
+              {{ consultation!.event!.title }} (vínculo actual)
+            </option>
+          }
+          @for (event of eligibleEvents; track event.id) {
+            <option [value]="event.id">{{ event.title }}</option>
+          }
+        </select>
+        @if (eventsLoading) {
+          <p role="status">Cargando eventos…</p>
+        }
+        @if (eventsError) {
+          <p role="alert">No se pudieron cargar los eventos.</p>
+          <button class="outline" type="button" (click)="loadEvents()">Reintentar</button>
+        } @else if (!eventsLoading && !eligibleEvents.length) {
+          <p>No hay eventos elegibles. Puedes continuar sin vínculo.</p>
+        }
+        @if (eventError) {
+          <p role="alert">{{ eventError }}</p>
+        }
+        <div class="text-query-actions">
+          <button
+            type="button"
+            class="outline"
+            [disabled]="eventSaving"
+            (click)="closeEventEditor()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="primary"
+            [disabled]="eventsLoading || eventSaving"
+            (click)="saveEvent()"
+          >
+            {{ eventSaving ? 'Guardando…' : 'Guardar vínculo' }}
+          </button>
+        </div>
+      </dialog>
+    }
   `,
 })
 export class ConsultationDetailPage implements OnInit, OnDestroy {
@@ -284,6 +458,11 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   @Output() readonly updated = new EventEmitter<void>();
   @ViewChild('backButton') private backButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('resolveButton') private resolveButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('eventButton') private eventButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('eventDialog')
+  set eventDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
+    if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
+  }
   @ViewChild('resolutionDialog')
   set resolutionDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
     if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
@@ -308,6 +487,23 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   accepted = new Set<string>();
   submitting = false;
   resolveError = '';
+  resolutionLoading = false;
+  resolutionEvent?: TeamEventSummary;
+  draftEventId: string | null = null;
+  eligibleEvents: TeamEventSummary[] = [];
+  eventsLoading = false;
+  eventsError = false;
+  showEventEditor = false;
+  eventSaving = false;
+  eventError = '';
+  private readonly subscriptions = new Subscription();
+  private resolutionEventChanged = false;
+  private focusEventAfterLoad = false;
+  private eventFocusReturn?: HTMLElement;
+
+  get currentEventIsEligible(): boolean {
+    return this.eligibleEvents.some((event) => event.id === this.consultation?.event?.id);
+  }
 
   ngOnInit(): void {
     this.load();
@@ -315,6 +511,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.request?.unsubscribe();
+    this.subscriptions.unsubscribe();
   }
 
   load(): void {
@@ -326,6 +523,10 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
         this.confirmed = structuredClone(detail);
         this.loading = false;
         this.changeDetector.markForCheck();
+        if (this.focusEventAfterLoad) {
+          this.focusEventAfterLoad = false;
+          setTimeout(() => this.eventButton?.nativeElement.focus());
+        }
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
@@ -488,6 +689,11 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     this.confirming = false;
     this.resolveError = '';
     this.showResolution = true;
+    this.resolutionEventChanged = false;
+    this.draftEventId = this.consultation?.event?.id ?? null;
+    this.resolutionEvent = this.consultation?.event;
+    if (this.consultation?.type === 'date') this.loadEvents();
+    this.refreshResolution();
     this.changeDetector.markForCheck();
   }
 
@@ -500,15 +706,16 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   }
 
   toggleAccepted(id: string): void {
-    if (this.accepted.has(id)) this.accepted.delete(id);
+    const selected = this.accepted.has(id);
+    if (this.draftEventId) this.accepted.clear();
+    if (selected) this.accepted.delete(id);
     else this.accepted.add(id);
     this.changeDetector.markForCheck();
   }
 
   beginConfirmation(decision: Decision): void {
     this.decision = decision;
-    this.confirming = true;
-    this.changeDetector.markForCheck();
+    this.refreshResolution(true);
   }
 
   confirmResolution(): void {
@@ -516,8 +723,27 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     this.submitting = true;
     this.resolveError = '';
     const accepted = this.decision === 'resolved' ? [...this.accepted] : [];
+    const event =
+      this.consultation?.type === 'date'
+        ? {
+            ...(this.decision === 'resolved' && this.resolutionEvent?.status === 'rejected'
+              ? { eventId: null }
+              : this.resolutionEventChanged
+                ? { eventId: this.draftEventId }
+                : {}),
+            ...(this.decision === 'resolved' && this.resolutionEvent?.status === 'definitive'
+              ? { expectedEventVersion: this.resolutionEvent.version }
+              : {}),
+          }
+        : undefined;
     this.api
-      .resolveConsultation(this.consultationId, this.team.participantId, this.decision, accepted)
+      .resolveConsultation(
+        this.consultationId,
+        this.team.participantId,
+        this.decision,
+        accepted,
+        event,
+      )
       .subscribe({
         next: ({ consultation, expiresAt }) => {
           this.submitting = false;
@@ -533,12 +759,168 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
         error: (error: HttpErrorResponse) => {
           this.submitting = false;
           if (this.team.handleAccessError(error)) return;
-          this.resolveError =
-            error.status === 409
-              ? 'La consulta ya tiene otra resolución. Recarga el detalle.'
-              : 'No se pudo guardar la resolución. Puedes reintentar.';
+          if (error.status === 409) {
+            this.confirming = false;
+            this.resolveError =
+              'El estado ha cambiado. Revisa los datos actualizados y vuelve a confirmar.';
+            this.refreshResolution();
+            if (this.consultation?.type === 'date') this.loadEvents();
+          } else {
+            this.resolveError = 'No se pudo guardar la resolución. Puedes reintentar.';
+          }
           this.changeDetector.markForCheck();
         },
       });
+  }
+
+  openEventEditor(remove = false): void {
+    this.eventFocusReturn =
+      document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    this.draftEventId = remove ? null : (this.consultation?.event?.id ?? null);
+    this.eventError = '';
+    this.showEventEditor = true;
+    this.loadEvents();
+  }
+
+  closeEventEditor(event?: Event): void {
+    event?.preventDefault();
+    if (this.eventSaving) return;
+    this.showEventEditor = false;
+    this.changeDetector.markForCheck();
+    setTimeout(() => {
+      if (this.eventFocusReturn?.isConnected) this.eventFocusReturn.focus();
+      else this.eventButton?.nativeElement.focus();
+    });
+  }
+
+  loadEvents(): void {
+    this.eventsLoading = true;
+    this.eventsError = false;
+    this.subscriptions.add(
+      forkJoin({ events: this.api.events(), consultations: this.api.consultations() }).subscribe({
+        next: ({ events, consultations }) => {
+          const occupied = new Set(
+            consultations.open
+              .filter((item) => item.id !== this.consultationId)
+              .map((item) => item.event?.id),
+          );
+          this.eligibleEvents = events.unfinalized.filter(
+            (event) => event.status === 'provisional' && !occupied.has(event.id),
+          );
+          this.eventsLoading = false;
+          this.changeDetector.markForCheck();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.eventsLoading = false;
+          this.eventsError = !this.team.handleAccessError(error);
+          this.changeDetector.markForCheck();
+        },
+      }),
+    );
+  }
+
+  saveEvent(): void {
+    if (this.eventSaving) return;
+    this.eventSaving = true;
+    this.eventError = '';
+    this.subscriptions.add(
+      this.api.setConsultationEvent(this.consultationId, this.draftEventId).subscribe({
+        next: ({ expiresAt }) => {
+          this.eventSaving = false;
+          this.team.updateExpiry(expiresAt);
+          this.closeEventEditor();
+          this.focusEventAfterLoad = true;
+          this.load();
+          this.updated.emit();
+          this.message = 'Vínculo actualizado.';
+        },
+        error: (error: HttpErrorResponse) => {
+          this.eventSaving = false;
+          if (this.team.handleAccessError(error)) return;
+          this.eventError =
+            error.status === 409
+              ? 'El estado ha cambiado. Revisa los eventos disponibles y vuelve a intentarlo.'
+              : 'No se pudo guardar el vínculo. Puedes reintentar.';
+          if (error.status === 409) this.loadEvents();
+          this.changeDetector.markForCheck();
+        },
+      }),
+    );
+  }
+
+  selectResolutionEvent(id: string): void {
+    this.resolutionEventChanged = true;
+    this.draftEventId = id || null;
+    this.resolutionEvent =
+      this.eligibleEvents.find((event) => event.id === id) ??
+      (this.consultation?.event?.id === id ? this.consultation.event : undefined);
+    if (this.draftEventId && this.accepted.size > 1) this.accepted.clear();
+  }
+
+  refreshResolution(confirm = false): void {
+    this.resolutionLoading = true;
+    this.subscriptions.add(
+      this.api.consultation(this.consultationId).subscribe({
+        next: (detail) => {
+          this.consultation = detail;
+          this.confirmed = structuredClone(detail);
+          if (detail.state !== 'open') {
+            this.resolutionLoading = false;
+            this.closeResolution();
+            this.updated.emit();
+            this.message = 'La consulta ya está cerrada.';
+            return;
+          }
+          if (!this.resolutionEventChanged) this.draftEventId = detail.event?.id ?? null;
+          if (!this.draftEventId) {
+            this.resolutionEvent = undefined;
+            this.finishResolutionRefresh(confirm);
+            return;
+          }
+          this.subscriptions.add(
+            this.api.event(this.draftEventId).subscribe({
+              next: ({ event }) => {
+                if (
+                  confirm &&
+                  this.decision === 'resolved' &&
+                  event.status === 'rejected' &&
+                  this.resolutionEvent?.status !== 'rejected'
+                ) {
+                  confirm = false;
+                  this.resolveError = 'El evento está rechazado. Elige cómo continuar.';
+                }
+                this.resolutionEvent = event;
+                this.finishResolutionRefresh(confirm);
+              },
+              error: (error: HttpErrorResponse) => this.resolutionRefreshFailed(error),
+            }),
+          );
+        },
+        error: (error: HttpErrorResponse) => this.resolutionRefreshFailed(error),
+      }),
+    );
+  }
+
+  private finishResolutionRefresh(confirm: boolean): void {
+    this.resolutionLoading = false;
+    if (confirm) {
+      this.resolveError = '';
+      if (
+        this.decision === 'resolved' &&
+        (this.accepted.size === 0 || (this.draftEventId && this.accepted.size !== 1))
+      ) {
+        this.resolveError = 'Elige exactamente una fecha para el evento vinculado.';
+      } else {
+        this.confirming = true;
+      }
+    }
+    this.changeDetector.markForCheck();
+  }
+
+  private resolutionRefreshFailed(error: HttpErrorResponse): void {
+    this.resolutionLoading = false;
+    if (!this.team.handleAccessError(error))
+      this.resolveError = 'No se pudo comprobar el estado actual. Reintenta antes de confirmar.';
+    this.changeDetector.markForCheck();
   }
 }

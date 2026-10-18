@@ -29,10 +29,22 @@ export const routes: Routes = [
         title: 'Consultas · Synqo',
       },
       {
+        path: 'consultas/:consultationId',
+        component: ConsultationsPage,
+        data: { section: 'consultas' },
+        title: 'Detalle de la consulta · Synqo',
+      },
+      {
         path: 'eventos',
         component: EventsPage,
         data: { section: 'eventos' },
         title: 'Eventos · Synqo',
+      },
+      {
+        path: 'eventos/:eventId',
+        component: EventsPage,
+        data: { section: 'eventos' },
+        title: 'Detalle del evento · Synqo',
       },
     ],
   },

@@ -54,6 +54,9 @@ async function createTeam(page: import('@playwright/test').Page) {
       });
     }
   });
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
   await page.goto('/');
   const name = `Disponibilidad ${Date.now()}`;
   await page.locator('#team-name').fill(name);
@@ -90,6 +93,9 @@ test('shows distinct keyboard focus and selection on the selected day', async ({
   );
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
+  );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
   );
 
   await page.goto('/e/calendario#t=focus-token');

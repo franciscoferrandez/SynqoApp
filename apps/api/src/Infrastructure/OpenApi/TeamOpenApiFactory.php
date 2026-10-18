@@ -139,7 +139,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 summary: 'Create an open text or date consultation',
                 security: $security,
                 requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->consultationRequest())]), required: true),
-                responses: ['201' => $this->response('Created text or date consultation', ['consultation' => $consultation, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid type, title, time zone or options', withViolations: true)] + $consultationErrors,
+                responses: ['201' => $this->response('Created text or date consultation', ['consultation' => $consultation, 'expiresAt' => $this->schema('string', format: 'date-time')]), '409' => $this->problem('Event no longer eligible', 'urn:synqo:problem:event-conflict'), '422' => $this->problem('Invalid type, title, time zone or options', withViolations: true)] + $consultationErrors,
             ),
         ));
         $consultationDetail = $this->consultationDetail();
@@ -153,6 +153,15 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             parameters: [$consultationId],
             responses: ['200' => new Response(description: 'Consultation detail', content: new \ArrayObject(['application/json' => new MediaType(schema: $consultationDetail)]))] + $decisionErrors,
         )));
+        $paths->addPath('/api/teams/current/consultations/{consultationId}/event', new PathItem(put: new Operation(
+            operationId: 'setConsultationEvent',
+            tags: ['Consultations'],
+            summary: 'Set or remove the event link of an open date consultation',
+            security: $security,
+            parameters: [$consultationId],
+            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['eventId' => $this->eventLinkInput()], ['eventId']))]), required: true),
+            responses: ['200' => $this->response('Updated consultation event link', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed or missing eventId'), '409' => $this->problem('Consultation closed or event no longer eligible (urn:synqo:problem:consultation-closed / urn:synqo:problem:event-conflict)'), '422' => $this->problem('Invalid event link', withViolations: true)] + $decisionErrors,
+        )));
         $paths->addPath('/api/teams/current/consultations/{consultationId}/votes/{participantId}/options/{optionId}', new PathItem(put: new Operation(
             operationId: 'setConsultationVoteOption',
             tags: ['Consultations'],
@@ -164,14 +173,17 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         )));
         $accepted = $this->schema('array');
         $accepted['items'] = $this->schema('string', format: 'uuid');
+        $expectedEventVersion = $this->schema('integer');
+        $expectedEventVersion['minimum'] = 1;
+        $expectedEventVersion['description'] = 'Version shown in the definitive event warning; required to accept a linked definitive event. Any mismatch returns event-conflict without changes.';
         $paths->addPath('/api/teams/current/consultations/{consultationId}/resolution', new PathItem(put: new Operation(
             operationId: 'resolveConsultation',
             tags: ['Consultations'],
             summary: 'Accept options or reject an open consultation',
             security: $security,
             parameters: [$consultationId],
-            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'status' => $this->enumSchema(['resolved', 'rejected']), 'acceptedOptionIds' => $accepted], ['participantId', 'status', 'acceptedOptionIds']))]), required: true),
-            responses: ['200' => $this->response('Confirmed resolution and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Different resolution already recorded', 'urn:synqo:problem:consultation-closed'), '422' => $this->problem('Invalid resolution', withViolations: true)] + $decisionErrors,
+            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'status' => $this->enumSchema(['resolved', 'rejected']), 'acceptedOptionIds' => $accepted, 'eventId' => $this->eventLinkInput(), 'expectedEventVersion' => $expectedEventVersion], ['participantId', 'status', 'acceptedOptionIds']))]), required: true),
+            responses: ['200' => $this->response('Confirmed resolution and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Different resolution, rejected event or stale definitive event version (urn:synqo:problem:consultation-closed / urn:synqo:problem:event-conflict)'), '422' => $this->problem('Invalid resolution', withViolations: true)] + $decisionErrors,
         )));
         $event = $this->eventSummary();
         $eventList = $this->schema('array');
@@ -195,6 +207,15 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 responses: ['201' => $this->response('Created event', ['event' => $this->eventDetail(), 'expiresAt' => $this->schema('string', format: 'date-time')])] + $eventErrors,
             ),
         ));
+        $calendarRange = [new Parameter(name: 'from', in: 'query', required: true, schema: ['type' => 'string', 'format' => 'date']), new Parameter(name: 'to', in: 'query', required: true, schema: ['type' => 'string', 'format' => 'date'])];
+        $paths->addPath('/api/teams/current/events/calendar', new PathItem(get: new Operation(
+            operationId: 'calendarTeamEvents',
+            tags: ['Events'],
+            summary: 'List active dated events in a calendar range',
+            security: $security,
+            parameters: $calendarRange,
+            responses: ['200' => $this->response('Events in the requested range', ['events' => $eventList]), '401' => $this->unauthorizedProblem(), '410' => $this->problem('Team expired'), '422' => $this->problem('Invalid calendar range', withViolations: true)],
+        )));
         $eventId = new Parameter(name: 'eventId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid']);
         $paths->addPath('/api/teams/current/events/{eventId}', new PathItem(
             get: new Operation(
@@ -223,7 +244,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 summary: $action === 'rejection' ? 'Reject an event' : 'Recover a rejected event',
                 security: $security,
                 parameters: [$eventId],
-                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $participantAction)]), required: true),
+                requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $action === 'rejection' ? $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'disposition' => $this->enumSchema(['unlink', 'reject_both'])], ['participantId']) : $participantAction)]), required: true),
                 responses: ['200' => $this->response('Changed event lifecycle state', ['event' => $this->eventDetail(), 'expiresAt' => $this->schema('string', format: 'date-time')])] + $eventErrors,
             )));
         }
@@ -282,7 +303,8 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $accepted = $this->schema('array');
         $accepted['items'] = $this->schema('string', format: 'uuid');
         $resolution = $this->schema('object', ['participant' => $this->participant(), 'resolvedAt' => $this->schema('string', format: 'date-time'), 'acceptedOptionIds' => $accepted], ['participant', 'resolvedAt', 'acceptedOptionIds']);
-        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options, 'resolution' => $resolution], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
+        $event = $this->eventSummary();
+        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options, 'event' => $event, 'resolution' => $resolution], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
     }
 
     private function consultationDetail(): Schema
@@ -316,7 +338,16 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             'title' => $this->schema('string', maxLength: 250),
             'options' => $options,
             'timeZone' => $timeZone,
+            'eventId' => $this->eventLinkInput(),
         ], ['participantId', 'title', 'options']);
+    }
+
+    private function eventLinkInput(): Schema
+    {
+        $schema = $this->schema('string', format: 'uuid');
+        $schema['nullable'] = true;
+        $schema['description'] = 'UUID changes the link; null removes it. Omit during resolution to keep the current link. New links require an eligible event.';
+        return $schema;
     }
 
     /** @param list<string> $values */
@@ -359,6 +390,9 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
     private function eventDetail(): Schema
     {
         $event = $this->eventSummary();
+        $consultations = $this->schema('array');
+        $consultations['items'] = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'title' => $this->schema('string'), 'state' => $this->enumSchema(['open', 'resolved', 'rejected'])], ['id', 'title', 'state']);
+        $event['properties']['consultations'] = $consultations;
         $notes = $this->schema('string', maxLength: 5000);
         $notes['nullable'] = true;
         $lastModifiedBy = $this->participant();

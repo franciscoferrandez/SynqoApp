@@ -43,6 +43,15 @@ final readonly class ConsultationService
     }
 
     /** @return array{consultation: array<string, mixed>, expiresAt: string} */
+    public function setEvent(?string $token, string $consultationId, mixed $eventId): array
+    {
+        if ($eventId !== null && (!is_string($eventId) || !\Symfony\Component\Uid\Uuid::isValid($eventId))) {
+            throw new InvalidConsultationInput(['eventId']);
+        }
+        return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->setEvent($team['id'], $consultationId, $eventId, $activity->format(DATE_ATOM)), $consultationId);
+    }
+
+    /** @return array{consultation: array<string, mixed>, expiresAt: string} */
     public function vote(?string $token, string $consultationId, string $participantId, string $optionId, mixed $selected): array
     {
         if (!is_bool($selected)) {
@@ -54,9 +63,15 @@ final readonly class ConsultationService
     /** @param mixed $acceptedOptionIds
      * @return array{consultation: array<string, mixed>, expiresAt: string}
      */
-    public function resolve(?string $token, string $consultationId, mixed $participantId, mixed $state, mixed $acceptedOptionIds): array
+    public function resolve(?string $token, string $consultationId, mixed $participantId, mixed $state, mixed $acceptedOptionIds, bool $changeEvent = false, mixed $eventId = null, mixed $expectedEventVersion = null): array
     {
         $violations = [];
+        if ($eventId !== null && (!is_string($eventId) || !\Symfony\Component\Uid\Uuid::isValid($eventId))) {
+            $violations[] = 'eventId';
+        }
+        if ($expectedEventVersion !== null && (!is_int($expectedEventVersion) || $expectedEventVersion < 1)) {
+            $violations[] = 'expectedEventVersion';
+        }
         if (!is_string($participantId) || $participantId === '') {
             $violations[] = 'participantId';
         }
@@ -74,7 +89,7 @@ final readonly class ConsultationService
         /** @var string $participantId */
         /** @var string $state */
         /** @var list<string> $acceptedOptionIds */
-        return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->resolve($team['id'], $consultationId, $participantId, $state, $acceptedOptionIds, $now->format(DATE_ATOM), $activity->format(DATE_ATOM)), $consultationId);
+        return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->resolve($team['id'], $consultationId, $participantId, $state, $acceptedOptionIds, $now->format(DATE_ATOM), $activity->format(DATE_ATOM), $changeEvent, $eventId, $expectedEventVersion), $consultationId);
     }
 
     /** @param callable(array<string, string>, DateTimeImmutable, DateTimeImmutable): bool $work
@@ -110,7 +125,7 @@ final readonly class ConsultationService
     }
 
     /** @return array{consultation: array<string, mixed>, expiresAt: string} */
-    public function create(?string $token, mixed $participantId, mixed $title, mixed $options, mixed $type = null, mixed $timeZone = null): array
+    public function create(?string $token, mixed $participantId, mixed $title, mixed $options, mixed $type = null, mixed $timeZone = null, mixed $eventId = null): array
     {
         if ($token === null) {
             throw new MissingAccessCredential();
@@ -124,6 +139,12 @@ final readonly class ConsultationService
             : TextConsultationRules::violations($title, $options);
         if (!is_string($participantId) || $participantId === '') {
             $violations[] = 'participantId';
+        }
+        if ($kind !== 'date' && $eventId !== null) {
+            throw new InvalidConsultationInput(['eventId']);
+        }
+        if ($eventId !== null && (!is_string($eventId) || !\Symfony\Component\Uid\Uuid::isValid($eventId))) {
+            throw new InvalidConsultationInput(['eventId']);
         }
         if ($violations !== []) {
             throw new InvalidConsultationInput(array_values(array_unique($violations)));
@@ -143,7 +164,7 @@ final readonly class ConsultationService
         }
 
         /** @var array{consultation: array<string, mixed>, expiresAt: string} $result */
-        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($participantId, $title, $optionValues, $kind, $timeZone): array {
+        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($participantId, $title, $optionValues, $kind, $timeZone, $eventId): array {
             if ($team === null) {
                 throw new TeamNotFound();
             }
@@ -168,6 +189,7 @@ final readonly class ConsultationService
                 $title,
                 $kind,
                 $optionValues,
+                $eventId,
                 $now->format(DATE_ATOM),
                 $activity->format(DATE_ATOM),
             );

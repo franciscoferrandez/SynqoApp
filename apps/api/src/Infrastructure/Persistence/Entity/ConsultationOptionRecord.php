@@ -45,6 +45,11 @@ class ConsultationOptionRecord
         return $this->consultation;
     }
 
+    public function date(): ?DateTimeImmutable
+    {
+        return $this->date;
+    }
+
     /** @return array{id: string, text?: string, date?: string, position: int} */
     public function toItem(): array
     {

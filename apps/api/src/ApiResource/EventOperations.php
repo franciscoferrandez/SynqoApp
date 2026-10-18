@@ -12,6 +12,7 @@ use App\Controller\EventController;
 
 #[ApiResource(operations: [
     new Get(uriTemplate: '/teams/current/events', controller: EventController::class . '::list', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
+    new Get(uriTemplate: '/teams/current/events/calendar', controller: EventController::class . '::calendar', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
     new Post(uriTemplate: '/teams/current/events', controller: EventController::class . '::create', input: false, output: false, read: false, deserialize: false, validate: false, write: false, status: 201),
     new Get(uriTemplate: '/teams/current/events/{eventId}', controller: EventController::class . '::detail', input: false, output: false, read: false, deserialize: false, validate: false, write: false),
     new Put(uriTemplate: '/teams/current/events/{eventId}', controller: EventController::class . '::update', input: false, output: false, read: false, deserialize: false, validate: false, write: false),

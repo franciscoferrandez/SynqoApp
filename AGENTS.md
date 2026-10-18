@@ -1,5 +1,11 @@
 # Documentación del proyecto
 
+## Entorno WEB y commits
+
+Antes de ejecutar tests, lint, formato, build o hooks que afecten a `apps/web/`, selecciona la versión fijada del repositorio con `nvm use` desde la raíz. Si el shell no reconoce `nvm`, carga primero la inicialización de NVM del entorno; no declares los checks bloqueados por Node sin intentar esa activación.
+
+Cuando un hook bloquee un commit, conserva los cambios, lee la salida completa, corrige la causa y vuelve a ejecutar el commit sin saltar hooks. Comprueba después `git status` y `git log -1` para confirmar si el commit llegó a crearse; no hagas `amend` salvo que lo autorice la persona usuaria.
+
 La ubicación de la documentación del proyecto está en `.pdi/config.json`, campo `docs_dir`. Si aún no existe ese archivo, usa `pdi_doc/`.
 
 Antes de cambiar el producto o su código:

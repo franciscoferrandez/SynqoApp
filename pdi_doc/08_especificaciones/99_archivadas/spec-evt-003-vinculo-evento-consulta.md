@@ -1,7 +1,7 @@
 ---
 id: SPEC-EVT-003
 nivel: N2
-estado: ready_for_change_apply
+estado: cerrado
 release: REL-004
 ---
 
@@ -25,7 +25,7 @@ Permitir que una persona relacione una consulta de fechas abierta con un evento 
 
 ## Fuera de scope
 
-- El marcador de evento en el calendario y el detalle del día, que corresponden a [RF-EVT-004 — Mostrar eventos en el calendario](../../03_requisitos/01_funcionales/EVT/rf-evt-004-mostrar-eventos-calendario.md) y [SPEC-EVT-002 — Mostrar eventos en el calendario](spec-evt-002-eventos-en-calendario.md).
+- El marcador de evento en el calendario y el detalle del día, que corresponden a [RF-EVT-004 — Mostrar eventos en el calendario](../../03_requisitos/01_funcionales/EVT/rf-evt-004-mostrar-eventos-calendario.md) y [SPEC-EVT-002 — Mostrar eventos en el calendario](../99_archivadas/spec-evt-002-eventos-en-calendario.md).
 - La creación, edición, lista, ficha, rechazo y recuperación como capacidades independientes del evento, que corresponden a [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md). Esta SPEC depende de esa capacidad y solo añade las relaciones con consultas.
 - Las consultas de opciones de texto y su resolución.
 - Historial de cambios de vínculo mientras una consulta permanece abierta. Solo se conserva el vínculo vigente al cierre y las relaciones cerradas que decida el producto.
@@ -34,7 +34,7 @@ Permitir que una persona relacione una consulta de fechas abierta con un evento 
 ## Dependencias y orden
 
 - Para iniciar la implementación de esta SPEC debe estar implementada y disponible [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md): entidad, ficha y operaciones de evento. La integración se implementa después de ese Change.
-- Puede implementarse antes o después de [SPEC-EVT-002 — Mostrar eventos en el calendario](spec-evt-002-eventos-en-calendario.md); no comparte sus criterios de aceptación.
+- Puede implementarse antes o después de [SPEC-EVT-002 — Mostrar eventos en el calendario](../99_archivadas/spec-evt-002-eventos-en-calendario.md); no comparte sus criterios de aceptación.
 - La especificación puede prepararse en paralelo. No se altera el calendario ni se presupone que el Change de eventos ya esté entregado.
 
 ## Baseline relacionado
@@ -116,7 +116,7 @@ Realización de reglas y requisitos existentes. La regla de que un evento rechaz
 
 - Las escrituras de los dos módulos de dominio comparten la transacción abierta por `withLockedTeam`. No se confirma una resolución sin la asignación del evento cuando ambas son necesarias.
 - El bloqueo de la fila del equipo ordena operaciones concurrentes dentro del mismo equipo. Para el aviso de evento definitivo, la petición incluye `expectedEventVersion` y el servidor lo compara bajo el bloqueo con `version` actual; una diferencia devuelve conflicto sin escrituras y fuerza a revisar el aviso con el estado actual.
-- Añadir índice único parcial PostgreSQL por evento para consultas abiertas; conservar la posibilidad de varias consultas cerradas para el mismo evento. Mantener FK y cascada de borrado de datos del equipo coherentes con el esquema de SPEC-EVT-001.
+- La implementación conserva `event_id` para la relación histórica y usa `open_event_id` con el índice único `consultation_open_event_unique` para el vínculo abierto. Al vincular se sincronizan ambas columnas; al cerrar se vacía únicamente `open_event_id`. Esta adaptación de persistencia permite que Doctrine describa y valide el índice y conserva la unicidad abierta prevista por el índice parcial propuesto en Research. Las carreras se serializan con el bloqueo del equipo; las consultas cerradas pueden compartir evento. Las FK mantienen el borrado de datos del equipo coherente con [SPEC-EVT-001 — Gestión de eventos del equipo](../99_archivadas/spec-evt-001-gestion-eventos-equipo.md).
 - Nunca modificar última modificación del evento al cambiar únicamente el vínculo. En la asignación de fecha, atribuir el cambio al participante de la resolución. Actualizar actividad del equipo solo tras una operación confirmada.
 
 ### WEB y experiencia
@@ -167,3 +167,60 @@ Realización de reglas y requisitos existentes. La regla de que un evento rechaz
 ## Resultado de preparación
 
 **READY_FOR_CHANGE_APPLY.** El alcance, diseño, dependencia, estructura, slices y evidencia están definidos. No quedan decisiones funcionales bloqueantes; el evento rechazado debe recuperarse antes de ser ofrecido como vínculo nuevo, y la excepción del vínculo previo se mantiene. La implementación puede comenzar cuando SPEC-EVT-001 esté implementada y validada; esa validación local ya consta en REL-004. El despliegue de la release no es requisito previo. El calendario sigue fuera de este Change.
+
+## Verificación de implementación — 2026-10-18
+
+`pdi:change-verify` detectó huecos en mantenimiento y resolución del vínculo, control de versión y navegación. Se corrigieron mediante `pdi:change-apply` y se volvió a verificar. Las pruebas API usan PostgreSQL; los E2E con respuestas HTTP controladas se complementan con un recorrido contra Symfony y PostgreSQL reales.
+
+### Matriz de aceptación
+
+| Acceptance criterion | Evidence | Result |
+|---|---|---|
+| 1. Creación opcional con evento elegible del equipo | [Pruebas API de vínculos](../../../apps/api/tests/EventConsultationApiTest.php): elegibilidad, equipo y tipo. [E2E de vínculos](../../../apps/web/e2e/event-consultations.spec.ts): creación; [E2E real](../../../apps/web/e2e/events-real.spec.ts): creación desde calendario con evento. | PASS |
+| 2. Elegir, cambiar y retirar antes o durante resolución; revalidar al confirmar | Pruebas API de cambio/retirada y de `eventId` UUID/null durante resolución; E2E de cambio/retirada, selección durante resolución y cancelación sin escrituras. Selector de creación excluye eventos ocupados. | PASS |
+| 3. Unicidad abierta y conservación/reutilización histórica | API prueba dos vínculos concurrentes, reutilización tras rechazar la consulta anterior, vínculos históricos y liberación de `open_event_id`. | PASS |
+| 4. Una fecha con vínculo y varias sin vínculo | API rechaza varias opciones vinculadas y acepta varias tras retirar vínculo; E2E comprueba selección única vinculada y múltiple sin vínculo. | PASS |
+| 5. Fecha definitiva y autoría en la misma transacción que el cierre | API comprueba fecha, estado, autoría y versión; fallo SQL forzado revierte evento, consulta, vínculo, resolución y actividad. E2E real comprueba estado persistido y recarga. | PASS |
+| 6. Aviso de evento definitivo y conflicto de versión sin cambios | API verifica versión ausente/obsoleta, dos cambios en el mismo instante y paso definitivo→provisional después del aviso. E2E comprueba aviso, `expectedEventVersion`, recarga tras 409 y nueva confirmación requerida. | PASS |
+| 7. Rechazar consulta conserva el evento y el vínculo histórico | API y E2E de consulta rechazada; navegación histórica desde ambas fichas. | PASS |
+| 8. Evento excepcionalmente rechazado: desvincular y aceptar una fecha, rechazar consulta o cancelar | API y E2E cubren ambas salidas, conservación histórica y cancelación sin peticiones de escritura. | PASS |
+| 9. Rechazo de evento: `unlink`, `reject_both` y cancelación | API exige disposición explícita con consulta abierta y prueba ambas salidas y rollback. E2E comprueba cuerpos y cancelación sin escrituras. | PASS |
+| 10. Navegación consulta↔evento e historial cerrado/abierto | API devuelve relaciones; E2E recorre relaciones históricas; E2E real navega en ambos sentidos y recarga las fichas. Rutas de detalle aceptan cambios de parámetro. | PASS |
+| 11. Carga, vacío, error, reintento, teclado, foco y adaptación | [Smoke de vínculos](../../../apps/web/e2e/event-consultations-responsive.spec.ts): 16/16, cuatro viewports y dos temas; selector, resolución y rechazo coordinado, foco al cancelar y cero PUTs. Lint de accesibilidad de plantillas sin errores. | PASS |
+| 12. Contrato, Bearer, aislamiento, migración y atomicidad concurrente | API completa: 166 tests, 1468 assertions. Pruebas de OpenAPI nullable/versiones/relaciones, Bearer, caducidad y recursos ajenos; cuatro carreras con bloqueo de equipo; migración desde base de pruebas vacía y validación Doctrine correctas. | PASS |
+
+### Comandos y resultados
+
+- `docker compose exec -T api composer test`: PASS, 166 tests y 1468 assertions. Incluye 19 pruebas específicas de vínculos y cuatro escenarios con dos procesos concurrentes.
+- `docker compose exec -T api composer cs:check`: PASS; `composer stan`: PASS; `composer rector:check`: PASS, ejecutados también dentro de API.
+- `docker compose exec -T api php bin/console doctrine:schema:validate --env=test`: PASS. El recorrido E2E real aplicó las diez migraciones sobre `synqo_test` recreada por el script existente, sin resetear desarrollo.
+- Antes de todos los checks WEB: `source "$HOME/.nvm/nvm.sh" && nvm use` desde la raíz; Node 24.21.0, npm 11.19.0.
+- `npm --prefix apps/web test`: PASS, 26 tests; `npm --prefix apps/web run lint`, `format:check` y `build`: PASS.
+- Desde `apps/web`, `npx playwright test e2e/date-consultations.spec.ts e2e/event-consultations.spec.ts --workers=1 --output=/tmp/synqo-e2e-links-final-single --reporter=list`: PASS, 17/17.
+- Desde `apps/web`, `npx playwright test e2e/event-consultations-responsive.spec.ts --output=/tmp/synqo-evt003-responsive-results --reporter=list`: PASS, 16/16.
+- E2E real en el servicio aislado `api-e2e`, con `WEB_PROXY_CONFIG=proxy.e2e.conf.json npx playwright test e2e/events-real.spec.ts --output=/tmp/synqo-evt003-real-results --reporter=list` dentro de `web-visual-test`: PASS, 2/2. El nombre del contenedor no implica ejecución de regresiones visuales.
+- Regresión relacionada de eventos, consultas, decisiones, calendario, disponibilidad y accesibilidad: 48 casos únicos verificados. La ejecución en `api-e2e` de `events.spec.ts`, `consultations.spec.ts`, `consultation-decisions.spec.ts`, `calendar-events.spec.ts`, `calendar-options.spec.ts`, `availability.spec.ts` y `accessibility-smoke.spec.ts`, con dos workers, produjo 45 PASS y tres fallos de fixtures que omitían el recurso de eventos del calendario. Tras completar esos mocks, `npx playwright test e2e/calendar-options.spec.ts --workers=1 --output=/tmp/synqo-evt003-calendar-options-final --reporter=list`, en el mismo entorno aislado, pasó sus 9/9 casos, incluidos los tres pendientes. No quedan fallos de esa regresión sin resolver.
+- Accesibilidad automatizada: ESLint 10.12.0 y angular-eslint 21.4.0, `templateAccessibility` y procesamiento de plantillas inline, PASS sobre WEB; Playwright 1.63.0, smoke funcional de vínculos en 390×844, 768×1024, 769×1024 y 1280×800, claro/oscuro, PASS. Evidencia parcial de controles, foco, teclado y reflujo; no acredita conformidad WCAG global ni sustituye revisión manual.
+- Regresión visual: `omitido_activamente` por instrucción expresa de la persona impulsora; pendiente de tratar antes del cierre de [REL-004 — Eventos del equipo](../../01_producto/10_entregas/rel-004-eventos-del-equipo.md). No se ejecutaron ni actualizaron snapshots.
+
+### Convergencia y revisión independiente
+
+`pdi:change-converge` distingue dos clases de discrepancia resueltas:
+
+- **A — Código:** resolución sin los campos de vínculo/versión, mantenimiento del vínculo para consultas de texto, ruta de consulta ausente y comparación incompleta de una versión obsoleta. Se corrigieron conservando los criterios originales y se añadieron regresiones.
+- **B — Precisión de la SPEC:** el diseño inicial proponía un índice parcial; la implementación ya iniciada usa `event_id` histórico y `open_event_id` único. Se documenta la adaptación de persistencia en Design / Structure, sin modificar reglas, criterios ni baseline. Las pruebas de carreras y el esquema Doctrine verifican su realización.
+
+Los subagentes trabajaron con ownership separado para WEB, pruebas API, E2E y smoke responsive. Una revisión independiente posterior devolvió `REVIEW_OK`, sin BLOCKER, MAJOR ni MINOR pendientes. No hay decisiones de producto o arquitectura nuevas, escalados ni drift funcional abierto. No se han creado ADR ni commits.
+
+### Gate de cierre
+
+| Condición | Resultado | Evidencia |
+|---|---|---|
+| Criterios funcionales y alcance verificados | PASS | Matriz de los doce criterios; API, E2E controlados y recorrido real. |
+| Checks de API y WEB, migración y contrato | PASS | Comandos y resultados anteriores; regresión relacionada resuelta. |
+| Concurrencia, integridad, autoría y rollback | PASS | Cuatro carreras con dos procesos y fallos SQL forzados; esquema válido. |
+| Experiencia adaptable y accesibilidad automatizada | PASS | Smoke 16/16, lint de accesibilidad y evidencia de alcance limitado. |
+| Convergencia, revisión y decisiones pendientes | PASS | Revisión independiente sin hallazgos pendientes; no hay drift funcional ni decisiones nuevas. |
+| Omisión visual y delivery explícitos | PASS | Omisión autorizada; validación local sin declaración de entrega de la release. |
+
+**Resultado: DONE — Change cerrado y archivado localmente el 2026-10-18 mediante `pdi:change-close`.** No se realizaron commits ni despliegues. La capacidad de vínculo queda validada localmente en [REL-004 — Eventos del equipo](../../01_producto/10_entregas/rel-004-eventos-del-equipo.md); la release continúa sin declararse entregada y conserva pendiente la regresión visual antes de su cierre.

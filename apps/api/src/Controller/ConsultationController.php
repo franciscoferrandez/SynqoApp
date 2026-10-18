@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Application\Consultation\ConsultationService;
 use App\Application\Exception\InvalidConsultationInput;
 use App\Application\Exception\ConsultationClosed;
+use App\Application\Exception\EventConflict;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
@@ -49,10 +50,12 @@ final readonly class ConsultationController
             return $this->problem(400, 'JSON mal formado.');
         }
         try {
-            $created = $this->consultations->create($token, $body['participantId'] ?? null, $body['title'] ?? null, $body['options'] ?? null, $body['type'] ?? null, $body['timeZone'] ?? null);
+            $created = $this->consultations->create($token, $body['participantId'] ?? null, $body['title'] ?? null, $body['options'] ?? null, $body['type'] ?? null, $body['timeZone'] ?? null, $body['eventId'] ?? null);
             return $this->success($created, 201);
         } catch (InvalidConsultationInput $error) {
             return $this->problem(422, 'Revisa el tipo, el título, la zona horaria y las opciones.', $error->fields);
+        } catch (EventConflict) {
+            return $this->eventConflict();
         } catch (MissingAccessCredential) {
             return $this->missingCredential();
         } catch (TeamNotFound) {
@@ -70,6 +73,31 @@ final readonly class ConsultationController
             return $this->missingCredential();
         } catch (TeamNotFound) {
             return $this->problem(404, 'No encontramos esta consulta.');
+        } catch (TeamExpired) {
+            return $this->problem(410, 'Este equipo ha caducado.');
+        }
+    }
+
+    public function setEvent(Request $request, string $consultationId): JsonResponse
+    {
+        $token = $this->bearerToken($request);
+        try {
+            $this->teams->current($token);
+            $body = $this->json($request);
+            if ($body === null || !array_key_exists('eventId', $body)) {
+                return $this->problem(400, 'Indica el evento o null para retirar el vínculo.');
+            }
+            return $this->success($this->consultations->setEvent($token, $consultationId, $body['eventId']));
+        } catch (InvalidConsultationInput $error) {
+            return $this->problem(422, 'Revisa el evento elegido.', $error->fields);
+        } catch (EventConflict) {
+            return $this->eventConflict();
+        } catch (ConsultationClosed) {
+            return $this->problem(409, 'Esta consulta ya está cerrada.', type: 'urn:synqo:problem:consultation-closed');
+        } catch (MissingAccessCredential) {
+            return $this->missingCredential();
+        } catch (TeamNotFound) {
+            return $this->problem(404, 'No encontramos la consulta o el evento.');
         } catch (TeamExpired) {
             return $this->problem(410, 'Este equipo ha caducado.');
         }
@@ -107,9 +135,11 @@ final readonly class ConsultationController
             if ($body === null) {
                 return $this->problem(400, 'JSON mal formado.');
             }
-            return $this->success($this->consultations->resolve($token, $consultationId, $body['participantId'] ?? null, $body['status'] ?? null, $body['acceptedOptionIds'] ?? null));
+            return $this->success($this->consultations->resolve($token, $consultationId, $body['participantId'] ?? null, $body['status'] ?? null, $body['acceptedOptionIds'] ?? null, array_key_exists('eventId', $body), $body['eventId'] ?? null, $body['expectedEventVersion'] ?? null));
         } catch (InvalidConsultationInput $error) {
             return $this->problem(422, 'Revisa la resolución.', $error->fields);
+        } catch (EventConflict) {
+            return $this->eventConflict();
         } catch (ConsultationClosed) {
             return $this->problem(409, 'Esta consulta ya tiene otra resolución.', type: 'urn:synqo:problem:consultation-closed');
         } catch (MissingAccessCredential) {
@@ -153,6 +183,11 @@ final readonly class ConsultationController
         $response->headers->set('WWW-Authenticate', 'Bearer');
 
         return $response;
+    }
+
+    private function eventConflict(): JsonResponse
+    {
+        return $this->problem(409, 'El evento ha cambiado o ya no admite este vínculo. Revisa su estado antes de confirmar.', type: 'urn:synqo:problem:event-conflict');
     }
 
     /** @param list<string> $fields */

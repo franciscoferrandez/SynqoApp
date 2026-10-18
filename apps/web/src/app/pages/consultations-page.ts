@@ -8,6 +8,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Consultation, ConsultationGroups, TeamApi } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
@@ -40,11 +41,13 @@ type ConfirmationKind = 'create' | 'cancel';
         </div>
       }
       @if (selectedConsultationId) {
-        <app-consultation-detail
-          [consultationId]="selectedConsultationId"
-          (back)="closeDetail()"
-          (updated)="load()"
-        />
+        @for (id of [selectedConsultationId]; track id) {
+          <app-consultation-detail
+            [consultationId]="id"
+            (back)="closeDetail()"
+            (updated)="load()"
+          />
+        }
       } @else if (!loading && !loadFailed && consultations) {
         @if (isEmpty) {
           <div class="panel consultations-empty">
@@ -265,6 +268,8 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   readonly team = inject(TeamLayout);
   private readonly api = inject(TeamApi);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   @ViewChild('headerCreateButton') private headerCreateButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('titleInput') private titleInput?: ElementRef<HTMLInputElement>;
   @ViewChild('editorDialog')
@@ -301,13 +306,19 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   submitting = false;
   message = '';
   private request?: Subscription;
+  private routeRequest?: Subscription;
 
   ngOnInit(): void {
+    this.routeRequest = this.route.paramMap.subscribe((params) => {
+      this.selectedConsultationId = params.get('consultationId') ?? undefined;
+      this.changeDetector.markForCheck();
+    });
     this.load();
   }
 
   ngOnDestroy(): void {
     this.request?.unsubscribe();
+    this.routeRequest?.unsubscribe();
   }
 
   get isEmpty(): boolean {
@@ -445,6 +456,8 @@ export class ConsultationsPage implements OnInit, OnDestroy {
     this.focusReturnId = this.selectedConsultationId;
     this.selectedConsultationId = undefined;
     this.load();
+    if (this.route.snapshot.paramMap.has('consultationId'))
+      void this.router.navigate(['/e/consultas'], { preserveFragment: true });
   }
 
   openEditor(): void {

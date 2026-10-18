@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+});
+
 const viewports = [
   { width: 390, height: 844 },
   { width: 768, height: 1024 },
@@ -53,6 +59,9 @@ for (const viewport of viewports) {
         },
       }),
     );
+    await page.route('**/api/teams/current/events/calendar**', (route) =>
+      route.fulfill({ json: { events: [] } }),
+    );
     await page.goto('/e/calendario#t=options-token');
     const menu = page.getByRole('button', { name: 'Opciones de visualización' });
     const scope = page.getByRole('button', { name: 'Mi disponibilidad', exact: true });
@@ -79,9 +88,7 @@ for (const viewport of viewports) {
     await expect(worst).toBeChecked();
     await weeks.check();
     await expect.poll(() => page.locator('.calendar-day').count()).toBeGreaterThan(0);
-    await expect
-      .poll(async () => (await page.locator('.calendar-day').count()) % 7)
-      .toBe(0);
+    await expect.poll(async () => (await page.locator('.calendar-day').count()) % 7).toBe(0);
     const dates = await page
       .locator('.calendar-day')
       .evaluateAll((days) => days.map((day) => day.getAttribute('data-date')!));
@@ -310,6 +317,9 @@ test('invalid local storage falls back without blocking the menu', async ({ page
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
   );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
   await page.goto('/e/calendario#t=options-token');
   await page.getByRole('button', { name: 'Opciones de visualización' }).click();
   const overlay = page.getByRole('checkbox', { name: 'Superponer calendarios' });
@@ -348,6 +358,9 @@ test('blocked local storage keeps options usable during the visit', async ({ pag
   );
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
+  );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
   );
   await page.goto('/e/calendario#t=options-token');
   await page.getByRole('button', { name: 'Opciones de visualización' }).click();
