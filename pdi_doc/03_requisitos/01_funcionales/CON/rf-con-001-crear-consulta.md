@@ -12,6 +12,7 @@ El sistema debe permitir que un usuario con acceso al equipo construya manualmen
 ## Origen
 
 - [HU-CON-001 — Crear una consulta de fecha](../../../01_producto/07_historias-usuario/hu-con-001-crear-consulta-de-fecha.md)
+- Ajuste expreso de la persona impulsora el 2026-10-19 tras probar en local: sustituir la selección por la creación opcional de un evento; el evento usa el mismo título de la consulta.
 
 ## Precondiciones
 
@@ -20,7 +21,7 @@ El usuario tiene acceso al equipo y actúa bajo una identidad de participante de
 ## Criterios de aceptación
 
 - La consulta creada pertenece al equipo y puede recibir votos.
-- Al crear una consulta de fechas se puede elegir, de forma opcional, un evento del mismo equipo que no esté rechazado, que no tenga fecha o cuya fecha sea provisional, y que no esté vinculado a otra consulta abierta. Un evento rechazado no se ofrece; primero hay que recuperarlo. La consulta queda vinculada como máximo a un evento. Una consulta anterior ya cerrada no impide vincular ese evento a una nueva consulta abierta.
+- Al crear una consulta de fechas, un switch opcional permite crear a la vez un evento provisional sin fecha asignada, con el mismo título de la consulta, asociado a ella. No se selecciona un evento existente en este formulario. Con el switch desactivado se crea únicamente la consulta. El evento y la consulta se guardan juntos al confirmar; cancelar o fallar no deja un evento huérfano ni una consulta parcial.
 - La persona escribe un título breve al crear la consulta y ese título la identifica en la lista del equipo.
 - El título admite hasta 250 caracteres según [RD-CON-003 — Título de la consulta](../../03_datos/CON/rd-con-003-titulo-consulta.md).
 - La consulta puede crearse con una a diez opciones de fecha según [RN-CON-003 — Mínimo de una opción por consulta](../../02_reglas-negocio/CON/rn-con-003-minimo-opciones-consulta.md) y [RN-CON-007 — Máximo de diez opciones por consulta](../../02_reglas-negocio/CON/rn-con-007-maximo-opciones-consulta.md). El panel de creación indica visualmente el máximo.

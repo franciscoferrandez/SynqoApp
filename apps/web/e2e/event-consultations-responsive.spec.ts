@@ -73,7 +73,11 @@ async function assertNoHorizontalOverflow(page: Page): Promise<void> {
     .toBeLessThanOrEqual(1);
 }
 
-async function assertReachable(page: Page, role: 'button' | 'link', name: string): Promise<void> {
+async function assertReachable(
+  page: Page,
+  role: 'button' | 'link' | 'switch',
+  name: string,
+): Promise<void> {
   const control = page.getByRole(role, { name });
   await expect(control).toBeVisible();
   await expect(control).toBeEnabled();
@@ -161,13 +165,44 @@ for (const viewport of viewports) {
         await resolve.focus();
         await page.keyboard.press('Enter');
         const resolution = page.getByRole('dialog', { name: 'Resolver consulta' });
-        await expect(
-          resolution.getByText('No hay eventos elegibles. Puedes continuar sin vínculo.'),
-        ).toBeVisible();
+        await expect(resolution.getByRole('combobox')).toHaveCount(0);
+        await expect(resolution.getByText(/Evento vinculado:/)).toHaveCount(0);
+        await expect(resolution.getByText(/No hay eventos elegibles/)).toHaveCount(0);
         await assertNoHorizontalOverflow(page);
         await resolution.getByRole('button', { name: 'Cancelar' }).click();
         await expect(resolution).toBeHidden();
         await expect(resolve).toBeFocused();
+      });
+
+      test('creation switch is keyboard reachable and reflows without horizontal overflow', async ({
+        page,
+      }) => {
+        await installFixture(page, theme);
+        await page.route('**/api/teams/current/availability**', (route) =>
+          route.fulfill({ json: { days: [] } }),
+        );
+        await page.route('**/api/teams/current/events/calendar**', (route) =>
+          route.fulfill({ json: { events: [] } }),
+        );
+        await page.route('**/api/teams/current/events', (route) =>
+          route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+        );
+
+        await page.goto('/e/calendario#t=evt-responsive-token');
+        expect(await page.locator('html').getAttribute('data-theme')).toBe(theme);
+        await page.getByRole('button', { name: 'Crear consulta de fechas' }).focus();
+        await page.keyboard.press('Enter');
+        const createSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
+        await expect(createSwitch).not.toBeChecked();
+        await assertReachable(page, 'switch', 'Crear evento provisional');
+        await createSwitch.focus();
+        await page.keyboard.press('Space');
+        await expect(createSwitch).toBeChecked();
+        await expect(createSwitch).toBeFocused();
+        await assertNoHorizontalOverflow(page);
+        await page.keyboard.press('Space');
+        await expect(createSwitch).not.toBeChecked();
+        await assertNoHorizontalOverflow(page);
       });
 
       test('cancels linked-event rejection by keyboard and restores focus without a PUT', async ({

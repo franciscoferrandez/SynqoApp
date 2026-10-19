@@ -10,14 +10,13 @@ import {
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import {
   AvailabilityDay,
   AvailabilityState,
   AvailabilitySummaryRule,
   CalendarEvent,
   TeamApi,
-  TeamEventSummary,
 } from '../shared/team-api';
 import { summarizeAvailability } from '../shared/availability-summary';
 import { TeamLayout } from './team-layout';
@@ -407,35 +406,19 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
                 Elige entre una y diez fechas desde hoy. Puedes cambiar de mes; las fechas elegidas
                 se conservan.
               </p>
-              <label class="text-query-field" for="date-consultation-event"
-                >Evento (opcional)</label
+              <label
+                class="text-query-field event-create-switch"
+                for="date-consultation-create-event"
               >
-              <select
-                id="date-consultation-event"
-                class="text-query-input"
-                [value]="dateEventId ?? ''"
-                [disabled]="dateEventsLoading"
-                (change)="dateEventId = $any($event.target).value || null"
-              >
-                <option value="">Sin evento vinculado</option>
-                @for (event of eligibleDateEvents; track event.id) {
-                  <option [value]="event.id">{{ event.title }}</option>
-                }
-              </select>
-              @if (dateEventsLoading) {
-                <p class="text-query-help" role="status">Cargando eventos elegibles…</p>
-              } @else if (dateEventsError) {
-                <p class="text-query-error" role="alert">
-                  No se pudieron cargar los eventos. Puedes continuar sin vínculo.
-                </p>
-                <button class="outline" type="button" (click)="loadDateEvents()">
-                  Reintentar eventos
-                </button>
-              } @else if (!eligibleDateEvents.length) {
-                <p class="text-query-help">
-                  No hay eventos elegibles. Puedes continuar sin vínculo.
-                </p>
-              }
+                <input
+                  id="date-consultation-create-event"
+                  type="checkbox"
+                  role="switch"
+                  [checked]="dateCreateEvent"
+                  (change)="dateCreateEvent = $any($event.target).checked"
+                />
+                Crear evento provisional
+              </label>
               <p class="date-selection-count">
                 {{ selectedDates.length }} de {{ maxDateOptions }} fechas
               </p>
@@ -674,10 +657,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   selectedDates: string[] = [];
   dateTitle = '';
   dateTitleTouched = false;
-  dateEventId: string | null = null;
-  dateEvents: TeamEventSummary[] = [];
-  dateEventsLoading = false;
-  dateEventsError = false;
+  dateCreateEvent = false;
   dateServerError = '';
   submittingDate = false;
   showDateConfirmation = false;
@@ -734,9 +714,6 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
       this.selectedDates.length <= this.maxDateOptions &&
       !this.submittingDate
     );
-  }
-  get eligibleDateEvents(): TeamEventSummary[] {
-    return this.dateEvents.filter((event) => event.status === 'provisional');
   }
   get today(): string {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -1073,33 +1050,10 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.selectedDates = [];
     this.dateTitle = '';
     this.dateTitleTouched = false;
-    this.dateEventId = null;
-    this.loadDateEvents();
+    this.dateCreateEvent = false;
     this.dateServerError = '';
     this.changeDetector.detectChanges();
     setTimeout(() => document.querySelector<HTMLInputElement>('#date-consultation-title')?.focus());
-  }
-  loadDateEvents(): void {
-    this.dateEventsLoading = true;
-    this.dateEventsError = false;
-    forkJoin({ events: this.api.events(), consultations: this.api.consultations() }).subscribe({
-      next: ({ events, consultations }) => {
-        const occupied = new Set(consultations.open.map((item) => item.event?.id));
-        this.dateEvents = events.unfinalized.filter(
-          (event) => event.status === 'provisional' && !occupied.has(event.id),
-        );
-        if (this.dateEventId && !this.dateEvents.some((event) => event.id === this.dateEventId))
-          this.dateEventId = null;
-        this.dateEventsLoading = false;
-        this.changeDetector.markForCheck();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.dateEventsLoading = false;
-        this.dateEventsError = !this.team.handleAccessError(error);
-        this.changeDetector.markForCheck();
-      },
-    });
-    this.changeDetector.markForCheck();
   }
   toggleDate(date: string): void {
     if (!this.creatingDateConsultation) return;
@@ -1155,7 +1109,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
         this.dateTitle.trim(),
         this.selectedDates,
         this.effectiveTimeZone,
-        this.dateEventId ?? undefined,
+        this.dateCreateEvent,
       )
       .subscribe({
         next: ({ expiresAt }) => {
@@ -1174,10 +1128,6 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
           ) {
             this.dateServerError =
               'Alguna fecha ya no es admisible. Revisa las fechas elegidas e inténtalo de nuevo.';
-          } else if (error.status === 409) {
-            this.dateServerError =
-              'El evento ya no es elegible. Revisa los eventos disponibles y vuelve a confirmar.';
-            this.loadDateEvents();
           } else {
             this.dateServerError =
               'No se pudo crear la consulta. El borrador se ha conservado; puedes volver a intentarlo.';
@@ -1192,10 +1142,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.selectedDates = [];
     this.dateTitle = '';
     this.dateTitleTouched = false;
-    this.dateEventId = null;
-    this.dateEvents = [];
-    this.dateEventsLoading = false;
-    this.dateEventsError = false;
+    this.dateCreateEvent = false;
     this.dateServerError = '';
     this.submittingDate = false;
     this.selected = this.today;

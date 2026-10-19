@@ -17,7 +17,7 @@ El equipo debe poder dejar constancia de la decisión sin depender de un número
 
 El posible rechazo posterior de una resolución es una propuesta sin reglas definidas y no forma parte de esta fase.
 
-Rechazar una consulta vinculada no modifica el evento. Si un evento vinculado ya tiene fecha definitiva, se avisa antes de confirmar la resolución de que la consulta no cambiará esa fecha; la fecha se puede editar en la ficha del evento y la relación se conserva. Si el evento vinculado está rechazado, se ofrecerá desvincularlo y aceptar una fecha o rechazar también la consulta; cancelar el aviso deja ambos sin cambios.
+Rechazar una consulta vinculada no modifica el evento. Si un evento vinculado ya tiene fecha definitiva, se avisa antes de confirmar la resolución de que la consulta no cambiará esa fecha; la fecha se puede editar en la ficha del evento y la relación se conserva. Si el evento vinculado está rechazado, se puede rechazar la consulta conservando el vínculo o cancelar y retirarlo desde la ficha antes de resolver. El modal de resolución no permite elegir, cambiar ni quitar un evento; muestra solo la etiqueta del asociado, si lo hay. Cancelar deja ambos sin cambios.
 
 Al rechazar un evento con una consulta abierta vinculada, se ofrece en un único diálogo rechazar el evento y desvincular la consulta o rechazar ambos. Cancelar ese diálogo deja la consulta y el evento sin cambios.
 

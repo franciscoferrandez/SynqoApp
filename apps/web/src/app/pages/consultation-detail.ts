@@ -233,41 +233,13 @@ type Decision = 'resolved' | 'rejected';
             <button class="outline" type="button" (click)="refreshResolution()">Reintentar</button>
           }
         }
+        @if (resolutionEvent) {
+          <p class="calendar-note">Evento vinculado: {{ resolutionEvent.title }}</p>
+        }
         @if (!confirming) {
-          @if (item.type === 'date') {
-            <label for="resolution-event">Evento (opcional)</label>
-            <select
-              id="resolution-event"
-              class="text-query-input"
-              [value]="draftEventId ?? ''"
-              [disabled]="
-                eventsLoading || resolutionLoading || resolutionEvent?.status === 'rejected'
-              "
-              (change)="selectResolutionEvent($any($event.target).value)"
-            >
-              <option value="">Sin evento</option>
-              @if (item.event && !currentEventIsEligible) {
-                <option [value]="item.event.id">{{ item.event.title }} (vínculo actual)</option>
-              }
-              @for (event of eligibleEvents; track event.id) {
-                <option [value]="event.id">{{ event.title }}</option>
-              }
-            </select>
-            @if (eventsLoading) {
-              <p role="status">Cargando eventos…</p>
-            }
-            @if (eventsError) {
-              <p role="alert">No se pudieron cargar los eventos.</p>
-              <button type="button" class="outline" (click)="loadEvents()">
-                Reintentar eventos
-              </button>
-            } @else if (!eventsLoading && !eligibleEvents.length) {
-              <p>No hay eventos elegibles. Puedes continuar sin vínculo.</p>
-            }
-          }
           <p>
             {{
-              draftEventId
+              resolutionEvent
                 ? 'Elige exactamente una fecha para el evento vinculado.'
                 : 'Elige las opciones aceptadas. La selección empieza vacía y es independiente de tu voto.'
             }}
@@ -329,21 +301,21 @@ type Decision = 'resolved' | 'rejected';
               class="primary"
               type="button"
               [disabled]="
-                accepted.size === 0 || resolutionLoading || (!!draftEventId && accepted.size !== 1)
+                accepted.size === 0 ||
+                resolutionLoading ||
+                (!!resolutionEvent && accepted.size !== 1) ||
+                resolutionEvent?.status === 'rejected'
               "
               (click)="beginConfirmation('resolved')"
             >
-              {{
-                resolutionEvent?.status === 'rejected'
-                  ? 'Desvincular y resolver aceptando fecha'
-                  : 'Aceptar seleccionadas'
-              }}
+              Aceptar seleccionadas
             </button>
           </div>
           @if (resolutionEvent?.status === 'rejected') {
             <p role="alert">
-              El evento está rechazado. Puedes desvincularlo y aceptar una fecha, o rechazar la
-              consulta conservando el vínculo histórico.
+              El evento está rechazado. Puedes rechazar la consulta conservando el vínculo
+              histórico, o cancelar y retirar el vínculo desde la ficha antes de resolver sin
+              evento.
             </p>
           }
         } @else {
@@ -361,8 +333,6 @@ type Decision = 'resolved' | 'rejected';
                 El evento ya tiene fecha definitiva. Resolver esta consulta no cambiará su fecha. El
                 vínculo se conservará.
               </p>
-            } @else if (resolutionEvent.status === 'rejected') {
-              <p>El evento se desvinculará y la consulta se resolverá aceptando una fecha.</p>
             } @else {
               <p>
                 La fecha aceptada quedará asignada como definitiva al evento
@@ -497,7 +467,6 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   eventSaving = false;
   eventError = '';
   private readonly subscriptions = new Subscription();
-  private resolutionEventChanged = false;
   private focusEventAfterLoad = false;
   private eventFocusReturn?: HTMLElement;
 
@@ -689,10 +658,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     this.confirming = false;
     this.resolveError = '';
     this.showResolution = true;
-    this.resolutionEventChanged = false;
-    this.draftEventId = this.consultation?.event?.id ?? null;
     this.resolutionEvent = this.consultation?.event;
-    if (this.consultation?.type === 'date') this.loadEvents();
     this.refreshResolution();
     this.changeDetector.markForCheck();
   }
@@ -707,7 +673,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
 
   toggleAccepted(id: string): void {
     const selected = this.accepted.has(id);
-    if (this.draftEventId) this.accepted.clear();
+    if (this.resolutionEvent) this.accepted.clear();
     if (selected) this.accepted.delete(id);
     else this.accepted.add(id);
     this.changeDetector.markForCheck();
@@ -726,11 +692,6 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     const event =
       this.consultation?.type === 'date'
         ? {
-            ...(this.decision === 'resolved' && this.resolutionEvent?.status === 'rejected'
-              ? { eventId: null }
-              : this.resolutionEventChanged
-                ? { eventId: this.draftEventId }
-                : {}),
             ...(this.decision === 'resolved' && this.resolutionEvent?.status === 'definitive'
               ? { expectedEventVersion: this.resolutionEvent.version }
               : {}),
@@ -764,7 +725,6 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
             this.resolveError =
               'El estado ha cambiado. Revisa los datos actualizados y vuelve a confirmar.';
             this.refreshResolution();
-            if (this.consultation?.type === 'date') this.loadEvents();
           } else {
             this.resolveError = 'No se pudo guardar la resolución. Puedes reintentar.';
           }
@@ -848,15 +808,6 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     );
   }
 
-  selectResolutionEvent(id: string): void {
-    this.resolutionEventChanged = true;
-    this.draftEventId = id || null;
-    this.resolutionEvent =
-      this.eligibleEvents.find((event) => event.id === id) ??
-      (this.consultation?.event?.id === id ? this.consultation.event : undefined);
-    if (this.draftEventId && this.accepted.size > 1) this.accepted.clear();
-  }
-
   refreshResolution(confirm = false): void {
     this.resolutionLoading = true;
     this.subscriptions.add(
@@ -871,14 +822,13 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
             this.message = 'La consulta ya está cerrada.';
             return;
           }
-          if (!this.resolutionEventChanged) this.draftEventId = detail.event?.id ?? null;
-          if (!this.draftEventId) {
+          if (!detail.event) {
             this.resolutionEvent = undefined;
             this.finishResolutionRefresh(confirm);
             return;
           }
           this.subscriptions.add(
-            this.api.event(this.draftEventId).subscribe({
+            this.api.event(detail.event.id).subscribe({
               next: ({ event }) => {
                 if (
                   confirm &&
@@ -907,7 +857,9 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
       this.resolveError = '';
       if (
         this.decision === 'resolved' &&
-        (this.accepted.size === 0 || (this.draftEventId && this.accepted.size !== 1))
+        (this.accepted.size === 0 ||
+          (this.resolutionEvent && this.accepted.size !== 1) ||
+          this.resolutionEvent?.status === 'rejected')
       ) {
         this.resolveError = 'Elige exactamente una fecha para el evento vinculado.';
       } else {

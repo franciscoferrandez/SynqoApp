@@ -21,7 +21,8 @@ El equipo está vigente y hay una identidad de participante seleccionada.
 
 1. La persona pulsa el icono «Crear consulta de fechas» dentro del calendario. El día que estuviera seleccionado se deselecciona y el detalle del día deja paso al panel de creación, debajo del calendario en móvil.
 2. Escribe un título de hasta 250 caracteres. Pulsa días de hoy en adelante para añadirlos y vuelve a pulsarlos para retirarlos. Puede recorrer varios meses; el panel mantiene la selección ordenada por fecha e indica que admite hasta diez opciones.
-3. Pulsa «Crear consulta» con al menos una fecha y confirma la creación. La consulta queda abierta y aparece en «Consultas».
+3. Opcionalmente activa «Crear evento provisional». No elige un evento existente: al confirmar se creará uno sin fecha, con el mismo título de la consulta. Desactivar el switch conserva la creación de una consulta sin evento.
+4. Pulsa «Crear consulta» con al menos una fecha y confirma. La consulta y, si se activó el switch, el evento y su vínculo se guardan juntos; la consulta queda abierta y aparece en «Consultas».
 
 ## Resultado
 

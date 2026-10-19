@@ -50,7 +50,7 @@ final readonly class ConsultationController
             return $this->problem(400, 'JSON mal formado.');
         }
         try {
-            $created = $this->consultations->create($token, $body['participantId'] ?? null, $body['title'] ?? null, $body['options'] ?? null, $body['type'] ?? null, $body['timeZone'] ?? null, $body['eventId'] ?? null);
+            $created = $this->consultations->create($token, $body['participantId'] ?? null, $body['title'] ?? null, $body['options'] ?? null, $body['type'] ?? null, $body['timeZone'] ?? null, $body['eventId'] ?? null, array_key_exists('createEvent', $body) ? $body['createEvent'] : false);
             return $this->success($created, 201);
         } catch (InvalidConsultationInput $error) {
             return $this->problem(422, 'Revisa el tipo, el título, la zona horaria y las opciones.', $error->fields);

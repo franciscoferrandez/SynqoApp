@@ -251,7 +251,7 @@ export class TeamApi {
     title: string,
     dates: string[],
     timeZone: string,
-    eventId?: string,
+    createEvent = false,
   ): Observable<{ consultation: Consultation; expiresAt: string }> {
     return this.http.post<{ consultation: Consultation; expiresAt: string }>(
       '/api/teams/current/consultations',
@@ -261,7 +261,7 @@ export class TeamApi {
         title,
         options: dates,
         timeZone,
-        ...(eventId ? { eventId } : {}),
+        createEvent,
       },
     );
   }

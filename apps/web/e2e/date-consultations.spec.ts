@@ -50,6 +50,9 @@ test('creates a date consultation from the calendar and keeps selections across 
   const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
   await expect(createButton).toBeEnabled();
   await createButton.press('Enter');
+  const createEventSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
+  await expect(createEventSwitch).not.toBeChecked();
+  await expect(page.locator('#date-consultation-event')).toHaveCount(0);
   await expect(calendar.locator('.calendar-day[aria-pressed="true"]')).toHaveCount(0);
   const submit = composer.getByRole('button', { name: 'Crear consulta', exact: true });
   await expect(submit).toBeDisabled();
@@ -93,6 +96,7 @@ test('creates a date consultation from the calendar and keeps selections across 
   await expect(page.locator('.consultation-card')).toContainText('Consulta de fechas');
   expect(submitted).toMatchObject({
     type: 'date',
+    createEvent: false,
     participantId: 'date-person',
     title: '¿Qué días nos van bien?',
     options: expect.arrayContaining([todayDate, nextMonthDate]),
@@ -125,6 +129,54 @@ test('creates a date consultation from the calendar and keeps selections across 
   await otherPage.goto('/e/consultas#t=date-token');
   await expect(otherPage.locator('.consultation-card')).toContainText('Consulta de fechas');
   await otherContext.close();
+});
+
+test('toggling and cancelling provisional-event creation does not submit a consultation', async ({
+  page,
+}) => {
+  const team = {
+    id: 'date-switch-team',
+    name: 'Equipo de fechas',
+    timeZone: 'Europe/Madrid',
+    expiresAt: '2027-01-01T00:00:00Z',
+    participants: [{ id: 'date-switch-person', name: 'Ana' }],
+  };
+  let writes = 0;
+  await page.addInitScript(() =>
+    localStorage.setItem('synqo-participant-date-switch-team', 'date-switch-person'),
+  );
+  await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
+  await page.route('**/api/teams/current/availability**', (route) =>
+    route.fulfill({ json: { days: [] } }),
+  );
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
+  await page.route(/\/api\/teams\/current\/events$/, (route) =>
+    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+  );
+  await page.route('**/api/teams/current/consultations', (route) => {
+    if (route.request().method() === 'POST') writes += 1;
+    return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+  });
+
+  await page.goto('/e/calendario#t=date-switch-token');
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
+  const createSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
+  await expect(createSwitch).not.toBeChecked();
+  await createSwitch.check();
+  await expect(createSwitch).toBeChecked();
+  await page.getByRole('button', { name: 'Cancelar consulta' }).click();
+  expect(writes).toBe(0);
+
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
+  const reopenedSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
+  await expect(reopenedSwitch).not.toBeChecked();
+  await reopenedSwitch.check();
+  await expect(reopenedSwitch).toBeChecked();
+  await reopenedSwitch.uncheck();
+  await page.getByRole('button', { name: 'Cancelar consulta' }).click();
+  expect(writes).toBe(0);
 });
 
 test('shows the composer below the calendar on mobile and keeps a draft when cancellation is rejected', async ({

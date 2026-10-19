@@ -957,6 +957,41 @@ html[data-theme='dark'] {
   gap: 0.55rem;
   flex-wrap: wrap;
 }
+.date-composer .event-create-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+.event-create-switch input {
+  appearance: none;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.event-create-switch input::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.event-create-switch input:checked {
+  background: var(--blue-strong);
+  border-color: var(--blue-strong);
+}
+.event-create-switch input:checked::before {
+  background: var(--surface);
+  transform: translateX(18px);
+}
 .scope-toggle {
   display: flex;
   gap: 0.25rem;

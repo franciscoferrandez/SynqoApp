@@ -21,8 +21,8 @@ Equipo vigente con identidad seleccionada. La persona crea una consulta de fecha
 ┌───────────────────────────────┬──────────────────────────────┐
 │ Calendario del mes            │ Nueva consulta de fechas     │
 │ [Anterior] [Siguiente] [Hoy]  │ Título breve [            ]  │
-│                               │ Evento (opcional)            │
-│                               │ [Elegir evento          ▼]   │
+│                               │ [○] Crear evento provisional │
+│                               │ Mismo título, sin fecha      │
 │ [día] [día elegido] [día]      │                               │
 │                               │ Fechas elegidas               │
 │                               │ 1. [Fecha]                   │
@@ -31,14 +31,14 @@ Equipo vigente con identidad seleccionada. La persona crea una consulta de fecha
 En móvil, el panel permanece debajo del calendario, como en WF-CON-004.
 ```
 
-El control permite retirar una selección opcional y dejar la consulta sin evento. Solo ofrece eventos activos (no rechazados) del mismo equipo que no tengan fecha definitiva ni estén vinculados a otra consulta abierta. Los eventos rechazados deben recuperarse antes de ofrecerlos como vínculo nuevo.
+El switch es opcional y comienza desactivado. Activarlo crea al confirmar un evento provisional sin fecha y con el mismo título de la consulta, asociado a ella. No hay selector de eventos existentes. Cancelar o fallar no crea parcialmente la consulta ni el evento.
 
 ### Resolver una consulta vinculada
 
 ```text
 ┌───────────────────────────────────────┐
 │ Resolver: [título de consulta]        │
-│ Evento: [Título] [Cambiar] [Quitar]   │
+│ Evento asociado: [Título]            │
 │                                       │
 │ Elige una fecha                       │
 │ [ ] Opción 1 · votos · participantes  │
@@ -51,7 +51,7 @@ El control permite retirar una selección opcional y dejar la consulta sin event
 └───────────────────────────────────────┘
 ```
 
-Cuando la consulta no tiene evento, se puede elegir uno al resolver. El vínculo puede cambiarse o quitarse mientras la consulta está abierta. Si queda vinculada al confirmar aceptación, solo se acepta una fecha.
+La etiqueta es informativa: no hay selector ni acciones para elegir, cambiar o retirar el evento dentro del modal. Si no hay vínculo, se omite por completo esa fila y se conserva la aceptación de varias fechas. Para resolver sin afectar al evento hay que retirar previamente el vínculo desde la ficha de la consulta abierta. Con vínculo solo se acepta una fecha, según las reglas de estado del evento.
 
 ### Avisos antes de resolver
 
@@ -67,7 +67,8 @@ Evento ahora definitivo:
 Evento rechazado excepcionalmente aún vinculado:
 ┌──────────────────────────────────────────────┐
 │ El evento está rechazado.                    │
-│ [Desvincular y resolver aceptando fecha]     │
+│ Para aceptar sin evento, cancela y quita     │
+│ el vínculo desde la ficha de la consulta.   │
 │ [Rechazar la consulta]                       │
 │ [Cancelar]                                   │
 └──────────────────────────────────────────────┘
@@ -104,23 +105,23 @@ La ficha de consulta permite abrir el evento relacionado. La ficha del evento li
 
 ## Acciones
 
-- Al crear una consulta, elegir opcionalmente un evento elegible o dejar el control vacío; cambiarlo o quitarlo antes de confirmar.
-- Al resolver una consulta abierta, elegir o cambiar un evento elegible, retirar el vínculo o continuar sin evento.
+- Al crear una consulta, activar opcionalmente el switch para crear un evento nuevo sin fecha, con el mismo título. Desactivarlo crea solo la consulta.
+- Antes de resolver, mantener o retirar el vínculo desde la ficha. En resolución solo se muestra la etiqueta del asociado, si existe.
 - Con evento vinculado, seleccionar una sola fecha para aceptar. Si la consulta no está vinculada, se conserva la selección múltiple actual.
 - Confirmar la resolución; la fecha aceptada pasa a definitiva en el evento si continúa sin fecha o con fecha provisional.
 - Leer el aviso y confirmar la resolución sin cambiar la fecha cuando el evento se haya vuelto definitivo.
-- Si el evento está rechazado, elegir exactamente una de las dos acciones ofrecidas o cancelar sin cambios.
+- Si el evento está rechazado, rechazar la consulta conservando la relación o cancelar y desvincular antes desde su ficha.
 - Al rechazar un evento vinculado, elegir entre desvincular la consulta abierta o rechazar también la consulta; confirmar o cancelar sin cambios.
 - Abrir las fichas vinculadas desde cualquiera de sus extremos; desde el evento consultar las relaciones cerradas anteriores.
 
-## Estado sin eventos elegibles
+## Consulta sin evento asociado
 
-Si no hay eventos elegibles, se indica que se puede crear o resolver la consulta sin vínculo; el selector no bloquea el recorrido.
+La creación ofrece el switch aunque no existan eventos previos. La resolución no muestra etiqueta, selector ni mensajes de vínculo vacío. El editor de vínculo de la ficha conserva sus estados de carga, vacío, error y reintento para eventos existentes.
 
 ## Notas
 
-**DEFINIDO por requisitos y decisiones aprobadas:** vínculo opcional uno a uno con consulta abierta; solo se ofrecen eventos no rechazados, sin fecha o provisionales, que no estén vinculados a otra consulta abierta; los eventos rechazados deben recuperarse antes de ofrecerlos como vínculo nuevo; el vínculo puede cambiarse o retirarse mientras la consulta siga abierta; las consultas vinculadas requieren una sola fecha aceptada; al aceptar, la fecha queda definitiva en el evento si aún no era definitivo; si el evento ya es definitivo se avisa antes de confirmar y se conserva el vínculo; rechazar la consulta no modifica el evento; las relaciones históricas de consultas cerradas se conservan y son navegables desde ambos lados. Si el evento está rechazado al resolver, las dos salidas son desvincular y aceptar una fecha, o rechazar la consulta. Al rechazar un evento con una consulta abierta, las dos salidas son rechazar el evento y desvincular, o rechazar ambos. Cancelar cualquiera de esos diálogos no cambia los datos.
+La creación conjunta y la resolución sin selector corresponden a la decisión expresa del 2026-10-19. La ficha de la consulta abierta sigue siendo el lugar para mantener el vínculo; las reglas de estado y conservación histórica se consultan en los requisitos relacionados.
 
 Las reglas se detallan en [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../../03_requisitos/02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md), [RF-CON-001 — Crear una consulta de fechas](../../03_requisitos/01_funcionales/CON/rf-con-001-crear-consulta.md), [RF-CON-004 — Resolver una consulta](../../03_requisitos/01_funcionales/CON/rf-con-004-resolver-consulta.md) y [RF-EVT-003 — Rechazar y recuperar un evento](../../03_requisitos/01_funcionales/EVT/rf-evt-003-rechazar-recuperar-evento.md).
 
-**Diseño de interacción concretado en [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md):** selector opcional, estado sin eventos elegibles, avisos previos a confirmación y navegación entre fichas. La regla de elegibilidad y la excepción para eventos ya vinculados están detalladas en [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../../03_requisitos/02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md). El acabado visual final sigue el sistema de diseño común.
+La realización anterior se conserva como historia en [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md). La evolución de este recorrido se concreta en [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md). El acabado visual final sigue el sistema de diseño común.

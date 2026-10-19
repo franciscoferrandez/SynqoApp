@@ -337,3 +337,23 @@
 | [API — reglas de implementación](../07_desarrollo/08_modulos/API/README.md) | [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) |
 | [WEB — arquitectura](../06_arquitectura/03_modulos/WEB/README.md) | [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) |
 | [WEB — reglas de implementación](../07_desarrollo/08_modulos/WEB/README.md) | [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) |
+
+## Creación conjunta de evento y simplificación de resolución
+
+| Artefacto | SPEC |
+|---|---|
+| [RF-CON-001 — Crear una consulta de fechas](../03_requisitos/01_funcionales/CON/rf-con-001-crear-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [RF-CON-004 — Resolver una consulta](../03_requisitos/01_funcionales/CON/rf-con-004-resolver-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../03_requisitos/02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [RN-CON-002 — Resolución de una consulta abierta](../03_requisitos/02_reglas-negocio/CON/rn-con-002-resolucion-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [RF-EVT-001 — Crear y editar un evento](../03_requisitos/01_funcionales/EVT/rf-evt-001-crear-editar-evento.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [FLUJO-CON-001 — Crear una consulta de fechas](../04_experiencia-usuario/02_flujos/flujo-con-001-crear-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [FLUJO-CON-003 — Resolver una consulta](../04_experiencia-usuario/02_flujos/flujo-con-003-resolver-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [FLUJO-EVT-003 — Vincular eventos y consultas de fechas](../04_experiencia-usuario/02_flujos/flujo-evt-003-vincular-evento-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [WF-EVT-004 — Vincular evento y consulta de fechas](../04_experiencia-usuario/03_wireframes/wf-evt-004-vincular-evento-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [API — arquitectura](../06_arquitectura/03_modulos/API/README.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [API — reglas de implementación](../07_desarrollo/08_modulos/API/README.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [WEB — arquitectura](../06_arquitectura/03_modulos/WEB/README.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [WEB — reglas de implementación](../07_desarrollo/08_modulos/WEB/README.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [REL-004 — Eventos del equipo](../01_producto/10_entregas/rel-004-eventos-del-equipo.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |
+| [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) | [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) |

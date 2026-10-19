@@ -331,6 +331,9 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $timeZone['description'] = 'Zona horaria IANA obligatoria para type date.';
         $options = $this->consultationOptionsSchema();
         $options['items']['description'] = 'Texto para type text; fecha civil YYYY-MM-DD para type date.';
+        $createEvent = $this->schema('boolean');
+        $createEvent['default'] = false;
+        $createEvent['description'] = 'For date consultations only: atomically create a linked provisional event with no date, the same title and creator. Cannot be combined with eventId.';
 
         return $this->schema('object', [
             'participantId' => $this->schema('string', format: 'uuid'),
@@ -339,6 +342,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             'options' => $options,
             'timeZone' => $timeZone,
             'eventId' => $this->eventLinkInput(),
+            'createEvent' => $createEvent,
         ], ['participantId', 'title', 'options']);
     }
 

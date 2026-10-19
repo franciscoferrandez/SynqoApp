@@ -20,7 +20,7 @@ La consulta está abierta y el equipo está vigente. No se exige ningún voto pr
 ## Pasos
 
 1. La persona abre el diálogo de resolución y revisa todas las opciones propuestas, inicialmente sin marcas de aceptación, con sus recuentos y votantes visibles. Puede mostrar más votantes mediante «(+N)».
-2. Elige aceptar una o varias opciones de la consulta o rechazarla. Esta selección no depende de su voto propio.
+2. Si hay evento asociado, el modal muestra su título como etiqueta y permite aceptar una sola fecha, aplicando las reglas de estado del evento. Sin evento no presenta ningún elemento de vinculación y conserva la aceptación de varias fechas. No hay selector ni acciones de cambio o retirada de vínculo; para resolver sin evento debe cancelarse y retirarlo previamente desde la ficha. La selección de opciones sigue siendo independiente del voto propio.
 3. Synqo solicita confirmar la aceptación o el rechazo elegido, indicando el resultado que quedará registrado.
 4. Si la persona confirma, se registra la resolución bajo la identidad de participante activa y se muestra la consulta como resuelta con opciones aceptadas o rechazada.
 

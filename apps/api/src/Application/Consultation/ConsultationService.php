@@ -10,6 +10,8 @@ use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Team\TeamRepository as TeamRepositoryPort;
 use App\Application\Team\TeamService;
+use App\Application\Team\IdentifierGenerator;
+use App\Application\Event\EventRepository;
 use App\Domain\Consultation\TextConsultationRules;
 use App\Domain\Consultation\DateConsultationRules;
 use App\Domain\Team\ExpiryCalculator;
@@ -25,6 +27,8 @@ final readonly class ConsultationService
         private ConsultationRepository $consultations,
         private ClockInterface $clock,
         private ExpiryCalculator $expiry,
+        private EventRepository $events,
+        private IdentifierGenerator $ids,
     ) {}
 
     /** @return array{open: list<array<string, mixed>>, resolved: list<array<string, mixed>>, rejected: list<array<string, mixed>>} */
@@ -125,7 +129,7 @@ final readonly class ConsultationService
     }
 
     /** @return array{consultation: array<string, mixed>, expiresAt: string} */
-    public function create(?string $token, mixed $participantId, mixed $title, mixed $options, mixed $type = null, mixed $timeZone = null, mixed $eventId = null): array
+    public function create(?string $token, mixed $participantId, mixed $title, mixed $options, mixed $type = null, mixed $timeZone = null, mixed $eventId = null, mixed $createEvent = false): array
     {
         if ($token === null) {
             throw new MissingAccessCredential();
@@ -133,6 +137,9 @@ final readonly class ConsultationService
         $kind = $type ?? 'text';
         if (!is_string($kind) || !in_array($kind, ['text', 'date'], true)) {
             throw new InvalidConsultationInput(['type']);
+        }
+        if (!is_bool($createEvent) || ($createEvent && ($kind !== 'date' || $eventId !== null))) {
+            throw new InvalidConsultationInput(['createEvent']);
         }
         $violations = $kind === 'date'
             ? DateConsultationRules::violations($title, $options, $timeZone)
@@ -164,7 +171,7 @@ final readonly class ConsultationService
         }
 
         /** @var array{consultation: array<string, mixed>, expiresAt: string} $result */
-        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($participantId, $title, $optionValues, $kind, $timeZone, $eventId): array {
+        $result = $this->teams->withLockedTeam(hash('sha256', $token), function (?array $team) use ($participantId, $title, $optionValues, $kind, $timeZone, $eventId, $createEvent): array {
             if ($team === null) {
                 throw new TeamNotFound();
             }
@@ -183,6 +190,20 @@ final readonly class ConsultationService
                 }
             }
             $activity = $now > $lastActivity ? $now : $lastActivity;
+            if ($createEvent) {
+                $eventId = $this->ids->generate();
+                $this->events->create(
+                    $team['id'],
+                    $participantId,
+                    $eventId,
+                    $title,
+                    null,
+                    null,
+                    'provisional',
+                    $now->format(DATE_ATOM),
+                    $activity->format(DATE_ATOM),
+                );
+            }
             $consultation = $this->consultations->create(
                 $team['id'],
                 $participantId,
