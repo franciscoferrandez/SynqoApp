@@ -19,8 +19,8 @@ Consulta de fechas o de opciones de texto abierta dentro de un equipo vigente, b
 ┌──────────────────────────────────┐
 │ [Cabecera común del equipo]      │
 │ [Volver a Consultas]             │
-│ [Título de consulta]             │
-│ Estado: Abierta                  │
+│ Consulta de fechas/opciones [☰] │
+│ [Título de consulta] [Abierta]  │
 │                                  │
 │ Elige una o varias fechas        │
 │ [x] Opción 1  6 votos           │
@@ -30,11 +30,14 @@ Consulta de fechas o de opciones de texto abierta dentro de un equipo vigente, b
 │ Marcar/desmarcar aplica al acto │
 │ (+3) muestra los demás aquí     │
 │                                  │
-│ [Resolver consulta]              │
 └──────────────────────────────────┘
 ```
 
 ## Acciones
+
+En consultas de texto abiertas, el menú incluye «Editar consulta», según [WF-CON-007 — Editar una consulta con opciones de texto](wf-con-007-editar-consulta-texto.md). La última edición, cuando exista, se muestra con participante y momento; los votos siguen disponibles fuera del menú. Las consultas cerradas o de fechas no ofrecen esta acción de edición.
+
+El menú hamburguesa «Acciones de la consulta» se sitúa arriba a la derecha del encabezado. Ofrece «Resolver consulta» mientras está abierta. En consultas de fechas incluye «Elegir evento» sin vínculo, o «Cambiar evento» y «Quitar vínculo» con vínculo. Las consultas cerradas no ofrecen acciones de modificación. Los enlaces a eventos y los votos siguen visibles fuera del menú. Escape o clic exterior cierran el menú; cancelar diálogos devuelve el foco al disparador. Al completar la resolución, el menú desaparece y el foco vuelve a «Volver a Consultas».
 
 - Registrar o cambiar un voto al marcar o desmarcar una o varias opciones mientras la consulta está abierta; toda la tarjeta de la opción es activable, excepto el control «(+N)»/«Ver menos» de votantes. Contadores y votantes se actualizan al momento.
 - Seleccionar también una opción cuya fecha ya haya pasado, si la consulta sigue abierta.

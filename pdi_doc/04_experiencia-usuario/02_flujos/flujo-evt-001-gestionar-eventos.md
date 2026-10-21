@@ -25,10 +25,10 @@ La persona abre la pestaña «Eventos» desde cualquier sección del equipo, o v
 3. La persona completa el título y, si quiere, notas, fecha y estado; revisa la fecha y el estado antes de guardar.
 4. Synqo valida el formulario. Si es válido, guarda el evento y abre su ficha. La lista lo incluye en la agrupación que corresponda.
 5. Para consultar uno existente, la persona abre su tarjeta y revisa título, notas, fecha, estado, autoría y consultas relacionadas cuando existan.
-6. Para editar un evento activo, activa «Editar», modifica título, notas, fecha o estado y guarda. Synqo actualiza la ficha y el grupo de la lista si el cambio afecta a la clasificación u orden.
+6. Para editar un evento activo, abre el menú hamburguesa del encabezado y activa «Editar evento», modifica título, notas, fecha o estado y guarda. Synqo actualiza la ficha y el grupo de la lista si el cambio afecta a la clasificación u orden.
 7. Si la persona cancela la edición y hay cambios sin guardar, Synqo pide confirmar que desea descartarlos. Si confirma, descarta los cambios y vuelve a la ficha; si vuelve a la edición, conserva el borrador.
-8. Para rechazar un evento, la persona activa «Rechazar» y confirma la acción. Synqo conserva los datos y lo muestra en «Rechazados».
-9. Para recuperar uno rechazado, la persona lo abre desde «Rechazados», activa «Recuperar» y confirma la acción. Synqo conserva la fecha, deja el estado provisional y mueve el evento a la agrupación que corresponda.
+8. Para rechazar un evento, la persona activa «Rechazar evento» desde ese menú y confirma la acción. Synqo conserva los datos y lo muestra en «Rechazados».
+9. Para recuperar uno rechazado, la persona lo abre desde «Rechazados», activa «Recuperar evento» desde el menú y confirma la acción. Synqo conserva la fecha, deja el estado provisional y mueve el evento a la agrupación que corresponda.
 10. Desde la ficha, la persona vuelve a la lista de eventos; desde la lista puede cambiar a Calendario o Consultas mediante la navegación común del equipo.
 
 ## Resultado
@@ -50,9 +50,9 @@ El evento creado o modificado conserva los valores actuales y la autoría y mome
 - Cancelar la edición sin cambios vuelve a la ficha. Si hay cambios sin guardar, Synqo pide confirmar que desea descartarlos. Si confirma, vuelve a la ficha; si vuelve a la edición, conserva el borrador.
 - Cancelar la confirmación de rechazo o recuperación no cambia el evento.
 
-## Propuestas UX por confirmar
+## Integración con consultas
 
-- En este Change no se crea ni se modifica el vínculo con consultas; por ello, el caso de rechazo de evento con consulta abierta de [RF-EVT-003 — Rechazar y recuperar un evento](../../03_requisitos/01_funcionales/EVT/rf-evt-003-rechazar-recuperar-evento.md) queda fuera de este flujo y debe tratarse al preparar el Change de integración de consultas.
+El rechazo de un evento con consulta abierta conserva las dos disposiciones definidas en [FLUJO-EVT-003 — Vincular eventos y consultas de fechas](flujo-evt-003-vincular-evento-consulta.md). Se inicia desde el mismo menú de acciones; no se añade una confirmación distinta ni se modifica su efecto.
 
 ## RF/RN relacionados
 

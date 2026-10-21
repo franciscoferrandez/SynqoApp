@@ -152,6 +152,14 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             security: $security,
             parameters: [$consultationId],
             responses: ['200' => new Response(description: 'Consultation detail', content: new \ArrayObject(['application/json' => new MediaType(schema: $consultationDetail)]))] + $decisionErrors,
+        ), patch: new Operation(
+            operationId: 'editTextConsultation',
+            tags: ['Consultations'],
+            summary: 'Edit explicit fields and options of an open text consultation',
+            security: $security,
+            parameters: [$consultationId],
+            requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->consultationEditRequest())]), required: true),
+            responses: ['200' => $this->response('Current consultation after editing; unchanged retries do not update activity', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->consultationEditProblems(), '422' => $this->problem('Invalid edits, option IDs, type, limits or duplicate texts', withViolations: true)] + $decisionErrors,
         )));
         $paths->addPath('/api/teams/current/consultations/{consultationId}/event', new PathItem(put: new Operation(
             operationId: 'setConsultationEvent',
@@ -304,7 +312,49 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $accepted['items'] = $this->schema('string', format: 'uuid');
         $resolution = $this->schema('object', ['participant' => $this->participant(), 'resolvedAt' => $this->schema('string', format: 'date-time'), 'acceptedOptionIds' => $accepted], ['participant', 'resolvedAt', 'acceptedOptionIds']);
         $event = $this->eventSummary();
-        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'options' => $options, 'event' => $event, 'resolution' => $resolution], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'options']);
+        $lastModifiedBy = $this->participant();
+        $lastModifiedBy['nullable'] = true;
+        $lastModifiedAt = $this->schema('string', format: 'date-time');
+        $lastModifiedAt['nullable'] = true;
+        return $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'type' => $type, 'title' => $this->schema('string', maxLength: 250), 'state' => $state, 'createdAt' => $this->schema('string', format: 'date-time'), 'createdBy' => $this->participant(), 'lastModifiedBy' => $lastModifiedBy, 'lastModifiedAt' => $lastModifiedAt, 'options' => $options, 'event' => $event, 'resolution' => $resolution], ['id', 'type', 'title', 'state', 'createdAt', 'createdBy', 'lastModifiedBy', 'lastModifiedAt', 'options']);
+    }
+
+    private function consultationEditRequest(): Schema
+    {
+        $entry = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50)], ['id', 'text']);
+        $entry['additionalProperties'] = false;
+        $entry['properties']['text']['minLength'] = 1;
+        $entries = $this->schema('array');
+        $entries['items'] = $entry;
+        $entries['maxItems'] = 10;
+        $ids = $this->schema('array');
+        $ids['items'] = $this->schema('string', format: 'uuid');
+        $ids['uniqueItems'] = true;
+        $ids['maxItems'] = 10;
+        $changes = $this->schema('object', ['add' => clone $entries, 'update' => clone $entries, 'remove' => clone $ids]);
+        $changes['additionalProperties'] = false;
+        $changes['description'] = 'Omitted lists are empty. IDs cannot overlap between lists. New option UUIDs must remain stable across retries; existing options retain IDs and votes. New options append after existing ones. No implicit removal or version comparison.';
+        $confirmed = clone $ids;
+        $confirmed['description'] = 'Subset of remove IDs explicitly confirmed for removal with all of their current votes. Defaults to empty; other voted removals return a confirmation-required conflict without writes.';
+        $title = $this->schema('string', maxLength: 250);
+        $title['minLength'] = 1;
+        $request = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'title' => $title, 'optionChanges' => $changes, 'confirmedRemovalOptionIds' => $confirmed], ['participantId']);
+        $request['additionalProperties'] = false;
+        return $request;
+    }
+
+    private function consultationEditProblems(): Response
+    {
+        $common = ['title' => $this->schema('string'), 'status' => $this->schema('integer'), 'detail' => $this->schema('string')];
+        $voted = $this->schema('array');
+        $voted['items'] = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50), 'count' => $this->schema('integer')], ['id', 'text', 'count']);
+        $schema = new Schema();
+        $schema['oneOf'] = [
+            $this->schema('object', ['type' => $this->enumSchema(['urn:synqo:problem:consultation-closed'])] + $common, ['type', 'title', 'status', 'detail']),
+            $this->schema('object', ['type' => $this->enumSchema(['urn:synqo:problem:consultation-edit-conflict']), 'consultation' => $this->consultationDetail()] + $common, ['type', 'title', 'status', 'detail', 'consultation']),
+            $this->schema('object', ['type' => $this->enumSchema(['urn:synqo:problem:consultation-removal-confirmation-required']), 'optionsWithVotes' => $voted] + $common, ['type', 'title', 'status', 'detail', 'optionsWithVotes']),
+        ];
+        return new Response(description: 'Closed consultation, changed options, or unconfirmed voted removals. No partial writes.', content: new \ArrayObject(['application/problem+json' => new MediaType(schema: $schema)]));
     }
 
     private function consultationDetail(): Schema

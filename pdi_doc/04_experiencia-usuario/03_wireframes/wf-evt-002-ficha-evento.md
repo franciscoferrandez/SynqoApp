@@ -20,6 +20,7 @@ La persona ha abierto un evento desde la lista. La ficha puede estar en consulta
 │ [Cabecera común: equipo, identidad, enlace]│
 │ [Volver a Eventos]                       │
 │                                          │
+│ Detalle del evento               [☰]   │
 │ [Título del evento]       [Estado]       │
 │                                          │
 │ Fecha                                    │
@@ -32,11 +33,12 @@ La persona ha abierto un evento desde la lista. La ficha puede estar en consulta
 │ Modificado por [participante] · [momento]│
 │ (solo tras un cambio real)               │
 │                                          │
-│ [Editar] [Rechazar]                      │
 └──────────────────────────────────────────┘
 ```
 
 Para un evento rechazado, la ficha conserva sus datos, indica «Rechazado» y ofrece «Recuperar». No ofrece edición hasta que se recupere.
+
+Las acciones se agrupan en el menú hamburguesa «Acciones del evento», arriba a la derecha y alineado con «Detalle del evento». El título y el badge comparten la fila siguiente. El menú ofrece «Editar evento» y «Rechazar evento» en activos, y «Recuperar evento» en rechazados. Las confirmaciones se mantienen. Escape o clic fuera cierran el menú; al cancelar un diálogo, el foco vuelve al disparador del menú.
 
 La edición propuesta ocupa el mismo espacio de contenido, manteniendo la cabecera común y el regreso a «Eventos»:
 
@@ -86,4 +88,4 @@ Si el evento no tiene fecha, se muestra «Sin fecha». Si no tiene notas, se omi
 
 **PROPUESTO para validar en la SPEC:** editar en la misma vista de ficha y disponer los campos en una columna. **DEFINIDO:** sin fecha, el estado activo se muestra fijo como provisional; se omite la última modificación hasta que ocurra un cambio real. Las confirmaciones al salir de la creación o edición con cambios sin guardar quedan resueltas en [FLUJO-EVT-001 — Consultar y gestionar eventos](../02_flujos/flujo-evt-001-gestionar-eventos.md).
 
-Este Change no muestra enlaces de consultas relacionadas ni el caso de rechazo con consulta abierta; la integración de consultas queda fuera de su alcance.
+Los enlaces de consultas relacionadas y el rechazo con consulta abierta se representan en [WF-EVT-004 — Vincular evento y consulta de fechas](wf-evt-004-vincular-evento-consulta.md). El menú de acciones conserva esos recorridos. La reorganización del encabezado corresponde a [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md).

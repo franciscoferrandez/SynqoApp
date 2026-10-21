@@ -15,12 +15,15 @@ import { forkJoin, Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ConsultationDetail, Participant, TeamApi, TeamEventSummary } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
+import { FormsModule } from '@angular/forms';
+import { DetailAction, DetailActions } from '../shared/detail-actions';
+import { ConsultationTextEditor } from './consultation-text-editor';
 
 type Decision = 'resolved' | 'rejected';
 
 @Component({
   selector: 'app-consultation-detail',
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule, DetailActions, ConsultationTextEditor],
   template: `
     <div class="consultation-detail-view">
       <button #backButton class="consultation-back" type="button" (click)="back.emit()">
@@ -35,34 +38,51 @@ type Decision = 'resolved' | 'rejected';
         </div>
       } @else if (consultation; as item) {
         <div class="panel">
-          <div class="consultation-detail-head">
-            <div>
+          <header class="entity-detail-heading">
+            <div class="detail-heading-top">
               <p class="eyebrow">
                 {{ item.type === 'date' ? 'Consulta de fechas' : 'Consulta de opciones' }}
               </p>
-              <h2>{{ item.title }}</h2>
               @if (item.state === 'open') {
-                <p>
-                  Elige una o varias opciones. Puedes cambiar o retirar tu voto mientras siga
-                  abierta.
-                </p>
+                <app-detail-actions
+                  #detailActions
+                  label="Acciones de la consulta"
+                  panelId="consultation-detail-actions"
+                  [actions]="detailActionItems"
+                  [disabled]="saving || submitting || eventSaving || showTextEditor"
+                  (selected)="selectDetailAction($event)"
+                />
               }
             </div>
-            <span
-              class="badge"
-              [class.open]="item.state === 'open'"
-              [class.resolved]="item.state === 'resolved'"
-              [class.rejected]="item.state === 'rejected'"
-            >
-              {{
-                item.state === 'open'
-                  ? 'Abierta'
-                  : item.state === 'resolved'
-                    ? 'Resuelta'
-                    : 'Rechazada'
-              }}
-            </span>
-          </div>
+            <div class="detail-heading-title">
+              <h2>{{ item.title }}</h2>
+              <span
+                class="badge"
+                [class.open]="item.state === 'open'"
+                [class.resolved]="item.state === 'resolved'"
+                [class.rejected]="item.state === 'rejected'"
+              >
+                {{
+                  item.state === 'open'
+                    ? 'Abierta'
+                    : item.state === 'resolved'
+                      ? 'Resuelta'
+                      : 'Rechazada'
+                }}
+              </span>
+            </div>
+            @if (item.state === 'open') {
+              <p>
+                Elige una o varias opciones. Puedes cambiar o retirar tu voto mientras siga abierta.
+              </p>
+            }
+          </header>
+          @if (item.lastModifiedBy && item.lastModifiedAt) {
+            <p class="calendar-note">
+              Última edición: {{ item.lastModifiedBy.name }} ·
+              {{ lastEditedAt(item.lastModifiedAt) }}
+            </p>
+          }
           @if (item.state === 'open' && item.type === 'date') {
             <section aria-label="Evento vinculado">
               @if (item.event) {
@@ -74,25 +94,6 @@ type Decision = 'resolved' | 'rejected';
                 </p>
               } @else {
                 <p>Sin evento vinculado.</p>
-              }
-              <button
-                #eventButton
-                class="outline"
-                type="button"
-                [disabled]="saving"
-                (click)="openEventEditor()"
-              >
-                {{ item.event ? 'Cambiar evento' : 'Elegir evento' }}
-              </button>
-              @if (item.event) {
-                <button
-                  class="outline"
-                  type="button"
-                  [disabled]="saving"
-                  (click)="openEventEditor(true)"
-                >
-                  Quitar vínculo
-                </button>
               }
             </section>
           }
@@ -185,15 +186,6 @@ type Decision = 'resolved' | 'rejected';
           }
           @if (item.state === 'open') {
             <div class="consultation-vote-note">
-              <button
-                #resolveButton
-                class="outline"
-                type="button"
-                [disabled]="saving"
-                (click)="openResolution()"
-              >
-                Resolver consulta
-              </button>
               <span>La resolución requiere confirmación y cierra la votación.</span>
             </div>
           }
@@ -362,6 +354,13 @@ type Decision = 'resolved' | 'rejected';
         }
       </dialog>
     }
+    @if (showTextEditor) {
+      <app-consultation-text-editor
+        [consultationId]="consultationId"
+        (saved)="textEdited($event)"
+        (closed)="closeTextEditor($event)"
+      />
+    }
     @if (showEventEditor) {
       <dialog
         #eventDialog
@@ -374,9 +373,9 @@ type Decision = 'resolved' | 'rejected';
         <select
           id="consultation-event"
           class="text-query-input"
-          [value]="draftEventId ?? ''"
+          [ngModel]="draftEventId ?? ''"
+          (ngModelChange)="draftEventId = $event || null"
           [disabled]="eventsLoading || eventSaving"
-          (change)="draftEventId = $any($event.target).value || null"
         >
           <option value="">Sin evento</option>
           @if (consultation?.event && !currentEventIsEligible) {
@@ -427,8 +426,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   @Output() readonly back = new EventEmitter<void>();
   @Output() readonly updated = new EventEmitter<void>();
   @ViewChild('backButton') private backButton?: ElementRef<HTMLButtonElement>;
-  @ViewChild('resolveButton') private resolveButton?: ElementRef<HTMLButtonElement>;
-  @ViewChild('eventButton') private eventButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('detailActions') private detailActions?: DetailActions;
   @ViewChild('eventDialog')
   set eventDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
     if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
@@ -464,18 +462,83 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   eventsLoading = false;
   eventsError = false;
   showEventEditor = false;
+  showTextEditor = false;
   eventSaving = false;
   eventError = '';
   private readonly subscriptions = new Subscription();
   private focusEventAfterLoad = false;
-  private eventFocusReturn?: HTMLElement;
 
   get currentEventIsEligible(): boolean {
     return this.eligibleEvents.some((event) => event.id === this.consultation?.event?.id);
   }
 
+  get detailActionItems(): DetailAction[] {
+    const actions: DetailAction[] = [{ id: 'resolve', label: 'Resolver consulta' }];
+    if (this.consultation?.type === 'text')
+      actions.unshift({ id: 'edit', label: 'Editar consulta' });
+    if (this.consultation?.type === 'date') {
+      actions.push({
+        id: 'event',
+        label: this.consultation.event ? 'Cambiar evento' : 'Elegir evento',
+      });
+      if (this.consultation.event) actions.push({ id: 'unlink', label: 'Quitar vínculo' });
+    }
+    return actions;
+  }
+
+  selectDetailAction(action: string): void {
+    if (
+      this.saving ||
+      this.submitting ||
+      this.eventSaving ||
+      this.showTextEditor ||
+      this.consultation?.state !== 'open'
+    )
+      return;
+    if (action === 'edit' && this.consultation?.type === 'text') {
+      if (!this.team.participantId) {
+        this.message = 'Elige una identidad del equipo para editar la consulta.';
+        return;
+      }
+      this.showTextEditor = true;
+      this.changeDetector.markForCheck();
+    } else if (action === 'resolve') this.openResolution();
+    else if (action === 'event' || action === 'unlink') this.openEventEditor(action === 'unlink');
+  }
+
   ngOnInit(): void {
     this.load();
+  }
+
+  textEdited(result: { consultation: ConsultationDetail; expiresAt: string }): void {
+    this.showTextEditor = false;
+    this.consultation = result.consultation;
+    this.confirmed = structuredClone(result.consultation);
+    this.team.updateExpiry(result.expiresAt);
+    this.updated.emit();
+    this.message = 'Consulta actualizada.';
+    this.changeDetector.markForCheck();
+    setTimeout(() => this.detailActions?.focusTrigger());
+  }
+
+  closeTextEditor(reload: boolean): void {
+    this.showTextEditor = false;
+    if (reload) {
+      this.focusEventAfterLoad = true;
+      this.load();
+      this.updated.emit();
+    } else {
+      this.changeDetector.markForCheck();
+      setTimeout(() => this.detailActions?.focusTrigger());
+    }
+  }
+
+  lastEditedAt(value: string): string {
+    return new Intl.DateTimeFormat('es-ES', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: this.team.team?.timeZone,
+    }).format(new Date(value));
   }
 
   ngOnDestroy(): void {
@@ -494,7 +557,10 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
         this.changeDetector.markForCheck();
         if (this.focusEventAfterLoad) {
           this.focusEventAfterLoad = false;
-          setTimeout(() => this.eventButton?.nativeElement.focus());
+          setTimeout(() => {
+            if (this.consultation?.state === 'open') this.detailActions?.focusTrigger();
+            else this.backButton?.nativeElement.focus();
+          });
         }
       },
       error: (error: HttpErrorResponse) => {
@@ -668,7 +734,10 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     if (this.submitting) return;
     this.showResolution = false;
     this.changeDetector.markForCheck();
-    setTimeout(() => this.resolveButton?.nativeElement.focus());
+    setTimeout(() => {
+      if (this.consultation?.state === 'open') this.detailActions?.focusTrigger();
+      else this.backButton?.nativeElement.focus();
+    });
   }
 
   toggleAccepted(id: string): void {
@@ -734,8 +803,6 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   }
 
   openEventEditor(remove = false): void {
-    this.eventFocusReturn =
-      document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     this.draftEventId = remove ? null : (this.consultation?.event?.id ?? null);
     this.eventError = '';
     this.showEventEditor = true;
@@ -748,8 +815,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     this.showEventEditor = false;
     this.changeDetector.markForCheck();
     setTimeout(() => {
-      if (this.eventFocusReturn?.isConnected) this.eventFocusReturn.focus();
-      else this.eventButton?.nativeElement.focus();
+      this.detailActions?.focusTrigger();
     });
   }
 

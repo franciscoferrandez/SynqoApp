@@ -110,7 +110,8 @@ test('opens votes, restores a failed change, retries and confirms a resolution',
   await expect(first.getByRole('checkbox')).not.toBeChecked();
   await expect(first.getByText('3 votos')).toBeVisible();
 
-  await activate(page.getByRole('button', { name: 'Resolver consulta' }));
+  await activate(page.getByRole('button', { name: 'Acciones de la consulta' }));
+  await activate(page.getByRole('button', { name: 'Resolver consulta', exact: true }));
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await expect(dialog.getByRole('checkbox')).toHaveCount(2);
   await expect(dialog.getByRole('checkbox').first()).not.toBeChecked();

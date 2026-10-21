@@ -56,6 +56,19 @@ async function installTeam(page: import('@playwright/test').Page): Promise<void>
   );
 }
 
+async function consultationAction(
+  page: import('@playwright/test').Page,
+  name: string,
+): Promise<void> {
+  await page.getByRole('button', { name: 'Acciones de la consulta' }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
+async function eventAction(page: import('@playwright/test').Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Acciones del evento' }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
 test('crea consulta y evento provisional vinculados desde el switch opcional', async ({ page }) => {
   await installTeam(page);
   let created: Record<string, unknown> | undefined;
@@ -71,7 +84,12 @@ test('crea consulta y evento provisional vinculados desde el switch opcional', a
     }
     created = route.request().postDataJSON() as Record<string, unknown>;
     const result = consultation({
-      event: { ...event, title: '¿Cuándo hacemos la excursión?', date: null, status: 'provisional' },
+      event: {
+        ...event,
+        title: '¿Cuándo hacemos la excursión?',
+        date: null,
+        status: 'provisional',
+      },
     });
     return route.fulfill({
       status: 201,
@@ -126,27 +144,107 @@ test('consulta abierta permite cambiar o retirar vínculo y cancelar sin guardar
 
   await page.goto('/e/consultas/con-1#t=evt-token');
   await expect(page.getByRole('heading', { name: consultation().title })).toBeVisible();
-  await page.getByRole('button', { name: 'Cambiar evento' }).click();
+  await consultationAction(page, 'Cambiar evento');
   const linkDialog = page.getByRole('dialog', { name: 'Evento vinculado' });
   await linkDialog.getByLabel('Evento (opcional)').selectOption(secondEvent.id);
   await linkDialog.getByRole('button', { name: 'Cancelar' }).click();
   await expect(linkDialog).toHaveCount(0);
   expect(requests).toHaveLength(0);
 
-  await page.getByRole('button', { name: 'Cambiar evento' }).click();
+  await consultationAction(page, 'Cambiar evento');
   await page
     .getByRole('dialog', { name: 'Evento vinculado' })
     .getByLabel('Evento (opcional)')
     .selectOption(secondEvent.id);
   await page.getByRole('button', { name: 'Guardar vínculo' }).click();
   await expect(page.getByRole('link', { name: secondEvent.title })).toBeVisible();
-  await page.getByRole('button', { name: 'Quitar vínculo' }).click();
-  await page
-    .getByRole('dialog', { name: 'Evento vinculado' })
-    .getByRole('button', { name: 'Guardar vínculo' })
-    .click();
+  await consultationAction(page, 'Quitar vínculo');
+  const unlinkDialog = page.getByRole('dialog', { name: 'Evento vinculado' });
+  await expect(unlinkDialog.getByLabel('Evento (opcional)')).toHaveValue('');
+  await unlinkDialog.getByRole('button', { name: 'Guardar vínculo' }).click();
   expect(requests).toEqual([{ eventId: secondEvent.id }, { eventId: null }]);
 });
+
+test('consulta sin vínculo inicia en Sin evento y cancelar la selección no escribe', async ({
+  page,
+}) => {
+  await installTeam(page);
+  let writes = 0;
+  await page.route('**/api/teams/current/consultations/con-1', (route) =>
+    route.fulfill({ json: consultation() }),
+  );
+  await page.route('**/api/teams/current/events', (route) =>
+    route.fulfill({ json: { unfinalized: [event], future: [], past: [], rejected: [] } }),
+  );
+  await page.route('**/api/teams/current/consultations/con-1/event', (route) => {
+    writes += 1;
+    return route.fulfill({ status: 500 });
+  });
+
+  await page.goto('/e/consultas/con-1#t=evt-token');
+  await consultationAction(page, 'Elegir evento');
+  const dialog = page.getByRole('dialog', { name: 'Evento vinculado' });
+  const selector = dialog.getByLabel('Evento (opcional)');
+  await expect(selector).toHaveValue('');
+  await selector.selectOption(event.id);
+  await dialog.getByRole('button', { name: 'Cancelar' }).click();
+  expect(writes).toBe(0);
+});
+
+for (const status of ['provisional', 'definitive', 'rejected'] as const) {
+  test(`cambiar vínculo conserva preselección ${status} tras error y carga asíncrona`, async ({
+    page,
+  }) => {
+    await installTeam(page);
+    const current = {
+      ...event,
+      date: status === 'definitive' ? '2026-10-20' : null,
+      status,
+    };
+    const eligible = { ...event, id: 'evt-eligible', title: 'Reunión' };
+    const eventsAfterRetry = status === 'provisional' ? [current, eligible] : [eligible];
+    let eventReads = 0;
+    let releaseEvents!: () => void;
+    const eventsReady = new Promise<void>((resolve) => (releaseEvents = resolve));
+    let saved: Record<string, unknown> | undefined;
+    await page.route('**/api/teams/current/consultations/con-1', (route) =>
+      route.fulfill({ json: consultation({ event: current }) }),
+    );
+    await page.route('**/api/teams/current/events', async (route) => {
+      eventReads += 1;
+      if (eventReads === 1) return route.fulfill({ status: 500, json: { status: 500 } });
+      await eventsReady;
+      return route.fulfill({
+        json: {
+          unfinalized: eventsAfterRetry,
+          future: status === 'definitive' ? [current] : [],
+          past: [],
+          rejected: status === 'rejected' ? [current] : [],
+        },
+      });
+    });
+    await page.route('**/api/teams/current/consultations/con-1/event', async (route) => {
+      saved = route.request().postDataJSON() as Record<string, unknown>;
+      return route.fulfill({
+        json: { consultation: consultation({ event: current }), expiresAt: team.expiresAt },
+      });
+    });
+
+    await page.goto('/e/consultas/con-1#t=evt-token');
+    await consultationAction(page, 'Cambiar evento');
+    const dialog = page.getByRole('dialog', { name: 'Evento vinculado' });
+    await expect(dialog.getByRole('alert')).toContainText('No se pudieron cargar los eventos.');
+    await dialog.getByRole('button', { name: 'Reintentar' }).click();
+    const selector = dialog.getByLabel('Evento (opcional)');
+    await expect(selector).toBeVisible();
+    releaseEvents();
+    await expect(selector).toBeEnabled();
+    await expect(selector).toHaveValue(event.id);
+    await expect(selector.locator(`option[value="${event.id}"]`)).toBeAttached();
+    await dialog.getByRole('button', { name: 'Guardar vínculo' }).click();
+    expect(saved).toEqual({ eventId: event.id });
+  });
+}
 
 test('resolver consulta vinculada con una fecha asigna esa fecha como definitiva al evento', async ({
   page,
@@ -188,7 +286,7 @@ test('resolver consulta vinculada con una fecha asigna esa fecha como definitiva
   });
 
   await page.goto('/e/consultas/con-1#t=evt-token');
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await expect(dialog.locator('.calendar-note')).toHaveText(`Evento vinculado: ${event.title}`);
   await expect(dialog.locator('select')).toHaveCount(0);
@@ -226,7 +324,7 @@ test('una consulta sin vínculo conserva la aceptación de varias fechas', async
     });
   });
   await page.goto('/e/consultas/con-1#t=evt-token');
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await expect(dialog.locator('.calendar-note')).toHaveCount(0);
   await expect(dialog.getByRole('combobox')).toHaveCount(0);
@@ -271,7 +369,7 @@ test('un evento definitivo se confirma con expectedEventVersion y un conflicto p
   });
 
   await page.goto('/e/consultas/con-1#t=evt-token');
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await dialog.getByRole('checkbox').first().check();
   await dialog.getByRole('button', { name: 'Aceptar seleccionadas' }).click();
@@ -308,7 +406,7 @@ test('cancelar la resolución con evento rechazado no envía cambios', async ({ 
     return route.fulfill({ status: 500 });
   });
   await page.goto('/e/consultas/con-1#t=evt-token');
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await expect(dialog.getByText(/El evento está rechazado/)).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Aceptar seleccionadas' })).toBeDisabled();
@@ -316,7 +414,7 @@ test('cancelar la resolución con evento rechazado no envía cambios', async ({ 
   await dialog.getByRole('button', { name: 'Cancelar' }).click();
   await expect(dialog).toHaveCount(0);
   expect(writes).toBe(0);
-  await expect(page.getByRole('button', { name: 'Resolver consulta' })).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Acciones de la consulta' })).toBeFocused();
 });
 
 test('rechazar consulta conserva el vínculo histórico con el evento rechazado', async ({
@@ -359,14 +457,16 @@ test('rechazar consulta conserva el vínculo histórico con el evento rechazado'
     });
   });
   await page.goto('/e/consultas/con-1#t=evt-token');
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await dialog.getByRole('button', { name: 'Rechazar consulta' }).click();
   await dialog.getByRole('button', { name: 'Confirmar resolución' }).click();
   expect(resolutionBody).toMatchObject({ status: 'rejected', acceptedOptionIds: [] });
 });
 
-test('evento rechazado bloquea aceptación; se retira desde la ficha tras cancelar', async ({ page }) => {
+test('evento rechazado bloquea aceptación; se retira desde la ficha tras cancelar', async ({
+  page,
+}) => {
   await installTeam(page);
   const rejected = { ...event, status: 'rejected' as const };
   let writes = 0;
@@ -399,12 +499,12 @@ test('evento rechazado bloquea aceptación; se retira desde la ficha tras cancel
     });
   });
   await page.goto('/e/consultas/con-1#t=evt-token');
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await expect(dialog.getByRole('button', { name: 'Aceptar seleccionadas' })).toBeDisabled();
   await expect(dialog.getByText(/Cancelar.*retirar el vínculo desde la ficha/i)).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancelar' }).click();
-  await page.getByRole('button', { name: 'Quitar vínculo' }).click();
+  await consultationAction(page, 'Quitar vínculo');
   await page
     .getByRole('dialog', { name: 'Evento vinculado' })
     .getByRole('button', { name: 'Guardar vínculo' })
@@ -438,7 +538,7 @@ for (const disposition of ['unlink', 'reject_both'] as const) {
       });
     });
     await page.goto('/e/eventos/evt-1#t=evt-token');
-    await page.getByRole('button', { name: 'Rechazar evento' }).click();
+    await eventAction(page, 'Rechazar evento');
     const dialog = page.getByRole('dialog', { name: '¿Rechazar este evento?' });
     await dialog.getByLabel('Consulta abierta').selectOption(disposition);
     await dialog.getByRole('button', { name: 'Rechazar evento' }).click();
@@ -467,8 +567,9 @@ test('cancelar el rechazo coordinado conserva ambos recursos y no envía la oper
     return route.fulfill({ status: 500 });
   });
   await page.goto('/e/eventos/evt-1#t=evt-token');
-  const opener = page.getByRole('button', { name: 'Rechazar evento' });
+  const opener = page.getByRole('button', { name: 'Acciones del evento' });
   await opener.click();
+  await page.getByRole('button', { name: 'Rechazar evento', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '¿Rechazar este evento?' });
   await dialog.getByRole('button', { name: 'Cancelar' }).click();
   await expect(dialog).toHaveCount(0);

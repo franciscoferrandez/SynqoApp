@@ -306,6 +306,23 @@ for (const viewport of viewports) {
         await expect(
           page.getByRole('heading', { name: consultation.title, exact: true }),
         ).toBeVisible();
+        const actions = page.getByRole('button', { name: 'Acciones de la consulta' });
+        if (consultation.state === 'open') {
+          await expect(actions).toHaveAttribute('aria-expanded', 'false');
+          await actions.focus();
+          await page.keyboard.press('Enter');
+          await expect(actions).toHaveAttribute('aria-expanded', 'true');
+          await expect(
+            page.getByRole('group', { name: 'Acciones de la consulta' }).getByRole('button', {
+              name: 'Resolver consulta',
+            }),
+          ).toBeVisible();
+          await page.keyboard.press('Escape');
+          await expect(actions).toHaveAttribute('aria-expanded', 'false');
+          await expect(actions).toBeFocused();
+        } else {
+          await expect(actions).toHaveCount(0);
+        }
         await reflow(page);
         await keyboardFocus(page.getByRole('button', { name: 'Volver a Consultas' }));
         await page.keyboard.press('Enter');

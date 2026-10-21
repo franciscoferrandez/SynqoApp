@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Application\Consultation\ConsultationService;
 use App\Application\Exception\InvalidConsultationInput;
 use App\Application\Exception\ConsultationClosed;
+use App\Application\Exception\ConsultationEditConflict;
+use App\Application\Exception\ConsultationRemovalConfirmationRequired;
 use App\Application\Exception\EventConflict;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
@@ -73,6 +75,33 @@ final readonly class ConsultationController
             return $this->missingCredential();
         } catch (TeamNotFound) {
             return $this->problem(404, 'No encontramos esta consulta.');
+        } catch (TeamExpired) {
+            return $this->problem(410, 'Este equipo ha caducado.');
+        }
+    }
+
+    public function edit(Request $request, string $consultationId): JsonResponse
+    {
+        $token = $this->bearerToken($request);
+        try {
+            $this->teams->current($token);
+            $body = $this->json($request);
+            if ($body === null) {
+                return $this->problem(400, 'JSON mal formado.');
+            }
+            return $this->success($this->consultations->edit($token, $consultationId, $body));
+        } catch (InvalidConsultationInput $error) {
+            return $this->problem(422, 'Revisa el título y los cambios de opciones.', $error->fields);
+        } catch (ConsultationEditConflict $error) {
+            return $this->problem(409, 'La consulta ha cambiado o alguna opción ya tiene votos. Revisa los datos actuales.', type: 'urn:synqo:problem:consultation-edit-conflict', extensions: ['consultation' => $error->consultation]);
+        } catch (ConsultationRemovalConfirmationRequired $error) {
+            return $this->problem(409, 'Confirma la retirada de las opciones y todos sus votos.', type: 'urn:synqo:problem:consultation-removal-confirmation-required', extensions: ['optionsWithVotes' => $error->optionsWithVotes]);
+        } catch (ConsultationClosed) {
+            return $this->problem(409, 'Esta consulta ya está cerrada.', type: 'urn:synqo:problem:consultation-closed');
+        } catch (MissingAccessCredential) {
+            return $this->missingCredential();
+        } catch (TeamNotFound) {
+            return $this->problem(404, 'No encontramos esta consulta o participante.');
         } catch (TeamExpired) {
             return $this->problem(410, 'Este equipo ha caducado.');
         }
@@ -190,15 +219,17 @@ final readonly class ConsultationController
         return $this->problem(409, 'El evento ha cambiado o ya no admite este vínculo. Revisa su estado antes de confirmar.', type: 'urn:synqo:problem:event-conflict');
     }
 
-    /** @param list<string> $fields */
-    private function problem(int $status, string $detail, array $fields = [], string $type = 'about:blank'): JsonResponse
+    /** @param list<string> $fields
+     * @param array<string, mixed> $extensions
+     */
+    private function problem(int $status, string $detail, array $fields = [], string $type = 'about:blank', array $extensions = []): JsonResponse
     {
         $titles = [400 => 'Solicitud incorrecta', 401 => 'Autenticación requerida', 404 => 'No encontrado', 409 => 'Conflicto', 410 => 'Equipo caducado', 422 => 'Datos inválidos'];
         $data = ['type' => $type, 'title' => $titles[$status] ?? 'Error', 'status' => $status, 'detail' => $detail];
         if ($fields !== []) {
             $data['violations'] = array_map(static fn(string $field): array => ['propertyPath' => $field, 'message' => 'Este valor no es válido.'], $fields);
         }
-        $response = new JsonResponse($data, $status, ['Content-Type' => 'application/problem+json']);
+        $response = new JsonResponse($data + $extensions, $status, ['Content-Type' => 'application/problem+json']);
         $response->headers->set('Cache-Control', 'no-store');
 
         return $response;

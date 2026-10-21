@@ -33,6 +33,10 @@ En móvil, el panel permanece debajo del calendario, como en WF-CON-004.
 
 El switch es opcional y comienza desactivado. Activarlo crea al confirmar un evento provisional sin fecha y con el mismo título de la consulta, asociado a ella. No hay selector de eventos existentes. Cancelar o fallar no crea parcialmente la consulta ni el evento.
 
+### Mantener el vínculo desde la ficha
+
+En una consulta de fechas abierta, el menú hamburguesa del encabezado ofrece «Elegir evento» si no hay vínculo, o «Cambiar evento» y «Quitar vínculo» si existe. El evento vinculado sigue visible como enlace en la ficha. «Cambiar evento» abre el editor con el evento actual seleccionado, también después de cargar o reintentar las opciones. Si el actual ya no es elegible para vínculos nuevos, sigue figurando como vínculo actual. Sin vínculo, el editor empieza en «Sin evento»; «Quitar vínculo» también inicia esa selección explícitamente. Guardar confirma la elección; cancelar no modifica el vínculo. Guardar el valor actual lo conserva.
+
 ### Resolver una consulta vinculada
 
 ```text
@@ -117,6 +121,8 @@ La ficha de consulta permite abrir el evento relacionado. La ficha del evento li
 ## Consulta sin evento asociado
 
 La creación ofrece el switch aunque no existan eventos previos. La resolución no muestra etiqueta, selector ni mensajes de vínculo vacío. El editor de vínculo de la ficha conserva sus estados de carga, vacío, error y reintento para eventos existentes.
+
+La organización de acciones en el menú de la ficha y la preselección del evento actual se concretan en [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md). Se mantiene la navegación visible entre fichas.
 
 ## Notas
 

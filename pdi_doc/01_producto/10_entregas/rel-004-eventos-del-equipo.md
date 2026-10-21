@@ -23,6 +23,12 @@ Permitir que un equipo organice sus eventos en una sección propia, consulte los
 
 [SPEC-EVT-001 — Gestión de eventos del equipo](../../08_especificaciones/99_archivadas/spec-evt-001-gestion-eventos-equipo.md), [SPEC-EVT-002 — Mostrar eventos en el calendario](../../08_especificaciones/99_archivadas/spec-evt-002-eventos-en-calendario.md) y [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) están cerradas y validadas localmente. La evolución [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) también está cerrada y validada localmente. No se acredita despliegue; la regresión visual sigue pendiente antes del cierre de la release.
 
+La evolución [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) está cerrada y validada localmente: menús de acciones en ambas fichas, badge alineado con el título y preselección del evento actual al cambiar el vínculo. Checks WEB, revisión independiente y E2E funcionales/responsive/reales verificados. Conserva los estados delivery validados; las regresiones visuales siguen pendientes y no se acredita despliegue.
+
+## Coordinación de entregas y despliegue
+
+Esta entrega avanza en paralelo con [REL-005 — Ajustes de funcionalidad de consultas](rel-005-ajustes-funcionalidad-consultas.md). Ambas agrupan las SPEC por su alcance y pueden desplegarse juntas en una misma versión de la aplicación, manteniendo sus dependencias, evidencia y cierre propios. Un despliegue compartido no acredita automáticamente la validación ni el cierre de ambas. Las SPEC de eventos ya incluidas conservan su asignación; la edición de consultas de texto se incorpora a REL-005. Si una SPEC contribuye a ambas entregas, se referencia el mismo documento desde ambas y se explicita su contribución.
+
 ## Estados permitidos
 
 DEFINIDO / PLANIFICADO / ESPECIFICADO / EN_IMPLEMENTACION / IMPLEMENTADO / VALIDADO / ENTREGADO / BLOQUEADO / POSPUESTO / DESCARTADO

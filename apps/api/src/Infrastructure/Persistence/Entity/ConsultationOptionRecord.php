@@ -50,6 +50,16 @@ class ConsultationOptionRecord
         return $this->date;
     }
 
+    public function editText(string $text): void
+    {
+        $this->text = $text;
+    }
+
+    public function setPosition(int $position): void
+    {
+        $this->position = $position;
+    }
+
     /** @return array{id: string, text?: string, date?: string, position: int} */
     public function toItem(): array
     {

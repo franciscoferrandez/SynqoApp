@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Regla
 
-En una consulta con opciones de texto, dos opciones no pueden tener el mismo texto después de ignorar diferencias de mayúsculas, acentos y espacios exteriores. Si se detecta una opción duplicada, se pide modificarla y no se crea la consulta mientras persista el duplicado.
+En una consulta con opciones de texto, dos opciones no pueden tener el mismo texto después de ignorar diferencias de mayúsculas, acentos y espacios exteriores. Si se detecta una opción duplicada, se pide modificarla y no se crea ni se guarda una edición de la consulta mientras persista el duplicado. La edición se define en [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md).
 
 ## Justificación
 

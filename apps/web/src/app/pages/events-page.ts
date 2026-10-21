@@ -19,12 +19,13 @@ import {
   EventStatus,
 } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
+import { DetailAction, DetailActions } from '../shared/detail-actions';
 
 type EventGroupKey = keyof TeamEventGroups;
 type LifecycleAction = 'reject' | 'recover';
 
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, DetailActions],
   template: `
     <section [attr.aria-labelledby]="selectedEventId ? null : 'events-heading'">
       @if (!selectedEventId) {
@@ -63,20 +64,30 @@ type LifecycleAction = 'reject' | 'recover';
             </div>
           } @else if (event; as item) {
             <article class="panel event-detail-card">
-              <header class="consultation-detail-head">
-                <div>
+              <header class="entity-detail-heading">
+                <div class="detail-heading-top">
                   <p class="eyebrow">Detalle del evento</p>
-                  <h2>{{ item.title }}</h2>
-                  <p>{{ eventDate(item) }}</p>
+                  <app-detail-actions
+                    #detailActions
+                    label="Acciones del evento"
+                    panelId="event-detail-actions"
+                    [actions]="detailActionItems"
+                    [disabled]="actionPending || submitting"
+                    (selected)="selectDetailAction($event)"
+                  />
                 </div>
-                <span
-                  class="badge"
-                  [class.open]="item.status === 'provisional'"
-                  [class.resolved]="item.status === 'definitive'"
-                  [class.rejected]="item.status === 'rejected'"
-                >
-                  {{ statusLabel(item.status) }}
-                </span>
+                <div class="detail-heading-title">
+                  <h2>{{ item.title }}</h2>
+                  <span
+                    class="badge"
+                    [class.open]="item.status === 'provisional'"
+                    [class.resolved]="item.status === 'definitive'"
+                    [class.rejected]="item.status === 'rejected'"
+                  >
+                    {{ statusLabel(item.status) }}
+                  </span>
+                </div>
+                <p>{{ eventDate(item) }}</p>
               </header>
               @if (item.notes) {
                 <section class="event-notes" aria-labelledby="event-notes-heading">
@@ -120,30 +131,6 @@ type LifecycleAction = 'reject' | 'recover';
               @if (actionError) {
                 <p class="event-error" role="alert">{{ actionError }}</p>
               }
-              <div class="event-actions">
-                @if (item.status !== 'rejected') {
-                  <button class="outline" type="button" (click)="openEdit()">Editar evento</button>
-                  <button
-                    #lifecycleButton
-                    class="outline danger"
-                    type="button"
-                    [disabled]="actionPending"
-                    (click)="askLifecycle('reject')"
-                  >
-                    Rechazar evento
-                  </button>
-                } @else {
-                  <button
-                    #lifecycleButton
-                    class="primary"
-                    type="button"
-                    [disabled]="actionPending"
-                    (click)="askLifecycle('recover')"
-                  >
-                    Recuperar evento
-                  </button>
-                }
-              </div>
             </article>
           }
         </div>
@@ -376,7 +363,7 @@ export class EventsPage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   @ViewChild('createButton') private createButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('titleInput') private titleInput?: ElementRef<HTMLInputElement>;
-  @ViewChild('lifecycleButton') private lifecycleButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('detailActions') private detailActions?: DetailActions;
   @ViewChild('editorDialog')
   set editorDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
     if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
@@ -446,6 +433,21 @@ export class EventsPage implements OnInit, OnDestroy {
     return (
       !!this.groups && this.groupDefinitions.every((group) => this.events(group.key).length === 0)
     );
+  }
+
+  get detailActionItems(): DetailAction[] {
+    return this.event?.status === 'rejected'
+      ? [{ id: 'recover', label: 'Recuperar evento' }]
+      : [
+          { id: 'edit', label: 'Editar evento' },
+          { id: 'reject', label: 'Rechazar evento', danger: true },
+        ];
+  }
+
+  selectDetailAction(action: string): void {
+    if (this.actionPending || this.submitting) return;
+    if (action === 'edit') this.openEdit();
+    else if (action === 'reject' || action === 'recover') this.askLifecycle(action);
   }
 
   get canSave(): boolean {
@@ -588,6 +590,7 @@ export class EventsPage implements OnInit, OnDestroy {
           this.event = event;
           this.message = 'Evento actualizado.';
           this.load();
+          setTimeout(() => this.detailActions?.focusTrigger());
         } else {
           this.selectedEventId = undefined;
           this.event = undefined;
@@ -648,7 +651,7 @@ export class EventsPage implements OnInit, OnDestroy {
     if (this.actionPending) return;
     this.showLifecycleConfirmation = false;
     this.changeDetector.markForCheck();
-    setTimeout(() => this.lifecycleButton?.nativeElement.focus());
+    setTimeout(() => this.detailActions?.focusTrigger());
   }
 
   confirmLifecycle(): void {
@@ -672,7 +675,7 @@ export class EventsPage implements OnInit, OnDestroy {
         this.message =
           this.lifecycleAction === 'reject' ? 'Evento rechazado.' : 'Evento recuperado.';
         this.load();
-        setTimeout(() => this.lifecycleButton?.nativeElement.focus());
+        setTimeout(() => this.detailActions?.focusTrigger());
       },
       error: (error: HttpErrorResponse) => {
         this.actionPending = false;
@@ -749,8 +752,7 @@ export class EventsPage implements OnInit, OnDestroy {
     this.originalDraft = '';
     this.formError = '';
     this.changeDetector.markForCheck();
-    if (this.selectedEventId)
-      setTimeout(() => document.querySelector<HTMLButtonElement>('[data-event-back]')?.focus());
+    if (this.selectedEventId) setTimeout(() => this.detailActions?.focusTrigger());
     else setTimeout(() => this.createButton?.nativeElement.focus());
   }
 

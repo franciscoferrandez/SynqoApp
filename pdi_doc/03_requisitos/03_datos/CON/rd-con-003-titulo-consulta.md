@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Dato / información
 
-Título breve escrito al crear una consulta de fechas o una consulta con opciones de texto.
+Título breve escrito al crear una consulta de fechas o una consulta con opciones de texto, editable en las condiciones de [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md).
 
 ## Significado
 
@@ -15,7 +15,7 @@ Identifica la consulta en la lista del equipo y facilita encontrarla entre otras
 
 ## Integridad
 
-Cada consulta de la primera entrega tiene un título escrito al crearla, de hasta 250 caracteres. No se ha definido si títulos iguales están permitidos.
+Cada consulta de la primera entrega tiene un título no vacío de hasta 250 caracteres; la edición mantiene ese límite. No se ha definido si títulos iguales entre consultas están permitidos.
 
 ## Retención / ciclo de vida
 

@@ -338,6 +338,56 @@
 | [WEB — arquitectura](../06_arquitectura/03_modulos/WEB/README.md) | [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) |
 | [WEB — reglas de implementación](../07_desarrollo/08_modulos/WEB/README.md) | [SPEC-EVT-003 — Vincular eventos y consultas de fechas](../08_especificaciones/99_archivadas/spec-evt-003-vinculo-evento-consulta.md) |
 
+## Edición de consultas con opciones de texto
+
+| Artefacto | SPEC |
+|---|---|
+| [REL-005 — Ajustes de funcionalidad de consultas](../01_producto/10_entregas/rel-005-ajustes-funcionalidad-consultas.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RF-CON-005 — Crear una consulta con opciones de texto](../03_requisitos/01_funcionales/CON/rf-con-005-crear-consulta-texto.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RF-CON-006 — Editar una consulta con opciones de texto](../03_requisitos/01_funcionales/CON/rf-con-006-editar-consulta-texto.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-CON-001 — Votación múltiple y pública](../03_requisitos/02_reglas-negocio/CON/rn-con-001-votacion-publica.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-CON-002 — Resolución de una consulta abierta](../03_requisitos/02_reglas-negocio/CON/rn-con-002-resolucion-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-CON-003 — Mínimo de una opción por consulta](../03_requisitos/02_reglas-negocio/CON/rn-con-003-minimo-opciones-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-CON-006 — Texto único entre opciones de una consulta](../03_requisitos/02_reglas-negocio/CON/rn-con-006-texto-unico-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-CON-007 — Máximo de diez opciones por consulta](../03_requisitos/02_reglas-negocio/CON/rn-con-007-maximo-opciones-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-CON-008 — Edición de opciones y conservación de votos](../03_requisitos/02_reglas-negocio/CON/rn-con-008-edicion-opciones-votos.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RD-CON-003 — Título de la consulta](../03_requisitos/03_datos/CON/rd-con-003-titulo-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RD-CON-004 — Momento de creación de la consulta](../03_requisitos/03_datos/CON/rd-con-004-momento-creacion-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RD-CON-005 — Texto de opción de una consulta](../03_requisitos/03_datos/CON/rd-con-005-texto-opcion-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RD-CON-006 — Autoría y momento de última edición de la consulta](../03_requisitos/03_datos/CON/rd-con-006-ultima-edicion-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [RN-EQU-002 — Caducidad de equipos rápidos por inactividad](../03_requisitos/02_reglas-negocio/EQU/rn-equ-002-caducidad-equipo.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [FLUJO-CON-004 — Crear una consulta con opciones de texto](../04_experiencia-usuario/02_flujos/flujo-con-004-crear-consulta-texto.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [FLUJO-CON-005 — Editar una consulta con opciones de texto](../04_experiencia-usuario/02_flujos/flujo-con-005-editar-consulta-texto.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [WF-CON-002 — Detalle de una consulta abierta](../04_experiencia-usuario/03_wireframes/wf-con-002-detalle-consulta.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [WF-CON-006 — Crear una consulta con opciones de texto](../04_experiencia-usuario/03_wireframes/wf-con-006-crear-consulta-texto.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [WF-CON-007 — Editar una consulta con opciones de texto](../04_experiencia-usuario/03_wireframes/wf-con-007-editar-consulta-texto.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [API — arquitectura](../06_arquitectura/03_modulos/API/README.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [API — reglas de implementación](../07_desarrollo/08_modulos/API/README.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [API — Convención HTTP](../06_arquitectura/03_modulos/API/convencion-http.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [WEB — arquitectura](../06_arquitectura/03_modulos/WEB/README.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [WEB — reglas de implementación](../07_desarrollo/08_modulos/WEB/README.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+| [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) | [SPEC-CON-004 — Editar una consulta con opciones de texto](../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) |
+
+## Acciones en fichas de eventos y consultas
+
+| Artefacto | SPEC |
+|---|---|
+| [RF-EVT-001 — Crear y editar un evento](../03_requisitos/01_funcionales/EVT/rf-evt-001-crear-editar-evento.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [RF-EVT-002 — Listar y consultar eventos](../03_requisitos/01_funcionales/EVT/rf-evt-002-listar-consultar-eventos.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [RF-EVT-003 — Rechazar y recuperar un evento](../03_requisitos/01_funcionales/EVT/rf-evt-003-rechazar-recuperar-evento.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [RF-CON-004 — Resolver una consulta](../03_requisitos/01_funcionales/CON/rf-con-004-resolver-consulta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [RN-EVT-003 — Vínculo entre evento y consulta de fechas abierta](../03_requisitos/02_reglas-negocio/EVT/rn-evt-003-vinculo-consulta-abierta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [FLUJO-EVT-001 — Consultar y gestionar eventos](../04_experiencia-usuario/02_flujos/flujo-evt-001-gestionar-eventos.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [FLUJO-CON-003 — Resolver una consulta](../04_experiencia-usuario/02_flujos/flujo-con-003-resolver-consulta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [FLUJO-EVT-003 — Vincular eventos y consultas de fechas](../04_experiencia-usuario/02_flujos/flujo-evt-003-vincular-evento-consulta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [WF-EVT-002 — Ficha y edición de evento](../04_experiencia-usuario/03_wireframes/wf-evt-002-ficha-evento.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [WF-CON-002 — Detalle de una consulta abierta](../04_experiencia-usuario/03_wireframes/wf-con-002-detalle-consulta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [WF-EVT-004 — Vincular evento y consulta de fechas](../04_experiencia-usuario/03_wireframes/wf-evt-004-vincular-evento-consulta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [WEB — arquitectura](../06_arquitectura/03_modulos/WEB/README.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [WEB — reglas de implementación](../07_desarrollo/08_modulos/WEB/README.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [REL-004 — Eventos del equipo](../01_producto/10_entregas/rel-004-eventos-del-equipo.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+| [SPEC-EVT-004 — Crear evento desde consulta y simplificar resolución](../08_especificaciones/99_archivadas/spec-evt-004-crear-evento-desde-consulta.md) | [SPEC-EVT-005 — Acciones en fichas de eventos y consultas](../08_especificaciones/99_archivadas/spec-evt-005-acciones-eventos-consultas.md) |
+
 ## Creación conjunta de evento y simplificación de resolución
 
 | Artefacto | SPEC |

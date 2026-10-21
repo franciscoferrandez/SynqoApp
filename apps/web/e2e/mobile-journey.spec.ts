@@ -127,6 +127,7 @@ for (const viewport of matrix) {
           await expect(
             page.locator('.consultation-vote-option').first().getByText('Bea'),
           ).toBeVisible();
+          await page.getByRole('button', { name: 'Acciones de la consulta' }).click();
           await page.getByRole('button', { name: 'Resolver consulta' }).click();
           const resolution = page.getByRole('dialog', { name: 'Resolver consulta' });
           if (accept) {

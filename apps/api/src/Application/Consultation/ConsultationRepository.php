@@ -17,6 +17,8 @@ interface ConsultationRepository
 
     public function setEvent(string $teamId, string $consultationId, ?string $eventId, string $activityAt): bool;
 
+    public function edit(string $teamId, string $consultationId, ConsultationEditInput $input, string $at, string $activityAt): bool;
+
     /** @return array<string, mixed>|null */
     public function detail(string $teamId, string $consultationId): ?array;
 

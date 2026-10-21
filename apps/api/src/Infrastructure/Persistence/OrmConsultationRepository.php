@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence;
 
 use App\Application\Consultation\ConsultationRepository;
+use App\Application\Consultation\ConsultationEditInput;
 use App\Application\Exception\ConsultationClosed;
+use App\Application\Exception\ConsultationEditConflict;
+use App\Application\Exception\ConsultationRemovalConfirmationRequired;
 use App\Application\Exception\EventConflict;
 use App\Application\Exception\TeamNotFound;
 use App\Application\Exception\InvalidConsultationInput;
+use App\Domain\Consultation\TextConsultationRules;
 use App\Infrastructure\Persistence\Entity\ConsultationOptionRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationVoteRecord;
@@ -17,6 +21,7 @@ use App\Infrastructure\Persistence\Entity\TeamRecord;
 use App\Infrastructure\Persistence\Entity\TeamEventRecord;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Uuid;
 
@@ -143,6 +148,140 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
         $consultation->team()->setLastActivityAt(new DateTimeImmutable($activityAt));
         $manager->flush();
 
+        return true;
+    }
+
+    public function edit(string $teamId, string $consultationId, ConsultationEditInput $input, string $at, string $activityAt): bool
+    {
+        $manager = $this->manager();
+        // The team lock is held: reload options/votes after acquiring it, even
+        // when the caller previously read them through the same entity manager.
+        $manager->clear();
+        [$consultation, $participant] = $this->actors($teamId, $consultationId, $input->participantId);
+        if ($consultation->state() !== 'open') {
+            throw new ConsultationClosed();
+        }
+        $item = $consultation->toItem();
+        if ($item['type'] !== 'text') {
+            throw new InvalidConsultationInput(['type']);
+        }
+        /** @var array<string, ConsultationOptionRecord> $records */
+        $records = [];
+        /** @var array<string, string> $original */
+        $original = [];
+        foreach ($consultation->options() as $option) {
+            $value = $option->toItem();
+            $records[$value['id']] = $option;
+            $original[$value['id']] = $value['text'] ?? throw new \LogicException('A text option must contain text.');
+        }
+        $votes = $manager->getRepository(ConsultationVoteRecord::class)->findBy(['consultation' => $consultation]);
+        $counts = [];
+        foreach ($votes as $vote) {
+            foreach ($vote->options() as $option) {
+                $id = $option->toItem()['id'];
+                $counts[$id] = ($counts[$id] ?? 0) + 1;
+            }
+        }
+        $result = $original;
+        $additions = [];
+        foreach ($input->add as $entry) {
+            $id = $entry['id'];
+            if (isset($original[$id])) {
+                if ($original[$id] !== $entry['text']) {
+                    throw new ConsultationEditConflict($this->detail($teamId, $consultationId) ?? []);
+                }
+                continue;
+            }
+            if ($manager->find(ConsultationOptionRecord::class, $id) !== null) {
+                throw new InvalidConsultationInput(['optionChanges.add']);
+            }
+            $additions[$id] = $entry['text'];
+        }
+        foreach ($input->update as $entry) {
+            $id = $entry['id'];
+            if (!isset($original[$id]) || (($counts[$id] ?? 0) > 0 && $original[$id] !== $entry['text'])) {
+                throw new ConsultationEditConflict($this->detail($teamId, $consultationId) ?? []);
+            }
+            $result[$id] = $entry['text'];
+        }
+        $removed = [];
+        $needsConfirmation = [];
+        foreach ($input->remove as $id) {
+            if (!isset($records[$id])) {
+                continue;
+            }
+            $removed[$id] = $records[$id];
+            unset($result[$id]);
+            if (($counts[$id] ?? 0) > 0 && !in_array($id, $input->confirmedRemovalOptionIds, true)) {
+                $needsConfirmation[] = ['id' => $id, 'text' => $original[$id], 'count' => $counts[$id]];
+            }
+        }
+        $result += $additions;
+        $title = $input->title ?? (string) $item['title'];
+        $violations = TextConsultationRules::violations($title, array_values($result));
+        if ($violations !== []) {
+            $optionIds = array_keys($result);
+            $paths = array_map(static function (string $path) use ($optionIds): string {
+                if (preg_match('/^options\.(\d+)$/', $path, $match) === 1) {
+                    return 'options.' . $optionIds[(int) $match[1]];
+                }
+                return $path;
+            }, $violations);
+            throw new InvalidConsultationInput($paths);
+        }
+        if ($needsConfirmation !== []) {
+            throw new ConsultationRemovalConfirmationRequired($needsConfirmation);
+        }
+        if ($result === $original && $title === $item['title']) {
+            return false;
+        }
+        if ($result !== $original) {
+            foreach ($votes as $vote) {
+                $changed = false;
+                foreach ($removed as $option) {
+                    if ($vote->hasOption($option)) {
+                        $vote->setOption($option, false);
+                        $changed = true;
+                    }
+                }
+                if ($changed && $vote->isEmpty()) {
+                    $manager->remove($vote);
+                }
+            }
+            foreach ($removed as $option) {
+                $consultation->removeOption($option);
+                $manager->remove($option);
+            }
+            // Vacate positive positions before compaction/insertion. Both
+            // flushes belong to the surrounding transaction and roll back together.
+            $temporary = -1;
+            foreach ($consultation->options() as $option) {
+                $option->setPosition($temporary--);
+            }
+            $manager->flush();
+            $position = 0;
+            foreach ($result as $id => $text) {
+                if (isset($records[$id])) {
+                    $records[$id]->editText($text);
+                    $records[$id]->setPosition($position);
+                } else {
+                    $option = new ConsultationOptionRecord($id, $consultation, $text, null, $position);
+                    $consultation->addOption($option);
+                    $manager->persist($option);
+                }
+                ++$position;
+            }
+        }
+        $consultation->recordEdit($title, $participant, new DateTimeImmutable($at));
+        $consultation->team()->setLastActivityAt(new DateTimeImmutable($activityAt));
+        try {
+            $manager->flush();
+        } catch (UniqueConstraintViolationException $error) {
+            if (str_contains($error->getMessage(), 'consultation_option_pkey')) {
+                throw new InvalidConsultationInput(['optionChanges.add']);
+            }
+            throw $error;
+        }
         return true;
     }
 

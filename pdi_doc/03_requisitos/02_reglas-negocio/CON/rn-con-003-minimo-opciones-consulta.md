@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Regla
 
-Toda consulta debe contener al menos una opción al crearse, sea de fecha o de texto en la primera entrega. No puede crearse una consulta sin opciones.
+Toda consulta debe contener al menos una opción al crearse, sea de fecha o de texto en la primera entrega. Tampoco puede guardarse una edición de consulta de texto que la deje sin opciones, conforme a [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md).
 
 ## Justificación
 

@@ -1593,6 +1593,111 @@ html[data-theme='dark'] {
   align-items: flex-start;
   gap: 1rem;
 }
+.consultation-text-editor {
+  width: min(680px, calc(100vw - 2rem));
+}
+.consultation-edit-fields {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.consultation-edit-option {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+  overflow-wrap: anywhere;
+}
+.consultation-edit-option.removed {
+  background: var(--soft);
+  border-style: dashed;
+}
+.consultation-edit-option input[readonly] {
+  background: var(--soft);
+  color: var(--muted);
+}
+.consultation-edit-option p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.consultation-edit-option button {
+  justify-self: start;
+  max-width: 100%;
+  min-height: 44px;
+}
+.entity-detail-heading {
+  display: block;
+}
+.detail-heading-top,
+.detail-heading-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+.detail-heading-top .eyebrow {
+  margin: 0;
+}
+.detail-heading-title h2 {
+  min-width: 0;
+  margin: 0.35rem 0;
+  font-size: 1.4rem;
+  overflow-wrap: anywhere;
+}
+.detail-heading-title .badge {
+  flex-shrink: 0;
+  margin: 0;
+}
+.entity-detail-heading > p {
+  color: var(--muted);
+  margin: 0.25rem 0 1rem;
+}
+.event-detail-card .entity-detail-heading .badge {
+  margin: 0;
+}
+app-detail-actions {
+  display: block;
+  position: relative;
+  flex-shrink: 0;
+}
+.detail-actions-trigger {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem;
+  font-size: 1.25rem;
+}
+.detail-actions-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  width: min(260px, calc(100vw - 3rem));
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.7rem;
+  background: var(--raised);
+  box-shadow: var(--shadow);
+}
+.detail-actions-panel button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  overflow-wrap: anywhere;
+}
+.detail-actions-panel button:hover {
+  background: var(--soft);
+}
+.detail-actions-panel button.danger {
+  color: var(--blue-strong);
+}
 .consultation-detail-head h2 {
   margin: 0.15rem 0 0.3rem;
   font-size: 1.4rem;

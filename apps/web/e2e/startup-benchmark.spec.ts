@@ -190,6 +190,7 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
       ]) {
         await page.getByRole('button', { name: new RegExp(title.replace(/[?]/g, '\\?')) }).click();
         await expect(page.locator('.consultation-vote-option').first()).toContainText('Bea');
+        await page.getByRole('button', { name: 'Acciones de la consulta' }).click();
         await page.getByRole('button', { name: 'Resolver consulta', exact: true }).click();
         const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
         if (decision === 'resolved') {

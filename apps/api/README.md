@@ -33,6 +33,10 @@ docker compose exec api php bin/console app:teams:cleanup
 
 El proceso elimina únicamente datos de la base activa; no implementa retención de copias de seguridad ni medidas de restauración.
 
+## Edición de consultas
+
+`PATCH /api/teams/current/consultations/{consultationId}` aplica cambios explícitos de título y opciones de texto mediante `optionChanges`, con IDs estables y confirmación específica de retiradas con votos. Las entradas, respuestas y tipos de conflicto se publican en OpenAPI; la capacidad se define en [RF-CON-006 — Editar una consulta con opciones de texto](../../pdi_doc/03_requisitos/01_funcionales/CON/rf-con-006-editar-consulta-texto.md). La migración de última edición se aplica con el comando de migraciones habitual, sin resetear los datos existentes.
+
 ## Restaurar únicamente los equipos demo
 
 `DEMO_TEAM_IDS` debe estar definida en el proceso que ejecuta el reset. Una cadena vacía, sin `--initialize`, termina correctamente sin borrar ni cargar datos. Una lista no vacía contiene exactamente los dos UUID distintos de los demo, separados por coma. Se validan sus verificadores contra `DEMO_ACCESS_SECRET`; nombres iguales no identifican equipos demo. Una lista parcial, inválida o con un equipo real falla sin cambios. La IaC preserva la variable del HTTP y la referencia desde el Cron; el HTTP puede servir peticiones aunque falte esta variable.

@@ -31,7 +31,7 @@ La persona inicia la creación de una consulta de fechas, abre una consulta de f
 ### Cambiar o elegir evento antes de resolver
 
 5. La persona abre una consulta de fechas abierta. La ficha muestra el evento vinculado, si existe.
-6. Antes de iniciar la resolución, puede elegir otro evento elegible o retirar el vínculo desde la ficha. El modal de resolución no permite elegir, cambiar ni retirar eventos: solo muestra el título del asociado como etiqueta; sin vínculo no muestra nada relacionado con eventos.
+6. Antes de iniciar la resolución, puede elegir otro evento elegible o retirar el vínculo desde el menú hamburguesa del encabezado de la ficha. «Cambiar evento» inicia el editor con el vínculo actual seleccionado, incluso tras la carga asíncrona o el reintento; si ya no es elegible, se representa como vínculo actual. Sin vínculo, «Elegir evento» inicia «Sin evento». «Quitar vínculo» selecciona explícitamente «Sin evento». Solo guardar confirma la elección; cancelar conserva la anterior. El modal de resolución no permite elegir, cambiar ni retirar eventos: solo muestra el título del asociado como etiqueta; sin vínculo no muestra nada relacionado con eventos.
 7. Para resolver una consulta vinculada, selecciona exactamente una fecha. Para una consulta sin vínculo, se conserva el comportamiento existente de aceptar una o varias fechas.
 8. Antes de confirmar, Synqo vuelve a comprobar el estado del evento vinculado:
    - Si sigue sin fecha o con fecha provisional, la confirmación indica que la fecha aceptada quedará asignada como definitiva al evento.
@@ -43,7 +43,7 @@ La persona inicia la creación de una consulta de fechas, abre una consulta de f
 
 ### Rechazar un evento con consulta abierta vinculada
 
-12. La persona activa «Rechazar» desde un evento que tiene una consulta de fechas abierta vinculada.
+12. La persona activa «Rechazar evento» desde el menú hamburguesa de un evento que tiene una consulta de fechas abierta vinculada.
 13. En un único diálogo elige una de estas acciones: rechazar el evento y desvincular la consulta, o rechazar tanto el evento como la consulta.
 14. La persona confirma. En la primera opción, el evento queda rechazado y la consulta permanece abierta sin vínculo. En la segunda, ambos quedan rechazados y la relación se conserva como relación histórica navegable.
 

@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Regla
 
-En la primera entrega, una consulta admite como máximo diez opciones al crearse, tanto si son fechas como si son textos. La creación no permite superar ese número.
+En la primera entrega, una consulta admite como máximo diez opciones al crearse, tanto si son fechas como si son textos. Tampoco puede guardarse una edición de consulta de texto que supere ese número, conforme a [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md).
 
 ## Justificación
 

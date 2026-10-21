@@ -1,5 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+async function consultationAction(
+  page: import('@playwright/test').Page,
+  name: string,
+): Promise<void> {
+  await page.getByRole('button', { name: 'Acciones de la consulta' }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
+async function eventAction(page: import('@playwright/test').Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Acciones del evento' }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
 test('crear evento provisional desde consulta y resolver conserva vínculo con API y PostgreSQL', async ({
   page,
   request,
@@ -58,7 +71,7 @@ test('crear evento provisional desde consulta y resolver conserva vínculo con A
       consultations: [{ id: linkedConsultation.id, title, state: 'open' }],
     },
   });
-  await page.getByRole('button', { name: 'Resolver consulta' }).click();
+  await consultationAction(page, 'Resolver consulta');
   const dialog = page.getByRole('dialog', { name: 'Resolver consulta' });
   await expect(dialog.getByText(`Evento vinculado: ${title}`)).toBeVisible();
   await expect(dialog.getByRole('combobox')).toHaveCount(0);
@@ -149,20 +162,20 @@ test('eventos persisten y se gestionan desde WEB contra API y PostgreSQL', async
   await expect(page.getByRole('heading', { name: 'Ensayo E2E persistente' })).toBeVisible();
   await expect(page.getByText('Comprobar lectura desde otra petición.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Editar evento' }).click();
+  await eventAction(page, 'Editar evento');
   const edit = page.getByRole('dialog', { name: 'Edita el evento' });
   await edit.locator('#event-title').fill('Ensayo E2E editado');
   await edit.getByRole('button', { name: 'Guardar evento' }).click();
   await expect(page.getByRole('heading', { name: 'Ensayo E2E editado' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Rechazar evento' }).click();
+  await eventAction(page, 'Rechazar evento');
   await page
     .getByRole('dialog', { name: '¿Rechazar este evento?' })
     .getByRole('button', { name: 'Rechazar evento' })
     .click();
   await expect(page.locator('.event-detail-card .badge')).toHaveText('Rechazado');
 
-  await page.getByRole('button', { name: 'Recuperar evento' }).click();
+  await eventAction(page, 'Recuperar evento');
   await page
     .getByRole('dialog', { name: '¿Recuperar este evento?' })
     .getByRole('button', { name: 'Recuperar evento' })

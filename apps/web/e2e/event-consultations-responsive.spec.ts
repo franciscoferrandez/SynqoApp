@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Focused responsive smoke for the event/consultation linking controls. This is
 // presentation evidence only and does not claim WCAG conformance.
@@ -45,6 +45,27 @@ const event = {
       state: 'open',
     },
   ],
+};
+const rejectedEvent = {
+  ...event,
+  id: 'evt-responsive-rejected-event',
+  title: 'Plan cancelado',
+  status: 'rejected',
+  consultations: [],
+};
+const linkedConsultation = {
+  ...consultation,
+  event: { id: event.id, title: event.title, status: 'provisional', date: null, version: 1 },
+};
+const closedConsultation = {
+  ...consultation,
+  state: 'resolved',
+  event: { id: event.id, title: event.title, status: 'provisional', date: null, version: 1 },
+  resolution: {
+    participant: team.participants[0],
+    resolvedAt: '2026-10-18T13:00:00Z',
+    acceptedOptionIds: ['evt-responsive-option-1'],
+  },
 };
 
 async function installFixture(page: Page, theme: 'light' | 'dark'): Promise<void> {
@@ -99,6 +120,34 @@ async function assertReachable(
   expect(bounds.top).toBeLessThan(bounds.height);
 }
 
+async function openActions(page: Page, name: string) {
+  const trigger = page.getByRole('button', { name });
+  await assertReachable(page, 'button', name);
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  const controls = await trigger.getAttribute('aria-controls');
+  expect(controls).toBeTruthy();
+  const group = page.locator(`[id="${controls}"]`);
+  await expect(group).toBeVisible();
+  await expect(group.getByRole('menu')).toHaveCount(0);
+  return { trigger, group };
+}
+
+async function assertAligned(first: Locator, second: Locator, tolerance = 3): Promise<void> {
+  const [firstCenter, secondCenter] = await Promise.all([
+    first.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.top + bounds.height / 2;
+    }),
+    second.evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return bounds.top + bounds.height / 2;
+    }),
+  ]);
+  expect(Math.abs(firstCenter - secondCenter)).toBeLessThanOrEqual(tolerance);
+}
+
 for (const viewport of viewports) {
   for (const theme of ['light', 'dark'] as const) {
     test.describe(`event consultation smoke ${viewport.width}x${viewport.height} ${theme}`, () => {
@@ -139,7 +188,10 @@ for (const viewport of viewports) {
         await page.keyboard.press('Enter');
         await expect(page.getByRole('heading', { name: consultation.title })).toBeVisible();
 
-        const chooseEvent = page.getByRole('button', { name: 'Elegir evento' });
+        const consultationActions = await openActions(page, 'Acciones de la consulta');
+        const chooseEvent = consultationActions.group.getByRole('button', {
+          name: 'Elegir evento',
+        });
         await assertReachable(page, 'button', 'Elegir evento');
         await chooseEvent.focus();
         await page.keyboard.press('Enter');
@@ -158,9 +210,10 @@ for (const viewport of viewports) {
         await assertNoHorizontalOverflow(page);
         await linkDialog.getByRole('button', { name: 'Cancelar' }).click();
         await expect(linkDialog).toBeHidden();
-        await expect(chooseEvent).toBeFocused();
+        await expect(consultationActions.trigger).toBeFocused();
 
-        const resolve = page.getByRole('button', { name: 'Resolver consulta' });
+        const resolutionActions = await openActions(page, 'Acciones de la consulta');
+        const resolve = resolutionActions.group.getByRole('button', { name: 'Resolver consulta' });
         await assertReachable(page, 'button', 'Resolver consulta');
         await resolve.focus();
         await page.keyboard.press('Enter');
@@ -171,7 +224,7 @@ for (const viewport of viewports) {
         await assertNoHorizontalOverflow(page);
         await resolution.getByRole('button', { name: 'Cancelar' }).click();
         await expect(resolution).toBeHidden();
-        await expect(resolve).toBeFocused();
+        await expect(resolutionActions.trigger).toBeFocused();
       });
 
       test('creation switch is keyboard reachable and reflows without horizontal overflow', async ({
@@ -220,9 +273,40 @@ for (const viewport of viewports) {
 
         await page.goto('/e/eventos/evt-responsive-event#t=evt-responsive-token');
         await expect(page.getByRole('heading', { name: event.title })).toBeVisible();
-        const opener = page.getByRole('button', { name: 'Rechazar evento' });
-        await assertReachable(page, 'button', 'Rechazar evento');
-        await opener.focus();
+        const eyebrow = page.getByText('Detalle del evento', { exact: true });
+        const title = page.getByRole('heading', { name: event.title });
+        const badge = page.getByText('Provisional', { exact: true });
+        const initialMenu = await openActions(page, 'Acciones del evento');
+        const opener = initialMenu.trigger;
+        await assertAligned(eyebrow, opener);
+        await assertAligned(title, badge);
+        await assertNoHorizontalOverflow(page);
+
+        await page.keyboard.press('Tab');
+        await expect(
+          initialMenu.group.getByRole('button', { name: 'Editar evento' }),
+        ).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(
+          initialMenu.group.getByRole('button', { name: 'Rechazar evento' }),
+        ).toBeFocused();
+        await page.keyboard.press('Tab');
+        const relatedConsultation = page.getByRole('link', { name: consultation.title });
+        await expect(relatedConsultation).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(opener).toHaveAttribute('aria-expanded', 'false');
+        await expect(opener).toBeFocused();
+        await opener.click();
+        await expect(opener).toHaveAttribute('aria-expanded', 'true');
+        await eyebrow.click();
+        await expect(opener).toHaveAttribute('aria-expanded', 'false');
+        expect(rejectionRequests).toBe(0);
+
+        const openMenu = await openActions(page, 'Acciones del evento');
+        await page.keyboard.press('Tab');
+        await expect(openMenu.group.getByRole('button', { name: 'Editar evento' })).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(openMenu.group.getByRole('button', { name: 'Rechazar evento' })).toBeFocused();
         await page.keyboard.press('Enter');
 
         const dialog = page.getByRole('dialog', { name: '¿Rechazar este evento?' });
@@ -241,8 +325,74 @@ for (const viewport of viewports) {
         await page.keyboard.press('Escape');
 
         await expect(dialog).toBeHidden();
-        await expect(opener).toBeFocused();
+        await expect(openMenu.trigger).toBeFocused();
         expect(rejectionRequests).toBe(0);
+        await assertNoHorizontalOverflow(page);
+      });
+
+      test('shows available actions by event and consultation state', async ({ page }) => {
+        await installFixture(page, theme);
+        await page.route('**/api/teams/current/events/evt-responsive-event', (route) =>
+          route.fulfill({ json: { event } }),
+        );
+        await page.route('**/api/teams/current/events/evt-responsive-rejected-event', (route) =>
+          route.fulfill({ json: { event: rejectedEvent } }),
+        );
+
+        await page.goto('/e/eventos/evt-responsive-event#t=evt-responsive-token');
+        const activeMenu = await openActions(page, 'Acciones del evento');
+        await expect(activeMenu.group.getByRole('button', { name: 'Editar evento' })).toBeVisible();
+        await expect(
+          activeMenu.group.getByRole('button', { name: 'Rechazar evento' }),
+        ).toBeVisible();
+        await expect(
+          activeMenu.group.getByRole('button', { name: 'Recuperar evento' }),
+        ).toHaveCount(0);
+
+        await page.goto('/e/eventos/evt-responsive-rejected-event#t=evt-responsive-token');
+        const rejectedMenu = await openActions(page, 'Acciones del evento');
+        await expect(
+          rejectedMenu.group.getByRole('button', { name: 'Recuperar evento' }),
+        ).toBeVisible();
+        await expect(rejectedMenu.group.getByRole('button', { name: 'Editar evento' })).toHaveCount(
+          0,
+        );
+        await expect(
+          rejectedMenu.group.getByRole('button', { name: 'Rechazar evento' }),
+        ).toHaveCount(0);
+
+        await page.goto('/e/consultas/evt-responsive-consultation#t=evt-responsive-token');
+        const consultationMenu = await openActions(page, 'Acciones de la consulta');
+        await expect(
+          consultationMenu.group.getByRole('button', { name: 'Resolver consulta' }),
+        ).toBeVisible();
+        await expect(
+          consultationMenu.group.getByRole('button', { name: 'Elegir evento' }),
+        ).toBeVisible();
+
+        await page.route(
+          '**/api/teams/current/consultations/evt-responsive-consultation',
+          (route) => route.fulfill({ json: linkedConsultation }),
+        );
+        await page.reload();
+        const linkedMenu = await openActions(page, 'Acciones de la consulta');
+        await expect(
+          linkedMenu.group.getByRole('button', { name: 'Cambiar evento' }),
+        ).toBeVisible();
+        await expect(
+          linkedMenu.group.getByRole('button', { name: 'Quitar vínculo' }),
+        ).toBeVisible();
+
+        await page.route(
+          '**/api/teams/current/consultations/evt-responsive-consultation',
+          (route) => route.fulfill({ json: closedConsultation }),
+        );
+        await page.reload();
+        await expect(page.getByRole('link', { name: event.title })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Resolver consulta' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Elegir evento' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Cambiar evento' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Quitar vínculo' })).toHaveCount(0);
         await assertNoHorizontalOverflow(page);
       });
     });

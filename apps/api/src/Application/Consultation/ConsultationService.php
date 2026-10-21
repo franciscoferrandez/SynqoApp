@@ -55,6 +55,16 @@ final readonly class ConsultationService
         return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->setEvent($team['id'], $consultationId, $eventId, $activity->format(DATE_ATOM)), $consultationId);
     }
 
+    /** @param array<string, mixed> $body
+     * @return array{consultation: array<string, mixed>, expiresAt: string}
+     */
+    public function edit(?string $token, string $consultationId, array $body): array
+    {
+        $input = ConsultationEditInput::fromPayload($body);
+
+        return $this->mutate($token, fn(array $team, DateTimeImmutable $now, DateTimeImmutable $activity): bool => $this->consultations->edit($team['id'], $consultationId, $input, $now->format(DATE_ATOM), $activity->format(DATE_ATOM)), $consultationId);
+    }
+
     /** @return array{consultation: array<string, mixed>, expiresAt: string} */
     public function vote(?string $token, string $consultationId, string $participantId, string $optionId, mixed $selected): array
     {

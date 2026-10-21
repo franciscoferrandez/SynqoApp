@@ -51,6 +51,8 @@ export interface Consultation {
   state: ConsultationState;
   createdAt: string;
   createdBy: Participant;
+  lastModifiedBy?: Participant | null;
+  lastModifiedAt?: string | null;
   options: ConsultationOption[];
   event?: TeamEventSummary;
   resolution?: {
@@ -66,6 +68,16 @@ export interface ConsultationGroups {
   open: Consultation[];
   resolved: Consultation[];
   rejected: Consultation[];
+}
+export interface ConsultationEdit {
+  participantId: string;
+  title?: string;
+  optionChanges: {
+    add: { id: string; text: string }[];
+    update: { id: string; text: string }[];
+    remove: string[];
+  };
+  confirmedRemovalOptionIds: string[];
 }
 export interface Participant {
   id: string;
@@ -160,6 +172,15 @@ export class TeamApi {
   }
   consultation(id: string): Observable<ConsultationDetail> {
     return this.http.get<ConsultationDetail>(`/api/teams/current/consultations/${id}`);
+  }
+  editConsultation(
+    id: string,
+    changes: ConsultationEdit,
+  ): Observable<{ consultation: ConsultationDetail; expiresAt: string }> {
+    return this.http.patch<{ consultation: ConsultationDetail; expiresAt: string }>(
+      `/api/teams/current/consultations/${id}`,
+      changes,
+    );
   }
   vote(
     consultationId: string,

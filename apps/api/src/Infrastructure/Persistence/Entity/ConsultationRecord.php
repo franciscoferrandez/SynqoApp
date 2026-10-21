@@ -15,8 +15,16 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'IDX_964685A671F7E88B', columns: ['event_id'])]
 #[ORM\UniqueConstraint(name: 'consultation_open_event_unique', columns: ['open_event_id'])]
 #[ORM\Index(name: 'consultation_team_created_idx', columns: ['team_id', 'created_at'])]
+#[ORM\Index(name: 'consultation_last_modified_by_idx', columns: ['last_modified_by_participant_id'])]
 class ConsultationRecord
 {
+    #[ORM\ManyToOne(targetEntity: ParticipantRecord::class)]
+    #[ORM\JoinColumn(name: 'last_modified_by_participant_id', referencedColumnName: 'id', nullable: true, onDelete: 'CASCADE')]
+    private ?ParticipantRecord $lastModifiedBy = null;
+
+    #[ORM\Column(name: 'last_modified_at', type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
+    private ?DateTimeImmutable $lastModifiedAt = null;
+
     /** @var Collection<int, ConsultationOptionRecord> */
     #[ORM\OneToMany(mappedBy: 'consultation', targetEntity: ConsultationOptionRecord::class, cascade: ['persist'])]
     #[ORM\OrderBy(['position' => 'ASC'])]
@@ -70,6 +78,18 @@ class ConsultationRecord
     public function addOption(ConsultationOptionRecord $option): void
     {
         $this->options->add($option);
+    }
+
+    public function removeOption(ConsultationOptionRecord $option): void
+    {
+        $this->options->removeElement($option);
+    }
+
+    public function recordEdit(string $title, ParticipantRecord $participant, DateTimeImmutable $at): void
+    {
+        $this->title = $title;
+        $this->lastModifiedBy = $participant;
+        $this->lastModifiedAt = $at;
     }
 
     public function team(): TeamRecord
@@ -129,7 +149,7 @@ class ConsultationRecord
     /** @return array<string, mixed> */
     public function toItem(): array
     {
-        $options = array_map(static fn(ConsultationOptionRecord $option): array => $option->toItem(), $this->options->toArray());
+        $options = array_values(array_map(static fn(ConsultationOptionRecord $option): array => $option->toItem(), $this->options->toArray()));
 
         $item = [
             'id' => $this->id,
@@ -138,6 +158,8 @@ class ConsultationRecord
             'state' => $this->state,
             'createdAt' => $this->createdAt->format(DATE_ATOM),
             'createdBy' => $this->createdBy->toListItem(),
+            'lastModifiedBy' => $this->lastModifiedBy?->toListItem(),
+            'lastModifiedAt' => $this->lastModifiedAt?->format(DATE_ATOM),
             'options' => $options,
         ];
         if ($this->event !== null) {

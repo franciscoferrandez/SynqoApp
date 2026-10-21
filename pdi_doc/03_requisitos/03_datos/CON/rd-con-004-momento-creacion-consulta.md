@@ -15,7 +15,7 @@ Permite ordenar las consultas de cada estado desde la más reciente a la más an
 
 ## Integridad
 
-Cada consulta conserva su momento de creación. Los votos y la resolución posteriores no lo modifican ni alteran ese criterio de orden.
+Cada consulta conserva su momento de creación. Los votos, la resolución y la edición posteriores no lo modifican ni alteran ese criterio de orden. La edición se atribuye separadamente según [RD-CON-006 — Autoría y momento de última edición de la consulta](rd-con-006-ultima-edicion-consulta.md).
 
 ## Retención / ciclo de vida
 

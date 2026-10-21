@@ -32,6 +32,11 @@ function summary(item: EventItem) {
   };
 }
 
+async function eventAction(page: import('@playwright/test').Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: 'Acciones del evento' }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
 test('creates, edits, rejects and recovers an event with confirmations', async ({ page }) => {
   let item: EventItem | undefined;
   await page.addInitScript(() =>
@@ -133,7 +138,26 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
   await expect(page.getByRole('heading', { name: 'Ensayo general' })).toBeVisible();
   await expect(page.getByText('Traer partituras.')).toBeVisible();
   await expect(page.getByText('Última modificación')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Editar evento' }).click();
+  const actions = page.getByRole('button', { name: 'Acciones del evento' });
+  await expect(actions).toHaveAttribute('aria-expanded', 'false');
+  const actionsId = await actions.getAttribute('aria-controls');
+  expect(actionsId).toBeTruthy();
+  await actions.focus();
+  await page.keyboard.press('Enter');
+  await expect(actions).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(page.getByRole('group', { name: 'Acciones del evento' })).toHaveAttribute(
+    'id',
+    actionsId!,
+  );
+  await expect(page.getByRole('button', { name: 'Editar evento', exact: true })).toBeEnabled();
+  await page.keyboard.press('Escape');
+  await expect(actions).toHaveAttribute('aria-expanded', 'false');
+  await expect(actions).toBeFocused();
+  await actions.click();
+  await page.getByRole('heading', { name: 'Ensayo general' }).click();
+  await expect(actions).toHaveAttribute('aria-expanded', 'false');
+  await eventAction(page, 'Editar evento');
   const edit = page.getByRole('dialog', { name: 'Edita el evento' });
   await edit.locator('#event-title').fill('Ensayo y repertorio');
   await edit.getByRole('button', { name: 'Cancelar' }).click();
@@ -145,12 +169,13 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
   await expect(page.getByRole('heading', { name: 'Ensayo y repertorio' })).toBeVisible();
   await expect(page.getByText('Última modificación')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Rechazar evento' }).click();
+  await eventAction(page, 'Rechazar evento');
   const reject = page.getByRole('dialog', { name: '¿Rechazar este evento?' });
   await reject.getByRole('button', { name: 'Rechazar evento' }).click();
   await expect(page.locator('.event-detail-card .badge')).toHaveText('Rechazado');
-  await expect(page.getByRole('button', { name: 'Editar evento' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Recuperar evento' }).click();
+  await page.getByRole('button', { name: 'Acciones del evento' }).click();
+  await expect(page.getByRole('button', { name: 'Editar evento', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Recuperar evento', exact: true }).click();
   await page
     .getByRole('dialog', { name: '¿Recuperar este evento?' })
     .getByRole('button', { name: 'Recuperar evento' })
