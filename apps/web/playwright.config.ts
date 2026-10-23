@@ -12,7 +12,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `exec node dev.mjs --host 0.0.0.0 --port ${webPort}`,
+    command: `exec node dev.mjs --host 0.0.0.0 --port ${webPort} --hmr=false --live-reload=false`,
     url: `http://127.0.0.1:${webPort}`,
     reuseExistingServer: !process.env['CI'],
     timeout: 120_000,

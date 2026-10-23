@@ -29,6 +29,8 @@ async function selectIdentity(page: Page, name: string) {
 
 async function showDate(page: Page, date: string) {
   const day = page.locator(`.calendar-day[data-date="${date}"]`);
+  // Month reloads temporarily remove every day; wait before deciding to navigate.
+  await expect(page.locator('.calendar-day').first()).toBeVisible();
   // The following week may cross the month/year boundary. Keep navigation inside the UI.
   if ((await day.count()) === 0) {
     await page.getByRole('button', { name: 'Mes siguiente' }).click();

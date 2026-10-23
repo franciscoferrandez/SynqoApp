@@ -42,7 +42,7 @@ La sesión de Railway CLI está caducada. Se ha solicitado reautenticación a la
 | 2. Protección INI común antes de peticiones y control de build | INI común; guardas de build y smoke CLI/embebido comprueban `session.upload_progress.enabled=0` | PASS |
 | 3. API, worker y perfil de pruebas locales usan runtime corregido, datos conservados | API y worker recreados; perfil E2E ejecutado con imagen corregida; tres runtimes 8.5.12/INI 0, API 198 tests y esquema PASS | PASS |
 | 4. Imagen Railway completa conserva salud, WEB, API y migraciones | Smoke aislado con PostgreSQL, CLI y PHP embebido PASS, sin reset de datos existentes | PASS |
-| 5. Todos los servicios PHP Railway existentes se actualizan, sin activar Cron nuevos | Pendiente de publicación/CI y verificación remota; CLI no autenticada | UNKNOWN |
+| 5. Todos los servicios PHP Railway existentes se actualizan, sin activar Cron nuevos | Tres despliegues SUCCESS del commit corregido; PHP/INI verificadas por SSH y HTTP, build de ambos Cron validado; CI en curso | PARTIAL |
 
 ## Plan y gate de preparación
 
@@ -62,8 +62,24 @@ La sesión de Railway CLI está caducada. Se ha solicitado reautenticación a la
 - `node --test scripts/distribution-notices.test.mjs`: **2 PASS**; `bash -n scripts/smoke-railway-image.sh`, estructura PDI, enlaces de artefactos y `git diff --check` PASS. Licencias upstream de PHP 8.5.12 y FrankenPHP 1.13.3 comparadas: textos íntegros conservados, sin cambios. Actualizados el índice de avisos y la procedencia de la imagen.
 - `pdi:baseline-update` consolida únicamente el mínimo de seguridad y procedimiento de sustitución/verificación en la guía de operación, por la petición expresa y los avisos oficiales; no cambia arquitectura ni reglas de producto.
 
-## Pendiente de ejecución remota y gate de verificación
+## Ejecución remota y gate de verificación
 
-`railway status --json` falla con sesión caducada/Unauthorized. La pregunta enviada a la persona impulsora solicita ejecutar `railway login` y avisar; no requiere exponer tokens en el chat. Hasta recuperar acceso no se puede inventariar ni certificar los servicios HTTP/Cron y su runtime real. La definición compartida garantiza la corrección de la imagen de próximos builds, pero no acredita procesos desplegados.
+El acceso inicial falló por sesión caducada. La persona impulsora confirma la reautenticación y se recupera acceso CLI. La clave SSH habitual necesita una passphrase sin agente disponible; se registra una clave temporal exclusiva para esta comprobación, se verifica el runtime y se revoca y elimina al terminar. No se almacenan secretos en el repositorio ni en la evidencia.
 
-`pdi:change-apply`: implementación local y de imagen completada. `pdi:change-verify`: **BLOCKED para cierre global**, criterio 5 aún UNKNOWN por acceso remoto pendiente. Los cuatro criterios locales están PASS; no se ejecuta `pdi:change-close` ni se archiva este Change hasta acreditar Railway. Sin cambios funcionales, de esquema o snapshots.
+Commit publicado: `6234b54c8f3d6b7409e93e0f37c3eecd5f0a43ec`, con hooks de commit API PASS y pre-push visual **136/136 PASS**, sin actualizar snapshots. Los tres servicios PHP existentes despliegan automáticamente desde `main`. PostgreSQL mantiene el despliegue anterior; no se toca IaC ni se activan servicios nuevos.
+
+| Servicio Railway | Despliegue | Estado y evidencia |
+|---|---|---|
+| `synqo-http` | `514d3cb0-7d57-4f92-ab84-f922a15b9d7a` | SUCCESS del commit `6234b54`; SSH confirma PHP CLI 8.5.12, FrankenPHP 1.13.3/PHP embebido 8.5.12 y `session.upload_progress.enabled=0` en ambos. |
+| `synqo-creation-limits-purge` | `05c8531b-c16a-468f-b19c-ad5d15a2cf29` | SUCCESS del mismo commit; log de build confirma digest corregido y guardas CLI/embebido. Conserva `*/5 * * * *` UTC. |
+| `synqo-demo-reset` | `07dcdf05-fa5e-4958-8539-21dedbace54f` | SUCCESS del mismo commit; log de build confirma digest corregido y guardas CLI/embebido. Conserva `0 * * * *` UTC. |
+
+La API pública `https://synqo-http-preproduction.up.railway.app/api/configuration` pasa de `X-Powered-By: PHP/8.5.11` a `PHP/8.5.12` y responde HTTP 200. `/healthz` HTTP 200. Los Cron se verifican por su nuevo despliegue/imagen y guardas de build; no se fuerza una ejecución de reset para comprobar versión. No cambian horarios ni volúmenes.
+
+`pdi:change-apply`: implementación y despliegue completados. `pdi:change-verify`: pendiente terminar [CI del parche](https://github.com/franciscoferrandez/SynqoApp/actions/runs/40020959966). Los cuatro criterios locales están PASS y el quinto conserva PARTIAL hasta disponer del resultado CI. Sin cambios funcionales, de esquema o snapshots; no cerrar ni archivar antes del gate completo.
+
+## Corrección de inestabilidad de verificación
+
+El primer CI pasa imagen de preproducción, análisis PHP, API completa y regresión visual, pero termina con 171 E2E PASS y dos fallos de sincronización en los tests anteriores. La traza del smoke de accesibilidad muestra una recarga completa del documento durante la comprobación de foco. La del benchmark muestra que consulta el DOM cuando el calendario aún no ha terminado de recargar y avanza indebidamente de mes.
+
+Corrección limitada a infraestructura/fixtures E2E: desactivar HMR y live reload en el servidor arrancado por Playwright y esperar a que haya días visibles antes de decidir navegar de mes en el helper del benchmark. No cambia el servidor habitual de desarrollo, funcionalidades, límites de aceptación ni timeouts. Se repiten los recorridos afectados con API/worker/correo aislados de pruebas; sin resetear datos ni tocar servicios de desarrollo.
