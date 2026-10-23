@@ -12,6 +12,9 @@ const team = {
 };
 
 test.beforeEach(async ({ page }) => {
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
   );
@@ -50,6 +53,9 @@ test('selecting and changing identity is local and expiry uses the browser zone'
 }) => {
   const context = await browser.newContext({ timezoneId: 'Asia/Tokyo' });
   const page = await context.newPage();
+  await page.route('**/api/teams/current/events/calendar**', (route) =>
+    route.fulfill({ json: { events: [] } }),
+  );
   await page.route('**/api/teams/current/availability**', (route) =>
     route.fulfill({ json: { days: [] } }),
   );
