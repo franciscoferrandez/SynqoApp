@@ -113,11 +113,20 @@ test('shows the same event detail inside the mobile dialog', async ({ page }) =>
   await expect(dialog.locator('.state-row.available')).toContainText('Tú');
 });
 
-test('preserves day selection while selecting dates for a consultation', async ({ page }) => {
+test('shows event bells in the date dialog without preselecting the open day', async ({ page }) => {
   await openCalendar(page);
+  const mainCalendar = page.locator('.calendar-panel');
+  const openDay = mainCalendar.locator('.calendar-day[data-date="2026-10-14"]');
+  await openDay.click();
   await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-  const day = page.locator('.calendar-day[data-date="2026-10-14"]');
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  const day = editor.locator('.calendar-day[data-date="2026-10-14"]');
+  await expect(day.locator('.date-event-bell')).toHaveCount(1);
+  await expect(day).toHaveAttribute('aria-label', /tiene evento/i);
+  await expect(editor.locator('.calendar-day[aria-pressed="true"]')).toHaveCount(0);
+  await expect(openDay).toHaveAttribute('aria-pressed', 'true');
   await day.click();
-  await expect(page.locator('.date-selection-list')).toContainText('miércoles, 14 de octubre');
-  await expect(page.locator('.calendar-event-indicator')).toHaveCount(1);
+  await expect(day).toHaveAttribute('aria-pressed', 'true');
+  await expect(day.locator('svg')).toHaveCount(1);
+  await expect(day.locator('.date-event-bell')).toHaveCount(1);
 });

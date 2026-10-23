@@ -72,13 +72,17 @@ export interface ConsultationGroups {
 export interface ConsultationEdit {
   participantId: string;
   title?: string;
+  timeZone?: string;
   optionChanges: {
-    add: { id: string; text: string }[];
+    add: ({ id: string; text: string } | { id: string; date: string })[];
     update: { id: string; text: string }[];
     remove: string[];
   };
   confirmedRemovalOptionIds: string[];
 }
+export type ConsultationRemovalWithVotes = { id: string; count: number } & (
+  { text: string; date?: never } | { date: string; text?: never }
+);
 export interface Participant {
   id: string;
   name: string;

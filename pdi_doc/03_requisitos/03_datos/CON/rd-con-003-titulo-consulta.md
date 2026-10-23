@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Dato / información
 
-Título breve escrito al crear una consulta de fechas o una consulta con opciones de texto, editable en las condiciones de [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md).
+Título breve escrito al crear una consulta de fechas o una consulta con opciones de texto, editable en las condiciones de [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md) y [RF-CON-007 — Editar una consulta de fechas](../../01_funcionales/CON/rf-con-007-editar-consulta-fechas.md), según el tipo de consulta.
 
 ## Significado
 
@@ -33,3 +33,4 @@ Decisión expresa de quien impulsa Synqo sobre la identificación de las consult
 
 - [RF-CON-001 — Crear una consulta de fechas](../../01_funcionales/CON/rf-con-001-crear-consulta.md)
 - [RF-CON-005 — Crear una consulta con opciones de texto](../../01_funcionales/CON/rf-con-005-crear-consulta-texto.md)
+- [RF-CON-007 — Editar una consulta de fechas](../../01_funcionales/CON/rf-con-007-editar-consulta-fechas.md)

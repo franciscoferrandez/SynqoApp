@@ -209,6 +209,10 @@ for (const viewport of viewports) {
         .getByRole('button', { name: /Crear consulta/ });
       await keyboardFocus(create);
       await page.keyboard.press('Enter');
+      await page
+        .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+        .getByRole('button', { name: 'Texto' })
+        .click();
       const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
       await expect(editor.getByRole('textbox', { name: 'Título breve' })).toBeFocused();
       await reachable(editor.getByRole('textbox', { name: 'Texto de la opción 1', exact: true }));
@@ -352,6 +356,10 @@ for (const viewport of viewports) {
         .getByRole('button', { name: /Crear consulta/ });
       await keyboardFocus(create);
       await page.keyboard.press('Enter');
+      await page
+        .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+        .getByRole('button', { name: 'Texto' })
+        .click();
       const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
       await reachable(editor.getByRole('textbox', { name: 'Título breve' }));
       await reachable(editor.getByRole('textbox', { name: 'Texto de la opción 1', exact: true }));

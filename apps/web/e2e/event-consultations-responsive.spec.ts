@@ -243,9 +243,13 @@ for (const viewport of viewports) {
 
         await page.goto('/e/calendario#t=evt-responsive-token');
         expect(await page.locator('html').getAttribute('data-theme')).toBe(theme);
-        await page.getByRole('button', { name: 'Crear consulta de fechas' }).focus();
+        const trigger = page.getByRole('button', { name: 'Crear consulta de fechas' });
+        await trigger.focus();
         await page.keyboard.press('Enter');
-        const createSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
+        const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+        await expect(editor).toBeVisible();
+        await expect(editor.getByRole('textbox', { name: 'Título breve' })).toBeFocused();
+        const createSwitch = editor.getByRole('switch', { name: 'Crear evento provisional' });
         await expect(createSwitch).not.toBeChecked();
         await assertReachable(page, 'switch', 'Crear evento provisional');
         await createSwitch.focus();

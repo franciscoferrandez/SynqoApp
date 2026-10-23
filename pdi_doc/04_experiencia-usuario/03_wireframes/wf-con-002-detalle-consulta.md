@@ -35,7 +35,7 @@ Consulta de fechas o de opciones de texto abierta dentro de un equipo vigente, b
 
 ## Acciones
 
-En consultas de texto abiertas, el menú incluye «Editar consulta», según [WF-CON-007 — Editar una consulta con opciones de texto](wf-con-007-editar-consulta-texto.md). La última edición, cuando exista, se muestra con participante y momento; los votos siguen disponibles fuera del menú. Las consultas cerradas o de fechas no ofrecen esta acción de edición.
+En consultas abiertas, el menú incluye «Editar consulta»: para texto sigue [WF-CON-007 — Editar una consulta con opciones de texto](wf-con-007-editar-consulta-texto.md); para fechas sigue [WF-CON-008 — Crear y editar consultas de fechas en un diálogo](wf-con-008-calendario-dialogo-consultas-fechas.md). La última edición, cuando exista, se muestra con participante y momento; los votos siguen disponibles fuera del menú. Las consultas cerradas no ofrecen esta acción de edición.
 
 El menú hamburguesa «Acciones de la consulta» se sitúa arriba a la derecha del encabezado. Ofrece «Resolver consulta» mientras está abierta. En consultas de fechas incluye «Elegir evento» sin vínculo, o «Cambiar evento» y «Quitar vínculo» con vínculo. Las consultas cerradas no ofrecen acciones de modificación. Los enlaces a eventos y los votos siguen visibles fuera del menú. Escape o clic exterior cierran el menú; cancelar diálogos devuelve el foco al disparador. Al completar la resolución, el menú desaparece y el foco vuelve a «Volver a Consultas».
 

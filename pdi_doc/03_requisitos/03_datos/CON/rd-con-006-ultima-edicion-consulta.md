@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Dato / información
 
-Identidad de participante y momento de la última edición efectiva del título o las opciones de una consulta de texto.
+Identidad de participante y momento de la última edición efectiva del título o las opciones de una consulta de texto o de fechas.
 
 ## Significado
 
@@ -31,6 +31,9 @@ Visible en la ficha para quienes tienen acceso al equipo.
 
 Respuesta expresa de la persona impulsora del 2026-10-20: mostrar quién hizo la última edición y cuándo, conservando la autoría de creación, siguiendo el patrón de eventos.
 
+Ampliación expresa del 2026-10-21: aplicar las mismas reglas de edición a consultas de fechas.
+
 ## Relaciones
 
 - [RF-CON-006 — Editar una consulta con opciones de texto](../../01_funcionales/CON/rf-con-006-editar-consulta-texto.md).
+- [RF-CON-007 — Editar una consulta de fechas](../../01_funcionales/CON/rf-con-007-editar-consulta-fechas.md).

@@ -581,9 +581,10 @@ test('un voto nuevo en una opción marcada para retirar solicita confirmación a
   });
 });
 
-test('editar consulta no aparece para consultas cerradas ni de fechas', async ({ page }) => {
+test('editar consulta no aparece para consultas cerradas', async ({ page }) => {
   const cases = [
     baseConsultation({
+      title: 'Consulta resuelta',
       state: 'resolved',
       lastModifiedBy: team.participants[0],
       lastModifiedAt: '2026-10-20T13:00:00+00:00',
@@ -594,6 +595,7 @@ test('editar consulta no aparece para consultas cerradas ni de fechas', async ({
       },
     }),
     baseConsultation({
+      title: 'Consulta rechazada',
       state: 'rejected',
       resolution: {
         participant: team.participants[0],
@@ -601,16 +603,15 @@ test('editar consulta no aparece para consultas cerradas ni de fechas', async ({
         acceptedOptionIds: [],
       },
     }),
-    baseConsultation({
-      type: 'date',
-      options: [{ id: 'date-option', date: '2026-10-22', position: 0, count: 0, voters: [] }],
-    }),
   ];
   for (const consultation of cases) {
+    await page.goto('about:blank');
     await installFixture(page, consultation);
     await page.goto('/e/consultas/editing-consultation#t=editing-token');
     await expect(page.getByRole('heading', { name: consultation.title })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Acciones de la consulta' })).toHaveCount(0);
+    const actions = page.getByRole('button', { name: 'Acciones de la consulta' });
+    if (await actions.count()) await actions.click();
+    await expect(page.getByRole('button', { name: 'Editar consulta', exact: true })).toHaveCount(0);
     if (consultation.state === 'resolved') {
       await expect(page.getByText('Última edición: Ana')).toBeVisible();
     }

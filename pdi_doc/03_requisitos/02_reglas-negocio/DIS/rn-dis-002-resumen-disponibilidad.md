@@ -19,7 +19,11 @@ La elección cambia solo el resultado agregado que ve esa persona; no modifica l
 
 ## Justificación
 
-El calendario permite consultar la misma distribución de marcas con distintos criterios de resumen, sin ocultar los recuentos que producen cada resultado. La regla histórica de peor disponibilidad se conserva como valor inicial.
+El calendario principal permite consultar la misma distribución de marcas con distintos criterios de resumen, sin ocultar los recuentos que producen cada resultado. La regla histórica de peor disponibilidad se conserva como valor inicial.
+
+## Excepción de presentación en consultas
+
+Por decisión expresa del 2026-10-21, los calendarios de los diálogos para crear o editar consultas de fechas muestran solo el color y el resultado de la regla recordada, sin votos, recuentos ni contadores de ningún tipo. El cálculo y las marcas no cambian; el calendario principal conserva sus recuentos y preferencias. El alcance de esa vista se define en [RF-CON-001 — Crear una consulta de fechas](../../01_funcionales/CON/rf-con-001-crear-consulta.md) y [RF-CON-007 — Editar una consulta de fechas](../../01_funcionales/CON/rf-con-007-editar-consulta-fechas.md).
 
 ## Casos de referencia
 

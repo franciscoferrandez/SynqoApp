@@ -20,70 +20,19 @@ import {
 } from '../shared/team-api';
 import { summarizeAvailability } from '../shared/availability-summary';
 import { TeamLayout } from './team-layout';
+import { ConsultationDateEditor } from './consultation-date-editor';
 
-export function civilDate(date: Date): string {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-}
-export function visibleDates(year: number, month: number, extended: boolean): string[] {
-  const first = new Date(Date.UTC(year, month, 1));
-  const last = new Date(Date.UTC(year, month + 1, 0));
-  if (extended) {
-    first.setUTCDate(first.getUTCDate() - ((first.getUTCDay() + 6) % 7));
-    last.setUTCDate(last.getUTCDate() + ((7 - last.getUTCDay()) % 7));
-  }
-  const dates: string[] = [];
-  for (const date = new Date(first); date <= last; date.setUTCDate(date.getUTCDate() + 1))
-    dates.push(civilDate(date));
-  return dates;
-}
-
-const calendarPreferenceKey = 'synqo:calendar-view:v2';
-const previousCalendarPreferenceKey = 'synqo:calendar-view:v1';
-export interface CalendarPreferences {
-  extended: boolean;
-  overlay: boolean;
-  counts: boolean;
-  rule: AvailabilitySummaryRule;
-}
-const defaultCalendarPreferences: CalendarPreferences = {
-  extended: false,
-  overlay: false,
-  counts: false,
-  rule: 'worst',
-};
-
-export function parseCalendarPreferences(value: string | null): CalendarPreferences {
-  if (!value) return { ...defaultCalendarPreferences };
-  try {
-    const parsed: unknown = JSON.parse(value);
-    if (
-      parsed !== null &&
-      typeof parsed === 'object' &&
-      'extended' in parsed &&
-      typeof parsed.extended === 'boolean' &&
-      'overlay' in parsed &&
-      typeof parsed.overlay === 'boolean' &&
-      'counts' in parsed &&
-      typeof parsed.counts === 'boolean'
-    )
-      return {
-        extended: parsed.extended,
-        overlay: parsed.overlay,
-        counts: parsed.counts,
-        rule:
-          'rule' in parsed &&
-          (parsed.rule === 'worst' || parsed.rule === 'median' || parsed.rule === 'mostFrequent')
-            ? parsed.rule
-            : 'worst',
-      };
-  } catch {
-    // Una preferencia antigua o dañada no debe impedir abrir el calendario.
-  }
-  return { ...defaultCalendarPreferences };
-}
+import {
+  civilDate,
+  visibleDates,
+  calendarPreferenceKey,
+  previousCalendarPreferenceKey,
+  parseCalendarPreferences,
+} from '../shared/calendar-view';
+export { civilDate, visibleDates, parseCalendarPreferences } from '../shared/calendar-view';
 
 @Component({
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, ConsultationDateEditor],
   template: `
     <section aria-labelledby="section-title">
       <div class="section-heading">
@@ -167,7 +116,9 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
                     aria-label="Crear consulta de fechas"
                     title="Crear consulta de fechas"
                     [disabled]="!canStartDateConsultation"
-                    [attr.aria-pressed]="creatingDateConsultation"
+                    #createDateButton
+                    aria-haspopup="dialog"
+                    [attr.aria-expanded]="showDateEditor"
                     (click)="startDateConsultation()"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -282,18 +233,10 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
                 [class.available]="displayState(date) === 'available'"
                 [class.maybe]="displayState(date) === 'maybe'"
                 [class.unavailable]="displayState(date) === 'unavailable'"
-                [class.date-option-selected]="selectedDates.includes(date)"
                 [class.past]="date < today"
                 [class.today]="date === today"
                 [attr.aria-label]="dayLabel(date)"
-                [attr.aria-pressed]="
-                  creatingDateConsultation ? selectedDates.includes(date) : selected === date
-                "
-                [disabled]="
-                  creatingDateConsultation &&
-                  !selectedDates.includes(date) &&
-                  (date < today || selectedDates.length >= maxDateOptions)
-                "
+                [attr.aria-pressed]="selected === date"
                 [attr.data-date]="date"
                 (click)="select(date, $event)"
               >
@@ -365,102 +308,8 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
           </ng-template>
           <p class="calendar-legend">✓ Disponible · ? Quizá · × No disponible · · Sin marcas</p>
         </div>
-        <aside
-          class="panel calendar-detail"
-          [class.calendar-detail-composer]="creatingDateConsultation"
-          [attr.aria-labelledby]="creatingDateConsultation ? 'date-composer-heading' : null"
-          aria-label="Detalle del día"
-        >
-          @if (creatingDateConsultation) {
-            <form class="date-composer" (submit)="beginDateCreateConfirmation($event)">
-              <div class="detail-heading">
-                <div>
-                  <p class="eyebrow">Nueva consulta</p>
-                  <h3 id="date-composer-heading">Proponer fechas</h3>
-                </div>
-                <button
-                  class="dialog-close"
-                  type="button"
-                  aria-label="Cancelar consulta"
-                  (click)="cancelDateConsultation()"
-                >
-                  ×
-                </button>
-              </div>
-              <label class="text-query-field" for="date-consultation-title">Título breve</label>
-              <input
-                #dateTitleInput
-                id="date-consultation-title"
-                class="text-query-input"
-                type="text"
-                maxlength="250"
-                autocomplete="off"
-                placeholder="Por ejemplo, ¿qué día nos va bien?"
-                [value]="dateTitle"
-                [attr.aria-invalid]="dateTitleTouched && !dateTitle.trim() ? true : null"
-                aria-describedby="date-selection-help"
-                (input)="dateTitle = $any($event.target).value; dateServerError = ''"
-                (blur)="dateTitleTouched = true"
-              />
-              <p id="date-selection-help" class="text-query-help">
-                Elige entre una y diez fechas desde hoy. Puedes cambiar de mes; las fechas elegidas
-                se conservan.
-              </p>
-              <label
-                class="text-query-field event-create-switch"
-                for="date-consultation-create-event"
-              >
-                <input
-                  id="date-consultation-create-event"
-                  type="checkbox"
-                  role="switch"
-                  [checked]="dateCreateEvent"
-                  (change)="dateCreateEvent = $any($event.target).checked"
-                />
-                Crear evento provisional
-              </label>
-              <p class="date-selection-count">
-                {{ selectedDates.length }} de {{ maxDateOptions }} fechas
-              </p>
-              @if (selectedDates.length) {
-                <ol class="date-selection-list" aria-label="Fechas elegidas, en orden cronológico">
-                  @for (date of selectedDates; track date) {
-                    <li [attr.data-date]="date">
-                      <span>{{ label(date) }}</span
-                      ><button
-                        class="remove-option"
-                        type="button"
-                        [attr.aria-label]="'Quitar ' + label(date)"
-                        (click)="toggleDate(date)"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  }
-                </ol>
-              } @else {
-                <p class="calendar-note">Pulsa los días del calendario para añadir fechas.</p>
-              }
-              @if (dateServerError) {
-                <p class="text-query-error" role="alert">{{ dateServerError }}</p>
-              }
-              <div class="text-query-actions">
-                <button class="outline" type="button" (click)="cancelDateConsultation()">
-                  Cancelar
-                </button>
-                <button
-                  class="primary"
-                  type="button"
-                  [disabled]="!canCreateDateConsultation"
-                  (click)="beginDateCreateConfirmation()"
-                >
-                  Crear consulta
-                </button>
-              </div>
-            </form>
-          } @else {
-            <ng-container *ngTemplateOutlet="detail" />
-          }
+        <aside class="panel calendar-detail" aria-label="Detalle del día">
+          <ng-container *ngTemplateOutlet="detail" />
         </aside>
       </div>
       <dialog
@@ -471,58 +320,21 @@ export function parseCalendarPreferences(value: string | null): CalendarPreferen
       >
         <ng-container *ngTemplateOutlet="detail; context: { mobile: true }" />
       </dialog>
-      @if (showDateConfirmation) {
-        <dialog
-          #dateConfirmationDialog
-          class="consultation-dialog consultation-confirmation"
-          aria-labelledby="date-confirmation-heading"
-          (cancel)="returnToDateComposer($event)"
-        >
-          <p class="eyebrow">Confirmación</p>
-          <h2 id="date-confirmation-heading">
-            {{
-              dateConfirmationKind === 'create'
-                ? '¿Crear esta consulta?'
-                : '¿Abandonar la consulta?'
-            }}
-          </h2>
-          <p>
-            {{
-              dateConfirmationKind === 'create'
-                ? '«' +
-                  dateTitle.trim() +
-                  '» tendrá ' +
-                  selectedDates.length +
-                  ' fechas propuestas.'
-                : 'Se descartarán el título y las fechas que has elegido. ¿Quieres continuar?'
-            }}
-          </p>
-          <div class="text-query-actions">
-            <button
-              #dateConfirmationBack
-              class="outline"
-              type="button"
-              [attr.autofocus]="''"
-              [disabled]="submittingDate"
-              (click)="returnToDateComposer()"
-            >
-              {{ dateConfirmationKind === 'cancel' ? 'Seguir editando' : 'Volver' }}
-            </button>
-            <button
-              class="primary"
-              [class.danger]="dateConfirmationKind === 'cancel'"
-              type="button"
-              [disabled]="submittingDate"
-              (click)="acceptDateConfirmation()"
-            >
-              @if (submittingDate) {
-                Creando…
-              } @else {
-                {{ dateConfirmationKind === 'cancel' ? 'Abandonar edición' : 'Confirmar creación' }}
-              }
-            </button>
-          </div>
-        </dialog>
+      @defer (when showDateEditor) {
+        @if (showDateEditor) {
+          <app-consultation-date-editor
+            [initialMonth]="month"
+            (created)="dateCreated($event)"
+            (closed)="closeDateEditor()"
+          />
+        }
+      } @loading {
+        <p role="status">Cargando formulario de fechas…</p>
+      } @error {
+        <p role="alert">
+          No se pudo cargar el formulario de fechas. Recarga la página para reintentar.
+        </p>
+        <button class="outline" type="button" (click)="reloadPage()">Recargar página</button>
       }
       <ng-template #detail let-mobile="mobile">
         <div class="detail-heading">
@@ -623,11 +435,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   private readonly changeDetector = inject(ChangeDetectorRef);
   @ViewChild('dayDialog') dialog?: ElementRef<HTMLDialogElement>;
   @ViewChild('menuButton') private menuButton?: ElementRef<HTMLButtonElement>;
-  @ViewChild('dateTitleInput') private dateTitleInput?: ElementRef<HTMLInputElement>;
-  @ViewChild('dateConfirmationDialog')
-  set dateConfirmationDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
-    if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
-  }
+  @ViewChild('createDateButton') private createDateButton?: ElementRef<HTMLButtonElement>;
   private focusReturn?: HTMLElement;
   private reading?: Subscription;
   private writing?: Subscription;
@@ -652,16 +460,7 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   events: Record<string, CalendarEvent[]> = {};
   month = this.today.slice(0, 7);
   selected = this.today;
-  readonly maxDateOptions = 10;
-  creatingDateConsultation = false;
-  selectedDates: string[] = [];
-  dateTitle = '';
-  dateTitleTouched = false;
-  dateCreateEvent = false;
-  dateServerError = '';
-  submittingDate = false;
-  showDateConfirmation = false;
-  dateConfirmationKind: 'create' | 'cancel' = 'create';
+  showDateEditor = false;
   constructor() {
     let stored: string | null = null;
     try {
@@ -700,19 +499,12 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   }
   get canStartDateConsultation(): boolean {
     return (
+      !this.showDateEditor &&
       !!this.team.participantId &&
       !!this.team.team &&
       !this.loading &&
       !this.loadFailed &&
       new Date(this.team.team.expiresAt).getTime() > Date.now()
-    );
-  }
-  get canCreateDateConsultation(): boolean {
-    return (
-      this.dateTitle.trim().length > 0 &&
-      this.selectedDates.length > 0 &&
-      this.selectedDates.length <= this.maxDateOptions &&
-      !this.submittingDate
     );
   }
   get today(): string {
@@ -867,10 +659,6 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
     this.load();
   }
   select(date: string, event: Event): void {
-    if (this.creatingDateConsultation) {
-      this.toggleDate(date);
-      return;
-    }
     this.selected = date;
     this.focusReturn = event.currentTarget as HTMLElement;
     if (matchMedia('(max-width: 768px)').matches) this.dialog?.nativeElement.showModal();
@@ -1046,114 +834,20 @@ export class AvailabilityCalendar implements OnInit, OnDestroy {
   startDateConsultation(): void {
     if (!this.canStartDateConsultation) return;
     this.dialog?.nativeElement.close();
-    this.creatingDateConsultation = true;
-    this.selectedDates = [];
-    this.dateTitle = '';
-    this.dateTitleTouched = false;
-    this.dateCreateEvent = false;
-    this.dateServerError = '';
-    this.changeDetector.detectChanges();
-    setTimeout(() => document.querySelector<HTMLInputElement>('#date-consultation-title')?.focus());
+    this.showDateEditor = true;
   }
-  toggleDate(date: string): void {
-    if (!this.creatingDateConsultation) return;
-    const selection = new Set(this.selectedDates);
-    if (selection.has(date)) selection.delete(date);
-    else if (date >= this.today && selection.size < this.maxDateOptions) selection.add(date);
-    this.selectedDates = [...selection].sort();
-    this.dateServerError = '';
+  closeDateEditor(): void {
+    this.showDateEditor = false;
     this.changeDetector.markForCheck();
+    setTimeout(() => this.createDateButton?.nativeElement.focus());
   }
-  beginDateCreateConfirmation(event?: Event): void {
-    event?.preventDefault();
-    this.dateTitleTouched = true;
-    if (!this.canCreateDateConsultation) return;
-    this.dateConfirmationKind = 'create';
-    this.showDateConfirmation = true;
-    this.openDateConfirmation();
+  dateCreated(result: { expiresAt: string }): void {
+    this.team.updateExpiry(result.expiresAt);
+    this.showDateEditor = false;
+    void this.router.navigate(['/e/consultas'], { preserveFragment: true });
   }
-  cancelDateConsultation(): void {
-    if (!this.creatingDateConsultation) return;
-    if (!this.dateTitle.trim() && this.selectedDates.length === 0) {
-      this.discardDateDraft();
-      return;
-    }
-    this.dateConfirmationKind = 'cancel';
-    this.showDateConfirmation = true;
-    this.openDateConfirmation();
-  }
-  returnToDateComposer(event?: Event): void {
-    event?.preventDefault();
-    this.showDateConfirmation = false;
-    this.changeDetector.markForCheck();
-    setTimeout(() => this.dateTitleInput?.nativeElement.focus());
-  }
-  acceptDateConfirmation(): void {
-    if (this.submittingDate) return;
-    if (this.dateConfirmationKind === 'cancel') {
-      this.showDateConfirmation = false;
-      this.discardDateDraft();
-      return;
-    }
-    const participantId = this.team.participantId;
-    if (!participantId) {
-      this.showDateConfirmation = false;
-      this.dateServerError = 'Elige una identidad del equipo para crear la consulta.';
-      return;
-    }
-    this.submittingDate = true;
-    this.dateServerError = '';
-    this.api
-      .createDateConsultation(
-        participantId,
-        this.dateTitle.trim(),
-        this.selectedDates,
-        this.effectiveTimeZone,
-        this.dateCreateEvent,
-      )
-      .subscribe({
-        next: ({ expiresAt }) => {
-          this.team.updateExpiry(expiresAt);
-          this.showDateConfirmation = false;
-          this.discardDateDraft();
-          void this.router.navigate(['/e/consultas'], { preserveFragment: true });
-        },
-        error: (error: HttpErrorResponse) => {
-          this.submittingDate = false;
-          this.showDateConfirmation = false;
-          const violations = error.error?.violations as { propertyPath?: string }[] | undefined;
-          if (
-            error.status === 422 &&
-            violations?.some((item) => item.propertyPath?.startsWith('options.'))
-          ) {
-            this.dateServerError =
-              'Alguna fecha ya no es admisible. Revisa las fechas elegidas e inténtalo de nuevo.';
-          } else {
-            this.dateServerError =
-              'No se pudo crear la consulta. El borrador se ha conservado; puedes volver a intentarlo.';
-          }
-          this.team.handleAccessError(error);
-          this.changeDetector.markForCheck();
-        },
-      });
-  }
-  private discardDateDraft(): void {
-    this.creatingDateConsultation = false;
-    this.selectedDates = [];
-    this.dateTitle = '';
-    this.dateTitleTouched = false;
-    this.dateCreateEvent = false;
-    this.dateServerError = '';
-    this.submittingDate = false;
-    this.selected = this.today;
-    this.changeDetector.markForCheck();
-  }
-  private openDateConfirmation(): void {
-    this.changeDetector.detectChanges();
-    const dialog = document
-      .querySelector<HTMLDialogElement>('#date-confirmation-heading')
-      ?.closest('dialog');
-    if (dialog && !dialog.open) dialog.showModal();
+  reloadPage(): void {
+    this.document.defaultView?.location.reload();
   }
   label(date: string): string {
     return new Intl.DateTimeFormat('es', { dateStyle: 'full', timeZone: 'UTC' }).format(

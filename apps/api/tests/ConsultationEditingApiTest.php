@@ -229,7 +229,7 @@ final class ConsultationEditingApiTest extends WebTestCase
             'participantId' => $team['participantId'], 'optionChanges' => ['add' => [['id' => Uuid::v7()->toRfc4122(), 'text' => 'Undécima']]],
         ], $server);
         self::assertResponseStatusCodeSame(422);
-        $this->patch($dateConsultation['id'], ['participantId' => $team['participantId'], 'title' => 'Fecha'], $server);
+        $this->patch($dateConsultation['id'], ['participantId' => $team['participantId'], 'optionChanges' => ['update' => [['id' => $dateConsultation['options'][0]['id'], 'text' => 'Fecha']]]], $server);
         self::assertResponseStatusCodeSame(422);
         $this->resolve($consultation, $team, $server);
         $this->patch($consultation['id'], ['participantId' => $team['participantId'], 'title' => 'Cerrada'], $server);

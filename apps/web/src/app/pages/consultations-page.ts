@@ -13,11 +13,12 @@ import { Subscription } from 'rxjs';
 import { Consultation, ConsultationGroups, TeamApi } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
 import { ConsultationDetailPage } from './consultation-detail';
+import { ConsultationDateEditor } from './consultation-date-editor';
 
 type ConfirmationKind = 'create' | 'cancel';
 
 @Component({
-  imports: [ConsultationDetailPage],
+  imports: [ConsultationDetailPage, ConsultationDateEditor],
   template: `
     <section [attr.aria-labelledby]="selectedConsultationId ? null : 'section-title'">
       @if (!selectedConsultationId) {
@@ -26,7 +27,7 @@ type ConfirmationKind = 'create' | 'cancel';
             <h2 id="section-title">Consultas</h2>
             <p>Vota o revisa las decisiones de este equipo.</p>
           </div>
-          <button #headerCreateButton class="primary" type="button" (click)="openEditor()">
+          <button #headerCreateButton class="primary" type="button" (click)="chooseType()">
             + Crear consulta
           </button>
         </div>
@@ -54,7 +55,7 @@ type ConfirmationKind = 'create' | 'cancel';
             <span class="empty-symbol" aria-hidden="true">?</span>
             <h3>Aún no hay consultas</h3>
             <p>Crea una consulta para empezar a decidir en equipo.</p>
-            <button class="primary" type="button" (click)="openEditor()">+ Crear consulta</button>
+            <button class="primary" type="button" (click)="chooseType()">+ Crear consulta</button>
           </div>
         } @else {
           @for (state of states; track state.key) {
@@ -91,6 +92,46 @@ type ConfirmationKind = 'create' | 'cancel';
         }
       }
       <p class="sr-only" role="status" aria-live="polite">{{ message }}</p>
+
+      @if (showTypeChoice) {
+        <dialog
+          #typeDialog
+          class="consultation-dialog consultation-confirmation"
+          aria-labelledby="consultation-type-heading"
+          (cancel)="closeTypeChoice($event)"
+        >
+          <div class="dialog-head">
+            <h2 id="consultation-type-heading">¿Qué quieres consultar?</h2>
+            <button
+              class="dialog-close"
+              type="button"
+              aria-label="Cancelar creación"
+              (click)="closeTypeChoice()"
+            >
+              ×
+            </button>
+          </div>
+          <div class="text-query-actions">
+            <button class="outline" type="button" (click)="openDateEditor()">Fechas</button>
+            <button class="outline" type="button" (click)="openEditor()">Texto</button>
+          </div>
+        </dialog>
+      }
+      @defer (when showDateEditor) {
+        @if (showDateEditor) {
+          <app-consultation-date-editor
+            (created)="dateCreated($event)"
+            (closed)="closeDateEditor()"
+          />
+        }
+      } @loading {
+        <p role="status">Cargando formulario de fechas…</p>
+      } @error {
+        <p role="alert">
+          No se pudo cargar el formulario de fechas. Recarga la página para reintentar.
+        </p>
+        <button class="outline" type="button" (click)="reloadPage()">Recargar página</button>
+      }
 
       @if (showEditor) {
         <dialog
@@ -272,6 +313,14 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   @ViewChild('headerCreateButton') private headerCreateButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('titleInput') private titleInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('typeDialog') set typeDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
+    if (ref && !ref.nativeElement.open) {
+      ref.nativeElement.showModal();
+      setTimeout(() =>
+        ref.nativeElement.querySelector<HTMLButtonElement>('.text-query-actions button')?.focus(),
+      );
+    }
+  }
   @ViewChild('editorDialog')
   set editorDialog(ref: ElementRef<HTMLDialogElement> | undefined) {
     if (ref && !ref.nativeElement.open) ref.nativeElement.showModal();
@@ -293,6 +342,8 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   loading = true;
   loadFailed = false;
   showEditor = false;
+  showTypeChoice = false;
+  showDateEditor = false;
   showConfirmation = false;
   confirmationKind: ConfirmationKind = 'create';
   title = '';
@@ -461,6 +512,7 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   }
 
   openEditor(): void {
+    this.showTypeChoice = false;
     this.title = '';
     this.options = [''];
     this.showValidation = false;
@@ -469,6 +521,39 @@ export class ConsultationsPage implements OnInit, OnDestroy {
     this.showEditor = true;
     this.changeDetector.markForCheck();
     setTimeout(() => this.titleInput?.nativeElement.focus());
+  }
+
+  chooseType(): void {
+    this.showTypeChoice = true;
+  }
+
+  reloadPage(): void {
+    location.reload();
+  }
+
+  closeTypeChoice(event?: Event): void {
+    event?.preventDefault();
+    this.showTypeChoice = false;
+    this.focusCreateButton();
+  }
+
+  openDateEditor(): void {
+    this.showTypeChoice = false;
+    this.showDateEditor = true;
+  }
+
+  closeDateEditor(): void {
+    this.showDateEditor = false;
+    this.changeDetector.markForCheck();
+    this.focusCreateButton();
+  }
+
+  dateCreated(result: { consultation: Consultation; expiresAt: string }): void {
+    this.team.updateExpiry(result.expiresAt);
+    this.showDateEditor = false;
+    this.message = 'Consulta creada y añadida a Abiertas.';
+    this.load();
+    this.focusCreateButton();
   }
 
   optionId(index: number): string {

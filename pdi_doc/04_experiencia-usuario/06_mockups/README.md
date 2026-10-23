@@ -47,6 +47,7 @@ Mockups
 
 [Abrir el índice navegable de vistas y estados parametrizados](index.html).
 
+- [MOCKUP-CON-001 — Calendario en consultas de fechas](mockup-con-001-calendario-consultas-fechas.md): propuesta interactiva de creación y edición desde Consultas, pendiente de revisión antes de implementar.
 - [MOCKUP-COO-001 — Calendario y consultas del equipo en claro y oscuro](mockup-coo-001-calendario-consultas.md): propuesta navegable de las vistas centrales con datos ilustrativos.
 - [MOCKUP-EQU-001 — Arranque directo de un equipo](mockup-equ-001-arranque-equipo.md): propuesta navegable del formulario inicial con primer participante y correo opcional.
 - [MOCKUP-EQU-002 — Acceso a un equipo caducado](mockup-equ-002-equipo-caducado.md): explicación sin acceso al contenido del equipo.

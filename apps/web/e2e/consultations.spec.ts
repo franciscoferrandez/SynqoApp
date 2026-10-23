@@ -55,6 +55,10 @@ test('creates a text consultation, confirms the action, and retains it after rel
     .not.toBe('rgba(0, 0, 0, 0)');
   await emptyCreate.focus();
   await emptyCreate.press('Enter');
+  await page
+    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+    .getByRole('button', { name: 'Texto' })
+    .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   await expect(editor).toBeVisible();
   await expect(editor.locator('#consultation-title')).toBeFocused();
@@ -145,6 +149,10 @@ test('cancel confirms only when a draft has text and keeps it when continuing', 
   await expect(createButton).toBeVisible();
   await createButton.focus();
   await createButton.press('Enter');
+  await page
+    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+    .getByRole('button', { name: 'Texto' })
+    .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   const geometry = await editor.evaluate((dialog) => {
     const rect = dialog.getBoundingClientRect();
@@ -164,6 +172,10 @@ test('cancel confirms only when a draft has text and keeps it when continuing', 
   await expect(createButton).toBeVisible();
   await createButton.focus();
   await createButton.press('Enter');
+  await page
+    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+    .getByRole('button', { name: 'Texto' })
+    .click();
   await editor.locator('#consultation-title').fill('Una idea');
   await activate(editor.getByRole('button', { name: 'Cancelar', exact: true }));
   const confirmation = page.getByRole('dialog', { name: '¿Cancelar esta consulta?' });
@@ -195,6 +207,10 @@ test('reports missing title and options and keeps invalid drafts from confirmati
     .getByRole('button', { name: /Crear consulta/ });
   await createButton.focus();
   await createButton.press('Enter');
+  await page
+    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+    .getByRole('button', { name: 'Texto' })
+    .click();
 
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   const title = editor.locator('#consultation-title');
@@ -256,6 +272,10 @@ test('server failure keeps the draft and offers a confirmed retry', async ({ pag
   await expect(createButton).toBeVisible();
   await createButton.focus();
   await createButton.press('Enter');
+  await page
+    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+    .getByRole('button', { name: 'Texto' })
+    .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   await editor.locator('#consultation-title').fill('Pregunta guardada');
   await editor.getByRole('textbox', { name: 'Texto de la opción 1' }).fill('Opción guardada');

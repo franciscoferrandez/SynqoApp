@@ -11,7 +11,7 @@ estado: en_revision
 
 ## Entrada
 
-Vista de calendario de un equipo vigente; acción «Crear consulta de fechas». El calendario es el punto de entrada, pero la creación no exige seleccionar ni revisar un día antes.
+Vista de calendario de un equipo vigente; acción «Crear consulta de fechas». Este flujo conserva la entrada del calendario principal y no exige seleccionar ni revisar un día antes. La entrada adicional desde Consultas se define en [FLUJO-CON-006 — Crear una consulta de fechas desde Consultas](flujo-con-006-crear-consulta-fechas-desde-consultas.md).
 
 ## Precondiciones
 
@@ -19,10 +19,10 @@ El equipo está vigente y hay una identidad de participante seleccionada.
 
 ## Pasos
 
-1. La persona pulsa el icono «Crear consulta de fechas» dentro del calendario. El día que estuviera seleccionado se deselecciona y el detalle del día deja paso al panel de creación, debajo del calendario en móvil.
-2. Escribe un título de hasta 250 caracteres. Pulsa días de hoy en adelante para añadirlos y vuelve a pulsarlos para retirarlos. Puede recorrer varios meses; el panel mantiene la selección ordenada por fecha e indica que admite hasta diez opciones.
+1. La persona pulsa el icono «Crear consulta de fechas» dentro del calendario. Se abre directamente el diálogo de fechas compartido, sin elegir tipo, en el mismo mes visible y sin fechas seleccionadas. El día abierto en el calendario de fondo no se incluye automáticamente.
+2. Escribe un título de hasta 250 caracteres. Pulsa días de hoy en adelante para añadirlos y vuelve a pulsarlos para retirarlos. Puede recorrer varios meses dentro del diálogo sin alterar el mes del calendario de fondo. Las fechas incluidas quedan marcadas sin lista apilada ni contadores; el máximo se comunica como instrucción fija. Se aplican las preferencias guardadas, selección sin tick y campanita de eventos del [WF-CON-008 — Crear y editar consultas de fechas en un diálogo](../03_wireframes/wf-con-008-calendario-dialogo-consultas-fechas.md).
 3. Opcionalmente activa «Crear evento provisional». No elige un evento existente: al confirmar se creará uno sin fecha, con el mismo título de la consulta. Desactivar el switch conserva la creación de una consulta sin evento.
-4. Pulsa «Crear consulta» con al menos una fecha y confirma. La consulta y, si se activó el switch, el evento y su vínculo se guardan juntos; la consulta queda abierta y aparece en «Consultas».
+4. Pulsa «Crear consulta» con al menos una fecha; se guarda directamente sin confirmación general. La consulta y, si se activó el switch, el evento y su vínculo se guardan juntos. Se actualiza la caducidad del equipo y se navega a la lista de Consultas, con la nueva consulta en Abiertas y manteniendo el valor de acceso.
 
 ## Resultado
 
@@ -38,7 +38,7 @@ Existe una consulta abierta del equipo con título y al menos una opción de fec
 
 ## Cancelación
 
-La persona puede cancelar desde el panel. Si el título no tiene texto y no hay fechas, vuelve directamente al calendario. Si hay título o fechas, se abre una confirmación con «Seguir editando» como acción enfocada inicialmente y «Abandonar edición» para descartar. Seguir editando conserva el borrador; abandonar vuelve al calendario sin nueva consulta. No se ha definido persistencia de borradores tras salir de la vista.
+La persona puede cancelar o pulsar Escape en el diálogo. Si el título no tiene texto y no hay fechas, vuelve directamente al calendario. Si hay título o fechas, se abre una confirmación con «Seguir editando» como acción enfocada inicialmente y «Descartar cambios» para abandonar. Seguir editando conserva el borrador; descartar vuelve al calendario de fondo con su mes, día y preferencias intactos y sin nueva consulta. El foco vuelve al botón de creación. No se ha definido persistencia de borradores tras salir de la vista.
 
 ## RF/RN relacionados
 

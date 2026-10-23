@@ -11,7 +11,7 @@ estado: en_revision
 
 ## Entrada
 
-Sección «Consultas» de un equipo vigente; acción «Crear consulta».
+Sección «Consultas» de un equipo vigente; acción «Crear consulta», elección «Texto» antes de abrir el formulario.
 
 ## Precondiciones
 
@@ -19,7 +19,7 @@ El equipo está vigente y hay una identidad de participante seleccionada.
 
 ## Pasos
 
-1. La persona pulsa «Crear consulta» desde «Consultas» y se abre un diálogo.
+1. La persona pulsa «Crear consulta» desde «Consultas» y elige «Texto»; se abre el diálogo de opciones escritas. «Fechas» conduce a [FLUJO-CON-006 — Crear una consulta de fechas desde Consultas](flujo-con-006-crear-consulta-fechas-desde-consultas.md). No se cambia el tipo dentro del borrador.
 2. Escribe un título de hasta 250 caracteres y hasta diez opciones de texto de 50 caracteres cada una. Puede añadir filas, editar el texto en cada una y eliminar opciones; el diálogo indica el máximo de diez opciones.
 3. Pulsa «Crear consulta» y confirma la creación. La consulta aparece abierta y el equipo puede votarla.
 

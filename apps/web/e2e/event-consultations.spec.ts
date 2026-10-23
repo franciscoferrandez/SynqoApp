@@ -99,17 +99,14 @@ test('crea consulta y evento provisional vinculados desde el switch opcional', a
 
   await page.goto('/e/calendario#t=evt-token');
   await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-  await page.locator('#date-consultation-title').fill('¿Cuándo hacemos la excursión?');
-  await page.locator('.calendar-day.today').click();
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await editor.getByRole('textbox', { name: 'Título breve' }).fill('¿Cuándo hacemos la excursión?');
+  await editor.locator('.calendar-day.today').click();
   const createEvent = page.getByRole('switch', { name: 'Crear evento provisional' });
   await expect(createEvent).not.toBeChecked();
   await createEvent.check();
-  const composer = page.locator('.calendar-detail-composer');
-  await composer.getByRole('button', { name: 'Crear consulta', exact: true }).click();
-  await page
-    .getByRole('dialog', { name: '¿Crear esta consulta?' })
-    .getByRole('button', { name: 'Confirmar creación' })
-    .click();
+  await editor.getByRole('button', { name: 'Crear consulta', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '¿Crear esta consulta?' })).toHaveCount(0);
 
   expect(created).toMatchObject({ type: 'date', createEvent: true });
   expect(created).not.toHaveProperty('eventId');

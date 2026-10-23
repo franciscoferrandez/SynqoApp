@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests;
 
 use Doctrine\DBAL\Connection;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -61,15 +62,19 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         self::assertSame(1, $this->voteCount($secondConsultation['id']));
     }
 
-    public function testEditingAndResolvingSerializeInEitherOrder(): void
+    #[DataProvider('consultationTypes')]
+    public function testEditingAndResolvingSerializeInEitherOrder(string $type): void
     {
         $team = $this->createTeam();
-        $consultation = $this->createConsultation($team);
+        $consultation = $this->createConsultation($team, $type);
         $option = $consultation['options'][0];
         $edit = [
             'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
             'body' => ['participantId' => $team['participantId'], 'title' => 'Editada antes de cerrar'],
         ];
+        if ($type === 'date') {
+            $edit['body']['optionChanges'] = ['add' => [['id' => Uuid::v7()->toRfc4122(), 'date' => '2026-10-25']]];
+        }
         $resolve = [
             'method' => 'PUT', 'path' => $this->consultationPath($consultation['id']) . '/resolution', 'token' => $team['token'],
             'body' => ['participantId' => $team['participantId'], 'status' => 'resolved', 'acceptedOptionIds' => [$option['id']]],
@@ -79,8 +84,9 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         self::assertSame([200, 200], array_column($first, 'status'));
         self::assertSame('resolved', $this->consultationState($consultation['id']));
         self::assertSame('Editada antes de cerrar', $this->consultationTitle($consultation['id']));
+        self::assertSame($type === 'date' ? 3 : 2, $this->optionCount($consultation['id']));
 
-        $secondConsultation = $this->createConsultation($team);
+        $secondConsultation = $this->createConsultation($team, $type);
         $secondResolve = [
             'method' => 'PUT', 'path' => $this->consultationPath($secondConsultation['id']) . '/resolution', 'token' => $team['token'],
             'body' => ['participantId' => $team['participantId'], 'status' => 'resolved', 'acceptedOptionIds' => [$secondConsultation['options'][0]['id']]],
@@ -89,6 +95,9 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
             'method' => 'PATCH', 'path' => $this->consultationPath($secondConsultation['id']), 'token' => $team['token'],
             'body' => ['participantId' => $team['participantId'], 'title' => 'No se edita cerrada'],
         ];
+        if ($type === 'date') {
+            $secondEdit['body']['optionChanges'] = ['add' => [['id' => Uuid::v7()->toRfc4122(), 'date' => '2026-10-25']]];
+        }
 
         $second = $this->runConcurrent($team, [$secondResolve, $secondEdit]);
         self::assertSame(200, $second[0]['status']);
@@ -96,12 +105,14 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         self::assertSame('urn:synqo:problem:consultation-closed', json_decode($second[1]['body'], true, flags: JSON_THROW_ON_ERROR)['type']);
         self::assertSame('Pregunta', $this->consultationTitle($secondConsultation['id']));
         self::assertSame('resolved', $this->consultationState($secondConsultation['id']));
+        self::assertSame(2, $this->optionCount($secondConsultation['id']));
     }
 
-    public function testConcurrentEditsToDifferentFieldsPreserveBothChangesInEitherOrder(): void
+    #[DataProvider('consultationTypes')]
+    public function testConcurrentEditsToDifferentFieldsPreserveBothChangesInEitherOrder(string $type): void
     {
         $team = $this->createTeam();
-        $consultation = $this->createConsultation($team);
+        $consultation = $this->createConsultation($team, $type);
         $newOptionId = Uuid::v7()->toRfc4122();
         $titleEdit = [
             'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
@@ -109,15 +120,15 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         ];
         $optionEdit = [
             'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
-            'body' => ['participantId' => $team['participantId'], 'optionChanges' => ['add' => [['id' => $newOptionId, 'text' => 'Nueva concurrente']]]],
+            'body' => ['participantId' => $team['participantId'], 'optionChanges' => ['add' => [['id' => $newOptionId, $type === 'date' ? 'date' : 'text' => $type === 'date' ? '2026-10-25' : 'Nueva concurrente']]]],
         ];
 
         $first = $this->runConcurrent($team, [$titleEdit, $optionEdit]);
         self::assertSame([200, 200], array_column($first, 'status'));
         self::assertSame('Título concurrente', $this->consultationTitle($consultation['id']));
-        self::assertSame('Nueva concurrente', $this->optionText($newOptionId));
+        self::assertSame($type === 'date' ? '2026-10-25' : 'Nueva concurrente', $this->optionValue($newOptionId));
 
-        $otherConsultation = $this->createConsultation($team);
+        $otherConsultation = $this->createConsultation($team, $type);
         $otherOptionId = Uuid::v7()->toRfc4122();
         $otherTitleEdit = [
             'method' => 'PATCH', 'path' => $this->consultationPath($otherConsultation['id']), 'token' => $team['token'],
@@ -125,19 +136,20 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         ];
         $otherOptionEdit = [
             'method' => 'PATCH', 'path' => $this->consultationPath($otherConsultation['id']), 'token' => $team['token'],
-            'body' => ['participantId' => $team['participantId'], 'optionChanges' => ['add' => [['id' => $otherOptionId, 'text' => 'Otra nueva']]]],
+            'body' => ['participantId' => $team['participantId'], 'optionChanges' => ['add' => [['id' => $otherOptionId, $type === 'date' ? 'date' : 'text' => $type === 'date' ? '2026-10-26' : 'Otra nueva']]]],
         ];
 
         $second = $this->runConcurrent($team, [$otherOptionEdit, $otherTitleEdit]);
         self::assertSame([200, 200], array_column($second, 'status'));
         self::assertSame('Otro título', $this->consultationTitle($otherConsultation['id']));
-        self::assertSame('Otra nueva', $this->optionText($otherOptionId));
+        self::assertSame($type === 'date' ? '2026-10-26' : 'Otra nueva', $this->optionValue($otherOptionId));
     }
 
-    public function testRemovingAnOptionAndChangingItsVotesSerializeInEitherOrder(): void
+    #[DataProvider('consultationTypes')]
+    public function testRemovingAnOptionAndChangingItsVotesSerializeInEitherOrder(string $type): void
     {
         $team = $this->createTeam();
-        $consultation = $this->createConsultation($team);
+        $consultation = $this->createConsultation($team, $type);
         $optionId = $consultation['options'][0]['id'];
         $remove = [
             'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
@@ -154,7 +166,7 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         self::assertSame(1, $this->optionCount($consultation['id']));
         self::assertSame(0, $this->voteCount($consultation['id']));
 
-        $secondConsultation = $this->createConsultation($team);
+        $secondConsultation = $this->createConsultation($team, $type);
         $secondOptionId = $secondConsultation['options'][0]['id'];
         $secondRemove = [
             'method' => 'PATCH', 'path' => $this->consultationPath($secondConsultation['id']), 'token' => $team['token'],
@@ -206,6 +218,58 @@ final class ConsultationEditingConcurrencyTest extends WebTestCase
         self::assertSame(200, $renameFirst[1]['status']);
         self::assertSame('Opción A', $this->optionText($secondOptionId));
         self::assertSame(0, $this->voteCount($secondConsultation['id']));
+    }
+
+    public static function consultationTypes(): iterable
+    {
+        yield 'text' => ['text'];
+        yield 'date' => ['date'];
+    }
+
+    public function testAddingANewDateAndVotingOnItSerializeInEitherOrder(): void
+    {
+        $team = $this->createTeam();
+        foreach ([true, false] as $addFirst) {
+            $consultation = $this->createConsultation($team, 'date');
+            $id = Uuid::v7()->toRfc4122();
+            $add = [
+                'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
+                'body' => ['participantId' => $team['participantId'], 'optionChanges' => ['add' => [['id' => $id, 'date' => '2026-10-25']]]],
+            ];
+            $vote = [
+                'method' => 'PUT', 'path' => $this->consultationPath($consultation['id']) . '/votes/' . $team['participantId'] . '/options/' . $id,
+                'token' => $team['token'], 'body' => ['selected' => true],
+            ];
+            $result = $this->runConcurrent($team, $addFirst ? [$add, $vote] : [$vote, $add]);
+            self::assertSame($addFirst ? [200, 200] : [404, 200], array_column($result, 'status'));
+            self::assertSame('2026-10-25', $this->optionValue($id));
+            self::assertSame($addFirst ? 1 : 0, $this->voteCount($consultation['id']));
+        }
+    }
+
+    private function optionValue(string $id): string
+    {
+        return static::getContainer()->get(Connection::class)->fetchOne('SELECT COALESCE(option_text, option_date::text) FROM consultation_option WHERE id = ?', [$id]);
+    }
+
+    public function testConcurrentDateAdditionsValidateTheFreshResultBeforeWritingInEitherOrder(): void
+    {
+        $team = $this->createTeam();
+        foreach ([true, false] as $firstStarts) {
+            $consultation = $this->createConsultation($team, 'date');
+            $first = [
+                'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
+                'body' => ['participantId' => $team['participantId'], 'title' => 'Primera', 'optionChanges' => ['add' => [['id' => Uuid::v7()->toRfc4122(), 'date' => '2026-10-25']]]],
+            ];
+            $second = [
+                'method' => 'PATCH', 'path' => $this->consultationPath($consultation['id']), 'token' => $team['token'],
+                'body' => ['participantId' => $team['participantId'], 'title' => 'Segunda', 'optionChanges' => ['add' => [['id' => Uuid::v7()->toRfc4122(), 'date' => '2026-10-25']]]],
+            ];
+            $outcomes = $this->runConcurrent($team, $firstStarts ? [$first, $second] : [$second, $first]);
+            self::assertSame([200, 422], array_column($outcomes, 'status'));
+            self::assertSame($firstStarts ? 'Primera' : 'Segunda', $this->consultationTitle($consultation['id']));
+            self::assertSame(3, $this->optionCount($consultation['id']));
+        }
     }
 
     private function runConcurrent(array $team, array $requests): array
@@ -311,9 +375,9 @@ PHP;
         return ['id' => $team['id'], 'participantId' => $team['firstParticipant']['id'], 'token' => substr($team['accessUrl'], strpos($team['accessUrl'], '#t=') + 3)];
     }
 
-    private function createConsultation(array $team): array
+    private function createConsultation(array $team, string $type = 'text'): array
     {
-        $this->client->jsonRequest('POST', '/api/teams/current/consultations', ['participantId' => $team['participantId'], 'title' => 'Pregunta', 'options' => ['Opción A', 'Opción B']], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+        $this->client->jsonRequest('POST', '/api/teams/current/consultations', ['participantId' => $team['participantId'], 'title' => 'Pregunta', 'type' => $type, 'timeZone' => 'UTC', 'options' => $type === 'date' ? ['2026-10-22', '2026-10-23'] : ['Opción A', 'Opción B']], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         self::assertResponseStatusCodeSame(201);
         return json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['consultation'];
     }

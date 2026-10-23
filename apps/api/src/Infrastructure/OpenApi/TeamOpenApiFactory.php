@@ -155,11 +155,11 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         ), patch: new Operation(
             operationId: 'editTextConsultation',
             tags: ['Consultations'],
-            summary: 'Edit explicit fields and options of an open text consultation',
+            summary: 'Edit explicit fields and options of an open text or date consultation',
             security: $security,
             parameters: [$consultationId],
             requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->consultationEditRequest())]), required: true),
-            responses: ['200' => $this->response('Current consultation after editing; unchanged retries do not update activity', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->consultationEditProblems(), '422' => $this->problem('Invalid edits, option IDs, type, limits or duplicate texts', withViolations: true)] + $decisionErrors,
+            responses: ['200' => $this->response('Current consultation after editing; unchanged retries do not update activity', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->consultationEditProblems(), '422' => $this->problem('Invalid edits, option IDs, typed values, date/time zone, limits or duplicates', withViolations: true)] + $decisionErrors,
         )));
         $paths->addPath('/api/teams/current/consultations/{consultationId}/event', new PathItem(put: new Operation(
             operationId: 'setConsultationEvent',
@@ -327,18 +327,26 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $entries = $this->schema('array');
         $entries['items'] = $entry;
         $entries['maxItems'] = 10;
+        $dateEntry = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'date' => $this->schema('string', format: 'date')], ['id', 'date']);
+        $dateEntry['additionalProperties'] = false;
+        $additions = clone $entries;
+        $addEntry = new Schema();
+        $addEntry['oneOf'] = [$entry, $dateEntry];
+        $additions['items'] = $addEntry;
         $ids = $this->schema('array');
         $ids['items'] = $this->schema('string', format: 'uuid');
         $ids['uniqueItems'] = true;
         $ids['maxItems'] = 10;
-        $changes = $this->schema('object', ['add' => clone $entries, 'update' => clone $entries, 'remove' => clone $ids]);
+        $changes = $this->schema('object', ['add' => $additions, 'update' => clone $entries, 'remove' => clone $ids]);
         $changes['additionalProperties'] = false;
-        $changes['description'] = 'Omitted lists are empty. IDs cannot overlap between lists. New option UUIDs must remain stable across retries; existing options retain IDs and votes. New options append after existing ones. No implicit removal or version comparison.';
+        $changes['description'] = 'Omitted lists are empty. Persisted consultation type determines add shape: text or date, never mixed. Date consultations require an empty update list: replace a date by removing and adding without transferring votes. IDs cannot overlap between lists. New option UUIDs must remain stable across retries; existing options retain IDs and votes. New options append after existing ones. New dates must be today or later at save time; retained past dates and identical add retries remain valid. No implicit removal or version comparison.';
         $confirmed = clone $ids;
         $confirmed['description'] = 'Subset of remove IDs explicitly confirmed for removal with all of their current votes. Defaults to empty; other voted removals return a confirmation-required conflict without writes.';
         $title = $this->schema('string', maxLength: 250);
         $title['minLength'] = 1;
-        $request = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'title' => $title, 'optionChanges' => $changes, 'confirmedRemovalOptionIds' => $confirmed], ['participantId']);
+        $timeZone = $this->schema('string');
+        $timeZone['description'] = 'Optional valid IANA device time zone for date additions. Defaults to the team time zone when omitted. Today is evaluated under the team lock at save time.';
+        $request = $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'title' => $title, 'optionChanges' => $changes, 'confirmedRemovalOptionIds' => $confirmed, 'timeZone' => $timeZone], ['participantId']);
         $request['additionalProperties'] = false;
         return $request;
     }
@@ -347,7 +355,12 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
     {
         $common = ['title' => $this->schema('string'), 'status' => $this->schema('integer'), 'detail' => $this->schema('string')];
         $voted = $this->schema('array');
-        $voted['items'] = $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50), 'count' => $this->schema('integer')], ['id', 'text', 'count']);
+        $votedEntry = new Schema();
+        $votedEntry['oneOf'] = [
+            $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'text' => $this->schema('string', maxLength: 50), 'count' => $this->schema('integer')], ['id', 'text', 'count']),
+            $this->schema('object', ['id' => $this->schema('string', format: 'uuid'), 'date' => $this->schema('string', format: 'date'), 'count' => $this->schema('integer')], ['id', 'date', 'count']),
+        ];
+        $voted['items'] = $votedEntry;
         $schema = new Schema();
         $schema['oneOf'] = [
             $this->schema('object', ['type' => $this->enumSchema(['urn:synqo:problem:consultation-closed'])] + $common, ['type', 'title', 'status', 'detail']),

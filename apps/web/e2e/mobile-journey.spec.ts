@@ -79,21 +79,26 @@ for (const viewport of matrix) {
         await page.reload();
         await page.getByRole('button', { name: 'Mes siguiente' }).click();
         await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-        await page.locator('#date-consultation-title').fill(dateTitle);
-        for (const date of dates) await page.locator(`.calendar-day[data-date="${date}"]`).click();
+        const dateEditor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+        await dateEditor.getByRole('textbox', { name: 'Título breve' }).fill(dateTitle);
+        for (const date of dates) {
+          const dateButton = dateEditor.locator(`.calendar-day[data-date="${date}"]`);
+          if (!(await dateButton.count())) {
+            await dateEditor.getByRole('button', { name: 'Mes siguiente' }).click();
+          }
+          await dateEditor.locator(`.calendar-day[data-date="${date}"]`).click();
+        }
         await fitsViewport(page);
-        await page
-          .locator('.calendar-detail-composer')
-          .getByRole('button', { name: 'Crear consulta', exact: true })
-          .click();
-        await page
-          .getByRole('dialog', { name: '¿Crear esta consulta?' })
-          .getByRole('button', { name: 'Confirmar creación' })
-          .click();
+        await dateEditor.getByRole('button', { name: 'Crear consulta', exact: true }).click();
+        await expect(page.getByRole('dialog', { name: '¿Crear esta consulta?' })).toHaveCount(0);
         await expect(page.getByRole('button', { name: new RegExp(dateTitle) })).toBeVisible();
         await page
           .locator('.section-heading')
           .getByRole('button', { name: /Crear consulta/ })
+          .click();
+        await page
+          .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+          .getByRole('button', { name: 'Texto' })
           .click();
         const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
         await editor.locator('#consultation-title').fill(textTitle);
@@ -248,6 +253,10 @@ test('keeps team navigation and the consultation editor within an enlarged mobil
   await page
     .locator('.section-heading')
     .getByRole('button', { name: /Crear consulta/ })
+    .click();
+  await page
+    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+    .getByRole('button', { name: 'Texto' })
     .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   await editor.getByRole('textbox', { name: 'Título breve' }).fill('Texto ampliado');

@@ -13,6 +13,7 @@ use App\Application\Exception\EventConflict;
 use App\Application\Exception\TeamNotFound;
 use App\Application\Exception\InvalidConsultationInput;
 use App\Domain\Consultation\TextConsultationRules;
+use App\Domain\Consultation\DateConsultationRules;
 use App\Infrastructure\Persistence\Entity\ConsultationOptionRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationVoteRecord;
@@ -162,9 +163,12 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
             throw new ConsultationClosed();
         }
         $item = $consultation->toItem();
-        if ($item['type'] !== 'text') {
-            throw new InvalidConsultationInput(['type']);
+        $isDate = $item['type'] === 'date';
+        $valueKey = $isDate ? 'date' : 'text';
+        if (($isDate && $input->update !== []) || count(array_filter($input->add, static fn(array $entry): bool => !isset($entry[$valueKey]))) > 0) {
+            throw new InvalidConsultationInput(['optionChanges']);
         }
+        $timeZone = $input->timeZone ?? $consultation->team()->toRow()['time_zone'];
         /** @var array<string, ConsultationOptionRecord> $records */
         $records = [];
         /** @var array<string, string> $original */
@@ -172,7 +176,7 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
         foreach ($consultation->options() as $option) {
             $value = $option->toItem();
             $records[$value['id']] = $option;
-            $original[$value['id']] = $value['text'] ?? throw new \LogicException('A text option must contain text.');
+            $original[$value['id']] = $value[$valueKey] ?? throw new \LogicException('An option must contain its typed value.');
         }
         $votes = $manager->getRepository(ConsultationVoteRecord::class)->findBy(['consultation' => $consultation]);
         $counts = [];
@@ -186,8 +190,9 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
         $additions = [];
         foreach ($input->add as $entry) {
             $id = $entry['id'];
+            $value = $entry[$valueKey];
             if (isset($original[$id])) {
-                if ($original[$id] !== $entry['text']) {
+                if ($original[$id] !== $value) {
                     throw new ConsultationEditConflict($this->detail($teamId, $consultationId) ?? []);
                 }
                 continue;
@@ -195,7 +200,7 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
             if ($manager->find(ConsultationOptionRecord::class, $id) !== null) {
                 throw new InvalidConsultationInput(['optionChanges.add']);
             }
-            $additions[$id] = $entry['text'];
+            $additions[$id] = $value;
         }
         foreach ($input->update as $entry) {
             $id = $entry['id'];
@@ -213,12 +218,22 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
             $removed[$id] = $records[$id];
             unset($result[$id]);
             if (($counts[$id] ?? 0) > 0 && !in_array($id, $input->confirmedRemovalOptionIds, true)) {
-                $needsConfirmation[] = ['id' => $id, 'text' => $original[$id], 'count' => $counts[$id]];
+                $needsConfirmation[] = ['id' => $id, $valueKey => $original[$id], 'count' => $counts[$id]];
             }
         }
         $result += $additions;
         $title = $input->title ?? (string) $item['title'];
-        $violations = TextConsultationRules::violations($title, array_values($result));
+        $violations = $isDate
+            ? DateConsultationRules::violations($title, array_values($result), $timeZone)
+            : TextConsultationRules::violations($title, array_values($result));
+        if ($isDate) {
+            $today = new DateTimeImmutable($at)->setTimezone(new \DateTimeZone($timeZone))->format('Y-m-d');
+            foreach ($result as $id => $date) {
+                if (isset($additions[$id]) && $date < $today) {
+                    $violations[] = 'options.' . $id;
+                }
+            }
+        }
         if ($violations !== []) {
             $optionIds = array_keys($result);
             $paths = array_map(static function (string $path) use ($optionIds): string {
@@ -260,12 +275,14 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
             }
             $manager->flush();
             $position = 0;
-            foreach ($result as $id => $text) {
+            foreach ($result as $id => $value) {
                 if (isset($records[$id])) {
-                    $records[$id]->editText($text);
+                    if (!$isDate) {
+                        $records[$id]->editText($value);
+                    }
                     $records[$id]->setPosition($position);
                 } else {
-                    $option = new ConsultationOptionRecord($id, $consultation, $text, null, $position);
+                    $option = new ConsultationOptionRecord($id, $consultation, $isDate ? null : $value, $isDate ? new DateTimeImmutable($value, new \DateTimeZone('UTC')) : null, $position);
                     $consultation->addOption($option);
                     $manager->persist($option);
                 }

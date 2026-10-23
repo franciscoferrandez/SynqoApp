@@ -128,26 +128,34 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
     });
     await step('Volver a P1 y crear consulta de dos fechas y de dos textos', async () => {
       await selectIdentity(page, 'Ana');
-      await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-      await page.locator('#date-consultation-title').fill('¿Qué día nos reunimos?');
       if (await page.getByRole('button', { name: 'Volver a hoy' }).count())
         await page.getByRole('button', { name: 'Volver a hoy' }).click();
-      for (const date of reference.week.slice(0, 2)) await (await showDate(page, date)).click();
-      await expect(page.locator('.date-selection-list li')).toHaveCount(2);
-      await page
-        .locator('.calendar-detail-composer')
-        .getByRole('button', { name: 'Crear consulta', exact: true })
-        .click();
+      await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
+      const dateEditor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+      await dateEditor
+        .getByRole('textbox', { name: 'Título breve' })
+        .fill('¿Qué día nos reunimos?');
+      for (const date of reference.week.slice(0, 2)) {
+        const day = dateEditor.locator(`.calendar-day[data-date="${date}"]`);
+        if (!(await day.count()))
+          await dateEditor.getByRole('button', { name: 'Mes siguiente' }).click();
+        await dateEditor.locator(`.calendar-day[data-date="${date}"]`).click();
+        await expect(dateEditor.locator(`.calendar-day[data-date="${date}"]`)).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        );
+      }
       await confirmedMutation(page, /\/consultations$/, () =>
-        page
-          .getByRole('dialog', { name: '¿Crear esta consulta?' })
-          .getByRole('button', { name: 'Confirmar creación' })
-          .click(),
+        dateEditor.getByRole('button', { name: 'Crear consulta', exact: true }).click(),
       );
       await expect(page.getByRole('button', { name: /¿Qué día nos reunimos\?/ })).toBeVisible();
       await page
         .locator('.section-heading')
         .getByRole('button', { name: /Crear consulta/ })
+        .click();
+      await page
+        .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+        .getByRole('button', { name: 'Texto' })
         .click();
       const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
       await editor.locator('#consultation-title').fill('¿Qué plan hacemos?');

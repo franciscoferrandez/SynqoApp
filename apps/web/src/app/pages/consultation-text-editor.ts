@@ -12,7 +12,12 @@ import {
   ViewChild,
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { ConsultationDetail, ConsultationEdit, TeamApi } from '../shared/team-api';
+import {
+  ConsultationDetail,
+  ConsultationEdit,
+  ConsultationRemovalWithVotes,
+  TeamApi,
+} from '../shared/team-api';
 import { TeamLayout } from './team-layout';
 
 interface DraftOption {
@@ -23,11 +28,7 @@ interface DraftOption {
   removed: boolean;
   currentText?: string;
 }
-interface Removal {
-  id: string;
-  text: string;
-  count: number;
-}
+type Removal = Extract<ConsultationRemovalWithVotes, { text: string }>;
 
 @Component({
   selector: 'app-consultation-text-editor',

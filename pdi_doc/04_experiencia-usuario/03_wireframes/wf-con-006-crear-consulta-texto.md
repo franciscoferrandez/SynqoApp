@@ -11,7 +11,7 @@ estado: en_revision
 
 ## Estado representado
 
-Equipo vigente bajo una identidad seleccionada. La persona abre el diálogo «Crear consulta» desde «Consultas».
+Equipo vigente bajo una identidad seleccionada. La persona pulsa «Crear consulta» desde «Consultas» y elige «Texto» antes de abrir el diálogo. Elegir «Fechas» lleva a [WF-CON-008 — Crear y editar consultas de fechas en un diálogo](wf-con-008-calendario-dialogo-consultas-fechas.md); el formulario de texto conserva su comportamiento.
 
 ## Jerarquía
 

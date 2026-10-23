@@ -18,12 +18,13 @@ import { TeamLayout } from './team-layout';
 import { FormsModule } from '@angular/forms';
 import { DetailAction, DetailActions } from '../shared/detail-actions';
 import { ConsultationTextEditor } from './consultation-text-editor';
+import { ConsultationDateEditor } from './consultation-date-editor';
 
 type Decision = 'resolved' | 'rejected';
 
 @Component({
   selector: 'app-consultation-detail',
-  imports: [RouterLink, FormsModule, DetailActions, ConsultationTextEditor],
+  imports: [RouterLink, FormsModule, DetailActions, ConsultationTextEditor, ConsultationDateEditor],
   template: `
     <div class="consultation-detail-view">
       <button #backButton class="consultation-back" type="button" (click)="back.emit()">
@@ -49,7 +50,9 @@ type Decision = 'resolved' | 'rejected';
                   label="Acciones de la consulta"
                   panelId="consultation-detail-actions"
                   [actions]="detailActionItems"
-                  [disabled]="saving || submitting || eventSaving || showTextEditor"
+                  [disabled]="
+                    saving || submitting || eventSaving || showTextEditor || showDateEditor
+                  "
                   (selected)="selectDetailAction($event)"
                 />
               }
@@ -361,6 +364,22 @@ type Decision = 'resolved' | 'rejected';
         (closed)="closeTextEditor($event)"
       />
     }
+    @defer (when showDateEditor) {
+      @if (showDateEditor) {
+        <app-consultation-date-editor
+          [consultationId]="consultationId"
+          (saved)="textEdited($event)"
+          (closed)="closeTextEditor($event)"
+        />
+      }
+    } @loading {
+      <p role="status">Cargando formulario de fechas…</p>
+    } @error {
+      <p role="alert">
+        No se pudo cargar el formulario de fechas. Recarga la página para reintentar.
+      </p>
+      <button class="outline" type="button" (click)="reloadPage()">Recargar página</button>
+    }
     @if (showEventEditor) {
       <dialog
         #eventDialog
@@ -463,6 +482,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
   eventsError = false;
   showEventEditor = false;
   showTextEditor = false;
+  showDateEditor = false;
   eventSaving = false;
   eventError = '';
   private readonly subscriptions = new Subscription();
@@ -474,8 +494,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
 
   get detailActionItems(): DetailAction[] {
     const actions: DetailAction[] = [{ id: 'resolve', label: 'Resolver consulta' }];
-    if (this.consultation?.type === 'text')
-      actions.unshift({ id: 'edit', label: 'Editar consulta' });
+    actions.unshift({ id: 'edit', label: 'Editar consulta' });
     if (this.consultation?.type === 'date') {
       actions.push({
         id: 'event',
@@ -492,15 +511,17 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
       this.submitting ||
       this.eventSaving ||
       this.showTextEditor ||
+      this.showDateEditor ||
       this.consultation?.state !== 'open'
     )
       return;
-    if (action === 'edit' && this.consultation?.type === 'text') {
+    if (action === 'edit') {
       if (!this.team.participantId) {
         this.message = 'Elige una identidad del equipo para editar la consulta.';
         return;
       }
-      this.showTextEditor = true;
+      this.showTextEditor = this.consultation?.type === 'text';
+      this.showDateEditor = this.consultation?.type === 'date';
       this.changeDetector.markForCheck();
     } else if (action === 'resolve') this.openResolution();
     else if (action === 'event' || action === 'unlink') this.openEventEditor(action === 'unlink');
@@ -512,6 +533,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
 
   textEdited(result: { consultation: ConsultationDetail; expiresAt: string }): void {
     this.showTextEditor = false;
+    this.showDateEditor = false;
     this.consultation = result.consultation;
     this.confirmed = structuredClone(result.consultation);
     this.team.updateExpiry(result.expiresAt);
@@ -523,6 +545,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
 
   closeTextEditor(reload: boolean): void {
     this.showTextEditor = false;
+    this.showDateEditor = false;
     if (reload) {
       this.focusEventAfterLoad = true;
       this.load();
@@ -531,6 +554,10 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
       this.changeDetector.markForCheck();
       setTimeout(() => this.detailActions?.focusTrigger());
     }
+  }
+
+  reloadPage(): void {
+    location.reload();
   }
 
   lastEditedAt(value: string): string {

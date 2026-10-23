@@ -1,19 +1,23 @@
 import { expect, test } from '@playwright/test';
 
-test('creates a date consultation from the calendar and keeps selections across months', async ({
-  page,
-}) => {
-  let consultations: Record<string, unknown>[] = [];
-  let submitted: Record<string, unknown> | undefined;
-  const team = {
-    id: 'date-team',
-    name: 'Equipo de fechas',
-    timeZone: 'Europe/Madrid',
-    expiresAt: '2027-01-01T00:00:00Z',
-    participants: [{ id: 'date-person', name: 'Ana' }],
-  };
-  await page.addInitScript(() =>
-    localStorage.setItem('synqo-participant-date-team', 'date-person'),
+const team = {
+  id: 'date-team',
+  name: 'Equipo de fechas',
+  timeZone: 'Europe/Madrid',
+  expiresAt: '2027-01-01T00:00:00Z',
+  participants: [{ id: 'date-person', name: 'Ana' }],
+};
+
+async function installCalendar(page: import('@playwright/test').Page) {
+  await page.addInitScript(
+    ({ teamId, participantId }) => {
+      localStorage.setItem(`synqo-participant-${teamId}`, participantId);
+      localStorage.setItem(
+        'synqo:calendar-view:v2',
+        JSON.stringify({ extended: true, overlay: true, counts: true, rule: 'median' }),
+      );
+    },
+    { teamId: team.id, participantId: team.participants[0].id },
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/availability**', (route) =>
@@ -25,10 +29,20 @@ test('creates a date consultation from the calendar and keeps selections across 
   await page.route(/\/api\/teams\/current\/events$/, (route) =>
     route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
   );
+}
+
+test('creates from the calendar in its visible month with an empty draft and saves directly', async ({
+  page,
+}) => {
+  let consultations: Record<string, unknown>[] = [];
+  let submitted: Record<string, unknown> | undefined;
+  let writes = 0;
+  await installCalendar(page);
   await page.route('**/api/teams/current/consultations', async (route) => {
     if (route.request().method() === 'GET') {
       return route.fulfill({ json: { open: consultations, resolved: [], rejected: [] } });
     }
+    writes += 1;
     submitted = route.request().postDataJSON() as Record<string, unknown>;
     const dates = submitted['options'] as string[];
     const consultation = {
@@ -45,304 +59,286 @@ test('creates a date consultation from the calendar and keeps selections across 
   });
 
   await page.goto('/e/calendario#t=date-token');
-  const calendar = page.locator('.calendar-panel');
-  const composer = page.locator('.calendar-detail-composer');
+  const mainCalendar = page.locator('.calendar-panel');
   const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
   await expect(createButton).toBeEnabled();
-  await createButton.press('Enter');
-  const createEventSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
-  await expect(createEventSwitch).not.toBeChecked();
-  await expect(page.locator('#date-consultation-event')).toHaveCount(0);
-  await expect(calendar.locator('.calendar-day[aria-pressed="true"]')).toHaveCount(0);
-  const submit = composer.getByRole('button', { name: 'Crear consulta', exact: true });
-  await expect(submit).toBeDisabled();
-  await page.locator('#date-consultation-title').fill('¿Qué días nos van bien?');
-  await expect(submit).toBeDisabled();
 
-  const today = page.locator('.calendar-day.today');
-  const todayDate = await today.getAttribute('data-date');
-  await today.press('Enter');
-  await expect(today).toHaveAttribute('aria-pressed', 'true');
-  const monthHeading = calendar.locator('.monthbar h3');
-  const currentMonth = await monthHeading.textContent();
-  await page.getByRole('button', { name: 'Mes siguiente' }).press('Enter');
-  await expect(monthHeading).not.toHaveText(currentMonth!);
-  const nextMonthDate = await calendar
-    .locator('.calendar-day:not(:disabled)')
-    .first()
-    .getAttribute('data-date');
-  await calendar.locator(`.calendar-day[data-date="${nextMonthDate}"]`).press('Enter');
-  await expect(calendar.locator(`.calendar-day[data-date="${nextMonthDate}"]`)).toHaveAttribute(
+  // The entry point reuses the visible future month and ignores its open day detail.
+  const today = mainCalendar.locator('.calendar-day.today');
+  const todayValue = (await today.getAttribute('data-date'))!;
+  const [year, month] = todayValue.split('-').map(Number);
+  const futureMonthDate = new Date(Date.UTC(year, month, 1));
+  const futureMonth = `${futureMonthDate.getUTCFullYear()}-${String(
+    futureMonthDate.getUTCMonth() + 1,
+  ).padStart(2, '0')}`;
+  await mainCalendar.getByRole('button', { name: 'Mes siguiente' }).click();
+  const openDay = mainCalendar.locator(`.calendar-day[data-date^="${futureMonth}"]`).first();
+  await openDay.click();
+  const openDayValue = (await openDay.getAttribute('data-date'))!;
+  const [visibleYear, visibleMonthNumber] = openDayValue.split('-').map(Number);
+  const expectedMonth = new Intl.DateTimeFormat('es', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(visibleYear, visibleMonthNumber - 1, 1)));
+  await createButton.press('Enter');
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await expect(editor).toBeVisible();
+  await expect(editor.locator('.date-month-toolbar h4')).toHaveText(expectedMonth);
+  await expect(editor.getByRole('textbox', { name: 'Título breve' })).toHaveValue('');
+  await expect(editor.locator('[data-date][aria-pressed="true"]')).toHaveCount(0);
+  await expect(editor.locator('.team-counts, .day-count, .availability-count')).toHaveCount(0);
+  await expect(editor.getByRole('switch', { name: 'Crear evento provisional' })).not.toBeChecked();
+  await expect(editor.getByRole('button', { name: 'Texto', exact: true })).toHaveCount(0);
+  await expect(editor).not.toContainText(/\b\d+ votos?\b/i);
+  await expect(editor.locator('.date-selection-list')).toHaveCount(0);
+
+  const submit = editor.getByRole('button', { name: 'Crear consulta', exact: true });
+  await submit.click();
+  await expect(editor.getByRole('alert')).toContainText('Revisa el título');
+  expect(writes).toBe(0);
+  await editor.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué días nos van bien?');
+  const firstDate = editor.locator('.calendar-day:not(:disabled)').first();
+  const firstDateValue = await firstDate.getAttribute('data-date');
+  await firstDate.click();
+  await expect(firstDate).toHaveAttribute('aria-pressed', 'true');
+  await editor.getByRole('button', { name: 'Mes siguiente' }).press('Enter');
+  const secondDate = editor.locator('.calendar-day:not(:disabled)').first();
+  const secondDateValue = await secondDate.getAttribute('data-date');
+  await secondDate.click();
+  await expect(secondDate).toHaveAttribute('aria-pressed', 'true');
+  await editor.getByRole('button', { name: 'Mes anterior' }).press('Enter');
+  await expect(editor.locator(`.calendar-day[data-date="${firstDateValue}"]`)).toHaveAttribute(
     'aria-pressed',
     'true',
   );
-  await expect(
-    composer
-      .getByRole('list', { name: 'Fechas elegidas, en orden cronológico' })
-      .getByRole('listitem'),
-  ).toHaveCount(2);
-  const selectedDates = await composer
-    .locator('.date-selection-list li')
-    .evaluateAll((items) => items.map((item) => item.getAttribute('data-date')));
-  expect(selectedDates).toEqual([todayDate, nextMonthDate]);
+  await editor.getByRole('button', { name: 'Mes siguiente' }).press('Enter');
+  await expect(editor.locator(`.calendar-day[data-date="${secondDateValue}"]`)).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
   await expect(submit).toBeEnabled();
-  await submit.click({ force: true });
-  const confirmation = page.getByRole('dialog', { name: '¿Crear esta consulta?' });
-  await expect(confirmation).toBeVisible();
-  await confirmation.getByRole('button', { name: 'Confirmar creación' }).press('Enter');
+  await submit.press('Enter');
+  await expect(page.getByRole('dialog', { name: '¿Crear esta consulta?' })).toHaveCount(0);
   await expect(page).toHaveURL(/\/e\/consultas#t=date-token$/);
   await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
-  await expect(page.locator('.consultation-card')).toContainText('Consulta de fechas');
+  await expect(page.locator('.consultation-card')).toContainText('¿Qué días nos van bien?');
+  expect(writes).toBe(1);
   expect(submitted).toMatchObject({
     type: 'date',
     createEvent: false,
     participantId: 'date-person',
     title: '¿Qué días nos van bien?',
-    options: expect.arrayContaining([todayDate, nextMonthDate]),
+    options: expect.arrayContaining([firstDateValue, secondDateValue]),
+    timeZone: expect.any(String),
   });
-  expect(submitted?.['timeZone']).toEqual(expect.any(String));
-
-  await page.reload();
-  await expect(page.locator('.consultation-card')).toContainText('Consulta de fechas');
-
-  const browser = page.context().browser();
-  if (!browser) throw new Error('Expected Playwright to launch a browser.');
-  const otherContext = await browser.newContext();
-  await otherContext.addInitScript(() =>
-    localStorage.setItem('synqo-participant-date-team', 'date-person'),
-  );
-  await otherContext.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
-  await otherContext.route('**/api/teams/current/availability**', (route) =>
-    route.fulfill({ json: { days: [] } }),
-  );
-  await otherContext.route('**/api/teams/current/events/calendar**', (route) =>
-    route.fulfill({ json: { events: [] } }),
-  );
-  await otherContext.route(/\/api\/teams\/current\/events$/, (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
-  );
-  await otherContext.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: consultations, resolved: [], rejected: [] } }),
-  );
-  const otherPage = await otherContext.newPage();
-  await otherPage.goto('/e/consultas#t=date-token');
-  await expect(otherPage.locator('.consultation-card')).toContainText('Consulta de fechas');
-  await otherContext.close();
 });
 
-test('toggling and cancelling provisional-event creation does not submit a consultation', async ({
+test('opens in a historical month with no selected dates and preserves the calendar on Escape', async ({
   page,
 }) => {
-  const team = {
-    id: 'date-switch-team',
-    name: 'Equipo de fechas',
-    timeZone: 'Europe/Madrid',
-    expiresAt: '2027-01-01T00:00:00Z',
-    participants: [{ id: 'date-switch-person', name: 'Ana' }],
-  };
   let writes = 0;
-  await page.addInitScript(() =>
-    localStorage.setItem('synqo-participant-date-switch-team', 'date-switch-person'),
-  );
-  await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
-  await page.route('**/api/teams/current/availability**', (route) =>
-    route.fulfill({ json: { days: [] } }),
-  );
-  await page.route('**/api/teams/current/events/calendar**', (route) =>
-    route.fulfill({ json: { events: [] } }),
-  );
-  await page.route(/\/api\/teams\/current\/events$/, (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
-  );
+  await installCalendar(page);
+  await page.route('**/api/teams/current/consultations', (route) => {
+    if (route.request().method() === 'POST') writes += 1;
+    return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+  });
+  await page.goto('/e/calendario#t=history-token');
+  const mainCalendar = page.locator('.calendar-panel');
+  const todayValue = (await mainCalendar.locator('.calendar-day.today').getAttribute('data-date'))!;
+  const [year, month] = todayValue.split('-').map(Number);
+  const historical = new Date(Date.UTC(year, month - 3, 1));
+  const historicalMonth = `${historical.getUTCFullYear()}-${String(
+    historical.getUTCMonth() + 1,
+  ).padStart(2, '0')}`;
+  await mainCalendar.getByRole('button', { name: 'Mes anterior' }).click();
+  await mainCalendar.getByRole('button', { name: 'Mes anterior' }).click();
+  const visibleMainDay = mainCalendar.locator(`.calendar-day[data-date^="${historicalMonth}"]`);
+  await expect(visibleMainDay.first()).toBeVisible();
+  const preservedMonth = await mainCalendar.locator('.monthbar h3').textContent();
+  const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
+  await createButton.click();
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  const [historicalYear, historicalMonthNumber] = historicalMonth.split('-').map(Number);
+  const expectedMonth = new Intl.DateTimeFormat('es', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(historicalYear, historicalMonthNumber - 1, 1)));
+  await expect(editor.locator('.date-month-toolbar h4')).toHaveText(expectedMonth);
+  await expect(editor.locator('.calendar-day')).not.toHaveCount(0);
+  await expect(editor.locator('.calendar-day:not(:disabled)')).toHaveCount(0);
+  await expect(editor.locator('.calendar-day[aria-pressed="true"]')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(editor).toHaveCount(0);
+  await expect(createButton).toBeFocused();
+  await expect(mainCalendar.locator('.monthbar h3')).toHaveText(preservedMonth!);
+  expect(writes).toBe(0);
+});
+
+test('cancelling a changed draft asks before discarding and does not write', async ({ page }) => {
+  let writes = 0;
+  await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) => {
     if (route.request().method() === 'POST') writes += 1;
     return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
   });
 
   await page.goto('/e/calendario#t=date-switch-token');
-  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-  const createSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
-  await expect(createSwitch).not.toBeChecked();
+  const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
+  await createButton.click();
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  const createSwitch = editor.getByRole('switch', { name: 'Crear evento provisional' });
   await createSwitch.check();
-  await expect(createSwitch).toBeChecked();
-  await page.getByRole('button', { name: 'Cancelar consulta' }).click();
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(editor).toHaveCount(0);
   expect(writes).toBe(0);
 
-  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-  const reopenedSwitch = page.getByRole('switch', { name: 'Crear evento provisional' });
-  await expect(reopenedSwitch).not.toBeChecked();
-  await reopenedSwitch.check();
-  await expect(reopenedSwitch).toBeChecked();
-  await reopenedSwitch.uncheck();
-  await page.getByRole('button', { name: 'Cancelar consulta' }).click();
+  await createButton.click();
+  const changedEditor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await changedEditor.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué día?');
+  const changedDate = changedEditor.locator('.calendar-day:not(:disabled)').first();
+  await changedDate.click();
+  const changedSwitch = changedEditor.getByRole('switch', {
+    name: 'Crear evento provisional',
+  });
+  await changedSwitch.check();
+  await changedEditor.getByRole('button', { name: 'Cancelar' }).click();
+  const discardDialog = page.getByRole('dialog', { name: '¿Descartar los cambios?' });
+  await expect(discardDialog).toBeVisible();
+  await discardDialog.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(changedSwitch).toBeChecked();
+  await changedEditor.getByRole('button', { name: 'Cancelar' }).click();
+  await page
+    .getByRole('dialog', { name: '¿Descartar los cambios?' })
+    .getByRole('button', { name: 'Abandonar edición' })
+    .click();
+  await expect(changedEditor).toHaveCount(0);
+  await expect(createButton).toBeFocused();
+  expect(writes).toBe(0);
+
+  await createButton.click();
+  const reopened = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await expect(
+    reopened.getByRole('switch', { name: 'Crear evento provisional' }),
+  ).not.toBeChecked();
+  await reopened.getByRole('button', { name: 'Cancelar' }).click();
+  await expect(reopened).toHaveCount(0);
   expect(writes).toBe(0);
 });
 
-test('shows the composer below the calendar on mobile and keeps a draft when cancellation is rejected', async ({
+test('mobile date creation uses the shared dialog and retains its draft after cancellation is rejected', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() =>
-    localStorage.setItem('synqo-participant-mobile-date-team', 'mobile-person'),
-  );
-  await page.route('**/api/teams/current', (route) =>
-    route.fulfill({
-      json: {
-        id: 'mobile-date-team',
-        name: 'Equipo móvil',
-        timeZone: 'Europe/Madrid',
-        expiresAt: '2027-01-01T00:00:00Z',
-        participants: [{ id: 'mobile-person', name: 'Ana' }],
-      },
-    }),
-  );
-  await page.route('**/api/teams/current/availability**', (route) =>
-    route.fulfill({ json: { days: [] } }),
-  );
-  await page.route('**/api/teams/current/events/calendar**', (route) =>
-    route.fulfill({ json: { events: [] } }),
-  );
-  await page.route(/\/api\/teams\/current\/events$/, (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
-  );
+  await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
   );
   await page.goto('/e/calendario#t=mobile-token');
   const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
-  await expect(createButton).toBeEnabled();
-  await createButton.click({ force: true });
-  const calendarPanel = page.locator('.calendar-panel');
-  const composer = page.locator('.calendar-detail-composer');
-  await expect(composer).toBeVisible();
-  const calendarColumns = await page
-    .locator('.calendar-layout')
+  await createButton.click();
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await expect(editor).toBeVisible();
+  const columns = await editor
+    .locator('.calendar-days')
     .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
-  expect(calendarColumns).toBe(1);
-  await composer.getByRole('button', { name: 'Cancelar', exact: true }).click({ force: true });
-  await expect(composer).toHaveCount(0);
-  await expect(page.getByRole('dialog')).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click({ force: true });
-  await page.locator('#date-consultation-title').fill('¿Qué día?');
-  await page.locator('.calendar-day.today').click({ force: true });
-  await page
-    .locator('.calendar-detail-composer')
-    .getByRole('button', { name: 'Cancelar', exact: true })
-    .click({ force: true });
-  const confirmation = page.getByRole('dialog', { name: '¿Abandonar la consulta?' });
-  await expect(confirmation).toBeVisible();
+  expect(columns).toBe(7);
+  await editor.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué día?');
+  const date = editor.locator('.calendar-day:not(:disabled)').first();
+  await date.click();
+  const dateValue = await date.getAttribute('data-date');
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
+  const confirmation = page.getByRole('dialog', { name: '¿Descartar los cambios?' });
   await expect(confirmation.getByRole('button', { name: 'Seguir editando' })).toBeFocused();
-  await confirmation.getByRole('button', { name: 'Seguir editando' }).click({ force: true });
-  await expect(page.locator('#date-consultation-title')).toHaveValue('¿Qué día?');
-  await expect(page.locator('.date-selection-list li')).toHaveCount(1);
+  await confirmation.getByRole('button', { name: 'Seguir editando' }).click();
+  await expect(editor.getByRole('textbox', { name: 'Título breve' })).toHaveValue('¿Qué día?');
+  await expect(editor.locator(`[data-date="${dateValue}"]`)).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await editor.getByRole('button', { name: 'Cancelar' }).click();
   await page
-    .locator('.calendar-detail-composer')
-    .getByRole('button', { name: 'Cancelar', exact: true })
-    .click({ force: true });
-  await page
-    .getByRole('dialog', { name: '¿Abandonar la consulta?' })
+    .getByRole('dialog', { name: '¿Descartar los cambios?' })
     .getByRole('button', { name: 'Abandonar edición' })
-    .click({ force: true });
-  await expect(page.locator('.calendar-detail-composer')).toHaveCount(0);
+    .click();
+  await expect(editor).toHaveCount(0);
+  await expect(createButton).toBeFocused();
 });
 
-test('announces create errors and preserves the date-consultation draft', async ({ page }) => {
-  await page.addInitScript(() =>
-    localStorage.setItem('synqo-participant-error-date-team', 'error-person'),
-  );
-  await page.route('**/api/teams/current', (route) =>
-    route.fulfill({
-      json: {
-        id: 'error-date-team',
-        name: 'Equipo de error',
-        timeZone: 'Europe/Madrid',
-        expiresAt: '2027-01-01T00:00:00Z',
-        participants: [{ id: 'error-person', name: 'Ana' }],
-      },
-    }),
-  );
-  await page.route('**/api/teams/current/availability**', (route) =>
-    route.fulfill({ json: { days: [] } }),
-  );
-  await page.route('**/api/teams/current/events/calendar**', (route) =>
-    route.fulfill({ json: { events: [] } }),
-  );
-  await page.route(/\/api\/teams\/current\/events$/, (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
-  );
-  await page.route('**/api/teams/current/consultations', (route) =>
-    route.request().method() === 'GET'
-      ? route.fulfill({ json: { open: [], resolved: [], rejected: [] } })
-      : route.fulfill({ status: 503, json: { detail: 'Servicio temporalmente no disponible.' } }),
-  );
-
-  await page.goto('/e/calendario#t=error-token');
-  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click({ force: true });
-  await page.locator('#date-consultation-title').fill('¿Qué día nos conviene?');
-  await page.locator('.calendar-day.today').click({ force: true });
-  const submit = page.getByRole('button', { name: 'Crear consulta', exact: true });
-  await expect(submit).toBeEnabled();
-  await submit.press('Enter');
-  await page
-    .getByRole('dialog', { name: '¿Crear esta consulta?' })
-    .getByRole('button', { name: 'Confirmar creación' })
-    .click({ force: true });
-  await expect(page.getByRole('alert')).toContainText('No se pudo crear la consulta');
-  await expect(page.locator('#date-consultation-title')).toHaveValue('¿Qué día nos conviene?');
-  await expect(page.locator('.date-selection-list li')).toHaveCount(1);
-});
-
-test('limits date selection to ten and makes room after removing a selected day', async ({
+test('announces create errors and preserves the title and selected date for retry', async ({
   page,
 }) => {
-  await page.addInitScript(() =>
-    localStorage.setItem('synqo-participant-limit-team', 'limit-person'),
+  let attempts = 0;
+  await installCalendar(page);
+  await page.route('**/api/teams/current/consultations', (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+    }
+    attempts += 1;
+    return attempts === 1
+      ? route.fulfill({ status: 503, json: { detail: 'Servicio temporalmente no disponible.' } })
+      : route.fulfill({
+          status: 201,
+          json: {
+            consultation: {
+              id: 'retry-created',
+              type: 'date',
+              title: '¿Qué día nos conviene?',
+              state: 'open',
+              options: [],
+            },
+            expiresAt: team.expiresAt,
+          },
+        });
+  });
+
+  await page.goto('/e/calendario#t=error-token');
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await editor.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué día nos conviene?');
+  const selected = editor.locator('.calendar-day:not(:disabled)').first();
+  const selectedDate = await selected.getAttribute('data-date');
+  await selected.click();
+  const submit = editor.getByRole('button', { name: 'Crear consulta', exact: true });
+  await submit.click();
+  await expect(page.getByRole('alert')).toContainText('No se pudo guardar la consulta');
+  await expect(editor.getByRole('textbox', { name: 'Título breve' })).toHaveValue(
+    '¿Qué día nos conviene?',
   );
-  await page.route('**/api/teams/current', (route) =>
-    route.fulfill({
-      json: {
-        id: 'limit-team',
-        name: 'Equipo con límite',
-        timeZone: 'Europe/Madrid',
-        expiresAt: '2027-01-01T00:00:00Z',
-        participants: [{ id: 'limit-person', name: 'Ana' }],
-      },
-    }),
+  await expect(editor.locator(`[data-date="${selectedDate}"]`)).toHaveAttribute(
+    'aria-pressed',
+    'true',
   );
-  await page.route('**/api/teams/current/availability**', (route) =>
-    route.fulfill({ json: { days: [] } }),
-  );
-  await page.route('**/api/teams/current/events/calendar**', (route) =>
-    route.fulfill({ json: { events: [] } }),
-  );
-  await page.route(/\/api\/teams\/current\/events$/, (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
-  );
+  await submit.click();
+  expect(attempts).toBe(2);
+});
+
+test('limits selected dates to ten and allows a replacement after removing one', async ({
+  page,
+}) => {
+  await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
   );
-
   await page.goto('/e/calendario#t=limit-token');
-  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click({ force: true });
-  const calendar = page.locator('.calendar-panel');
-  const monthHeading = calendar.locator('.monthbar h3');
-  const currentMonth = await monthHeading.textContent();
-  await page.getByRole('button', { name: 'Mes siguiente' }).press('Enter');
-  await expect(monthHeading).not.toHaveText(currentMonth!);
-  const selectable = calendar.locator('.calendar-day:not(:disabled)');
-  const dates = await selectable.evaluateAll((items) =>
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
+  const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+  await editor.getByRole('button', { name: 'Mes siguiente' }).click();
+  const enabledDays = editor.locator('.calendar-day:not(:disabled)');
+  const dates = await enabledDays.evaluateAll((items) =>
     items.slice(0, 11).map((item) => item.getAttribute('data-date')),
   );
   for (const date of dates.slice(0, 10)) {
-    await calendar.locator(`.calendar-day[data-date="${date}"]`).click({ force: true });
+    await editor.locator(`.calendar-day[data-date="${date}"]`).click();
   }
-  await expect(page.locator('.date-selection-list li')).toHaveCount(10);
-  const eleventh = calendar.locator(`.calendar-day[data-date="${dates[10]}"]`);
+  await expect(editor.locator('.calendar-day[aria-pressed="true"]')).toHaveCount(10);
+  const eleventh = editor.locator(`.calendar-day[data-date="${dates[10]}"]`);
   await expect(eleventh).toBeDisabled();
-  await page.locator('.date-selection-list .remove-option').first().click({ force: true });
+  const first = editor.locator(`.calendar-day[data-date="${dates[0]}"]`);
+  await first.click();
   await expect(eleventh).toBeEnabled();
-  await eleventh.click({ force: true });
-  await expect(page.locator('.date-selection-list li')).toHaveCount(10);
+  await eleventh.click();
+  await expect(editor.locator('.calendar-day[aria-pressed="true"]')).toHaveCount(10);
 });
