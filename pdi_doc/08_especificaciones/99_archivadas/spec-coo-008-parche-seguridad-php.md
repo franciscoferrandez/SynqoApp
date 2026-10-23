@@ -1,7 +1,7 @@
 ---
 id: SPEC-COO-008
 nivel: N1
-estado: en_implementacion
+estado: cerrado
 ---
 
 # SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos
@@ -42,7 +42,7 @@ La sesión de Railway CLI está caducada. Se ha solicitado reautenticación a la
 | 2. Protección INI común antes de peticiones y control de build | INI común; guardas de build y smoke CLI/embebido comprueban `session.upload_progress.enabled=0` | PASS |
 | 3. API, worker y perfil de pruebas locales usan runtime corregido, datos conservados | API y worker recreados; perfil E2E ejecutado con imagen corregida; tres runtimes 8.5.12/INI 0, API 198 tests y esquema PASS | PASS |
 | 4. Imagen Railway completa conserva salud, WEB, API y migraciones | Smoke aislado con PostgreSQL, CLI y PHP embebido PASS, sin reset de datos existentes | PASS |
-| 5. Todos los servicios PHP Railway existentes se actualizan, sin activar Cron nuevos | Tres despliegues SUCCESS del commit corregido; PHP/INI verificadas por SSH y HTTP, build de ambos Cron validado; CI en curso | PARTIAL |
+| 5. Todos los servicios PHP Railway existentes se actualizan, sin activar Cron nuevos | Tres despliegues SUCCESS; PHP/INI verificadas por SSH y HTTP, build de ambos Cron validado; CI final SUCCESS con 173 E2E, 136 visuales y 43 tests WEB | PASS |
 
 ## Plan y gate de preparación
 
@@ -76,10 +76,22 @@ Commit publicado: `6234b54c8f3d6b7409e93e0f37c3eecd5f0a43ec`, con hooks de commi
 
 La API pública `https://synqo-http-preproduction.up.railway.app/api/configuration` pasa de `X-Powered-By: PHP/8.5.11` a `PHP/8.5.12` y responde HTTP 200. `/healthz` HTTP 200. Los Cron se verifican por su nuevo despliegue/imagen y guardas de build; no se fuerza una ejecución de reset para comprobar versión. No cambian horarios ni volúmenes.
 
-`pdi:change-apply`: implementación y despliegue completados. `pdi:change-verify`: pendiente terminar [CI del parche](https://github.com/franciscoferrandez/SynqoApp/actions/runs/40020959966). Los cuatro criterios locales están PASS y el quinto conserva PARTIAL hasta disponer del resultado CI. Sin cambios funcionales, de esquema o snapshots; no cerrar ni archivar antes del gate completo.
+`pdi:change-apply`: implementación y despliegue completados. El [primer CI del parche](https://github.com/franciscoferrandez/SynqoApp/actions/runs/40020959966) pasó API/imagen/visual y detectó los dos fallos E2E descritos abajo. La verificación final se completa tras corregirlos, sin cambios funcionales, de esquema o snapshots.
 
 ## Corrección de inestabilidad de verificación
 
 El primer CI pasa imagen de preproducción, análisis PHP, API completa y regresión visual, pero termina con 171 E2E PASS y dos fallos de sincronización en los tests anteriores. La traza del smoke de accesibilidad muestra una recarga completa del documento durante la comprobación de foco. La del benchmark muestra que consulta el DOM cuando el calendario aún no ha terminado de recargar y avanza indebidamente de mes.
 
 Corrección limitada a infraestructura/fixtures E2E: desactivar HMR y live reload en el servidor arrancado por Playwright y esperar a que haya días visibles antes de decidir navegar de mes en el helper del benchmark. No cambia el servidor habitual de desarrollo, funcionalidades, límites de aceptación ni timeouts. Se repiten los recorridos afectados con API/worker/correo aislados de pruebas; sin resetear datos ni tocar servicios de desarrollo.
+
+## Verificación final, convergencia y cierre — 2026-10-23
+
+La repetición local de accesibilidad aporta **40 PASS** en cuatro anchuras, dos ejecuciones completas. El benchmark real se repite en entorno de pruebas con correo, dos veces: **2 PASS**, 18,8 y 14,3 segundos, sin ampliar el umbral de aceptación de 150 segundos. El primer intento del ensayo aislado usaba un puerto distinto al enlace generado: se corrige únicamente ese entorno y se repite completo. Servicios temporales detenidos/eliminados y clave de correo efímera no persistida en código.
+
+Commit de estabilización: `f3e810655fadbeabd5b6682858475283cb800a45`. [CI final SUCCESS](https://github.com/franciscoferrandez/SynqoApp/actions/runs/40023740712): smoke de imagen con CLI/embebido 8.5.12 e INI 0, **136 visuales PASS**, **173 E2E PASS**, lint/formato/build PASS y **43 tests WEB PASS**. La API conserva la evidencia de 198 tests/2071 assertions y checks PHP ya superados con el runtime corregido; no se modificó API al estabilizar E2E. Los hooks de ambos commits pasan íntegros, sin saltarlos ni actualizar snapshots.
+
+Railway actualiza los tres servicios al commit de estabilización, con los mismos Dockerfiles/INI corregidos: HTTP `aa2000cd-6afa-4117-bb97-6cf669fe9ba5`, purga `f558ffb7-3c2d-4d43-94e9-ea766f9b8f30` y demo `f8de7167-f0d6-40d6-91f8-3d848d50154c`, todos SUCCESS. La API pública sigue devolviendo HTTP 200/PHP 8.5.12. No se toca PostgreSQL, su volumen, secretos, horarios ni opt-ins.
+
+`pdi:change-verify`: **PASS — READY_FOR_CHANGE_CONVERGE**, cinco criterios PASS. `pdi:change-converge`: **PASS — READY_FOR_CHANGE_CLOSE**; intención explícita, imágenes, Composer, configuración, operación y evidencia coinciden. La discrepancia era un runtime vulnerable fijado/activo y queda corregida. Las reparaciones E2E se limitan a sincronización e infraestructura de verificación; sin drift funcional ni decisión arquitectónica nueva.
+
+**DONE — Cerrado y archivado mediante `pdi:change-close`.** Índice y enlaces reparados. Mantenimiento de seguridad aplicado en local y los tres servicios Railway existentes; no modifica el estado de entrega de releases funcionales ni las declara ENTREGADA. La guía de operación mantiene la regla vigente de runtime y verificación; esta SPEC conserva el contexto y evidencia históricos.

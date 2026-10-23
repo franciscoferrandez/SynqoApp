@@ -10,7 +10,7 @@ El [aviso crítico de PHP](https://www.php.net/archive/2026.php#2026-10-21-5) re
 
 En desarrollo, reconstruir `api`, `api-e2e` y `mail-worker`, recrear los activos sin eliminar volúmenes y comprobar `php -v` e `ini_get('session.upload_progress.enabled')`. En Railway, comprobar cada servicio PHP existente con `railway ssh --environment preproduction --service <servicio> -- php -v`; en HTTP comprobar también `frankenphp version` y el PHP embebido mediante `frankenphp php-cli`. Los Cron sin instancia permanente se verifican mediante su imagen/despliegue y sus ejecuciones programadas, sin lanzar un reset demo únicamente para comprobar versión. `npm run railway:image:smoke` comprueba CLI, PHP embebido y la configuración de la imagen final, además de salud, WEB, API y PostgreSQL aislado.
 
-La evidencia de esta intervención se registra en [SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos](../../08_especificaciones/01_activas/spec-coo-008-parche-seguridad-php.md). Una sesión CLI caducada impide certificar el runtime remoto: registrar el pendiente y no confundir el build local o el push con un despliegue verificado.
+La evidencia de esta intervención se registra en [SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos](../../08_especificaciones/99_archivadas/spec-coo-008-parche-seguridad-php.md). Una sesión CLI caducada impide certificar el runtime remoto: registrar el pendiente y no confundir el build local o el push con un despliegue verificado.
 
 ## Límites antes de operar
 
