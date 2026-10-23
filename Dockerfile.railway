@@ -11,7 +11,10 @@ RUN npm ci --prefix apps/web
 COPY apps/web/ ./apps/web/
 RUN npm --prefix apps/web run build
 
-FROM dunglas/frankenphp:1-php8.5-bookworm@sha256:667ddd39a3ed826cd4b5fb8dcbb3af480533931a9f0a53977c2d8557d81f7d99 AS php-runtime
+FROM dunglas/frankenphp:1.13.3-php8.5-bookworm@sha256:572f34f012de7de134f2bfb9528dfeeadc03d808e3c944676fde4d1659cc51f8 AS php-runtime
+COPY apps/api/docker/php-security.ini /usr/local/etc/php/conf.d/zz-synqo-security.ini
+RUN php -r 'if (PHP_VERSION_ID < 80512 || ini_get("session.upload_progress.enabled") !== "0") { fwrite(STDERR, "Unsafe PHP runtime\n"); exit(1); }' \
+    && frankenphp php-cli -r 'if (PHP_VERSION_ID < 80512 || ini_get("session.upload_progress.enabled") !== "0") { fwrite(STDERR, "Unsafe embedded PHP runtime\n"); exit(1); }'
 RUN install-php-extensions intl pdo_pgsql zip
 
 FROM php-runtime AS api-dependencies

@@ -57,7 +57,7 @@ El [alcance conceptual](pdi_doc/01_producto/04_alcance/alcance-conceptual.md) re
 | Módulo | Tecnología actual | Responsabilidad y arquitectura |
 |---|---|---|
 | [WEB](doc/architecture/web.md) | Angular 21, TypeScript y Node.js 24.21 | Navegación, presentación, preferencias locales y cliente HTTP. |
-| [API](doc/architecture/api.md) | PHP 8.5, Symfony 7.4 y API Platform 5 | Operaciones HTTP, casos de uso, reglas del dominio y persistencia ORM. |
+| [API](doc/architecture/api.md) | PHP 8.5.12 como mínimo, Symfony 7.4 y API Platform 5 | Operaciones HTTP, casos de uso, reglas del dominio y persistencia ORM. |
 | Persistencia | PostgreSQL 18 y Doctrine ORM | Guarda equipos, participantes, disponibilidad, consultas, opciones de texto o fecha, votos y resoluciones. |
 
 WEB consume JSON de API y envía el valor de acceso como Bearer desde el fragmento del enlace. API responde con JSON o Problem Details y publica su contrato OpenAPI. La arquitectura separa presentación, casos de uso, dominio y adaptadores; los detalles están en las páginas de [WEB](doc/architecture/web.md) y [API](doc/architecture/api.md), los [principios de implementación](pdi_doc/07_desarrollo/01_principios-y-convenciones/arquitectura-limpia-y-ddd.md) y la [convención HTTP](pdi_doc/06_arquitectura/03_modulos/API/convencion-http.md).

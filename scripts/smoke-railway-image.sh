@@ -22,6 +22,8 @@ trap cleanup EXIT
 
 cd "$root_dir"
 docker build -f Dockerfile.railway -t "$image" .
+docker run --rm --entrypoint php "$image" -r 'if (PHP_VERSION_ID < 80512 || ini_get("session.upload_progress.enabled") !== "0") { fwrite(STDERR, "Unsafe PHP runtime\n"); exit(1); } echo "PASS: PHP ", PHP_VERSION, ", session.upload_progress.enabled=0\n";'
+docker run --rm --entrypoint frankenphp "$image" php-cli -r 'if (PHP_VERSION_ID < 80512 || ini_get("session.upload_progress.enabled") !== "0") { fwrite(STDERR, "Unsafe embedded PHP runtime\n"); exit(1); } echo "PASS: embedded PHP ", PHP_VERSION, ", session.upload_progress.enabled=0\n";'
 docker network create "$network" >/dev/null
 docker run -d --name "$database" --network "$network" \
   -e POSTGRES_DB=synqo -e POSTGRES_USER=synqo -e "POSTGRES_PASSWORD=$database_password" \

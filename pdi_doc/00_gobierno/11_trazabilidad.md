@@ -2,6 +2,17 @@
 
 Índice opcional de relaciones directas con artefactos existentes que cada SPEC preparada enlaza.
 
+## Parche crítico de PHP
+
+| Artefacto | SPEC |
+|---|---|
+| [API — arquitectura](../06_arquitectura/03_modulos/API/README.md) | [SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos](../08_especificaciones/01_activas/spec-coo-008-parche-seguridad-php.md) |
+| [API — desarrollo](../07_desarrollo/08_modulos/API/README.md) | [SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos](../08_especificaciones/01_activas/spec-coo-008-parche-seguridad-php.md) |
+| [Operación de Railway para REL-002](../09_operacion/01_despliegue/railway-rel-002.md) | [SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos](../08_especificaciones/01_activas/spec-coo-008-parche-seguridad-php.md) |
+| [Toolkit local de Railway](../09_operacion/01_despliegue/railway-toolkit.md) | [SPEC-COO-008 — Aplicar el parche crítico de PHP en todos los entornos](../08_especificaciones/01_activas/spec-coo-008-parche-seguridad-php.md) |
+
+## Relaciones anteriores
+
 | Artefacto relacionado | SPEC |
 |---|---|
 | [ADR-COO-004 — Desplegar la preproducción de Synqo en Railway con IaC](../05_investigacion-y-decisiones/05_adr/adr-coo-004-preproduccion-railway-iac.md) | [SPEC-EQU-004 — Carga manual del juego demo en desarrollo local](../08_especificaciones/99_archivadas/spec-equ-004-juego-demo-reset-horario.md) |
