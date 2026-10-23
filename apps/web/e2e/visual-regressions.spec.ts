@@ -492,22 +492,24 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, teamUrl, 'light');
       await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-      await page.locator('#date-consultation-title').fill('¿Qué día nos viene mejor?');
-      await page.locator('.calendar-day[data-date="2026-10-17"]').click();
+      const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+      await editor.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué día nos viene mejor?');
+      await editor.locator('.calendar-day[data-date="2026-10-17"]').click();
       await expect(page.getByRole('button', { name: 'Crear consulta', exact: true })).toBeEnabled();
     },
   },
   {
     id: 'calendario-confirmar-consulta-fechas',
-    title: 'confirmación de consulta de fechas',
+    title: 'confirmación de descarte de consulta de fechas',
     fullPage: false,
     run: async (page) => {
       await open(page, teamUrl, 'light');
       await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
-      await page.locator('#date-consultation-title').fill('¿Qué día nos viene mejor?');
-      await page.locator('.calendar-day[data-date="2026-10-17"]').click();
-      await page.getByRole('button', { name: 'Crear consulta', exact: true }).click();
-      await expect(page.getByRole('dialog', { name: '¿Crear esta consulta?' })).toBeVisible();
+      const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
+      await editor.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué día nos viene mejor?');
+      await editor.locator('.calendar-day[data-date="2026-10-17"]').click();
+      await editor.getByRole('button', { name: 'Cancelar', exact: true }).click();
+      await expect(page.getByRole('dialog', { name: '¿Descartar los cambios?' })).toBeVisible();
     },
   },
   {
@@ -559,6 +561,7 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/eventos#t=${accessToken}`, 'light');
       await page.locator('[data-event-id="visual-event-provisional"]').click();
+      await page.getByRole('button', { name: 'Acciones del evento' }).click();
       await page.getByRole('button', { name: 'Editar evento' }).click();
       await expect(page.getByRole('dialog', { name: 'Edita el evento' })).toBeVisible();
       await expect(page.locator('#event-title')).toHaveValue('Ensayo general');
@@ -571,6 +574,7 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/eventos#t=${accessToken}`, 'light');
       await page.locator('[data-event-id="visual-event-provisional"]').click();
+      await page.getByRole('button', { name: 'Acciones del evento' }).click();
       await page.getByRole('button', { name: 'Rechazar evento' }).click();
       await expect(page.getByRole('dialog', { name: '¿Rechazar este evento?' })).toBeVisible();
     },
@@ -582,6 +586,7 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/eventos#t=${accessToken}`, 'light');
       await page.locator('[data-event-id="visual-event-rejected"]').click();
+      await page.getByRole('button', { name: 'Acciones del evento' }).click();
       await page.getByRole('button', { name: 'Recuperar evento' }).click();
       await expect(page.getByRole('dialog', { name: '¿Recuperar este evento?' })).toBeVisible();
     },
@@ -602,6 +607,10 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/consultas#t=${accessToken}`, 'light');
       await page.getByRole('button', { name: '+ Crear consulta' }).click();
+      await page
+        .getByRole('dialog', { name: '¿Qué quieres consultar?' })
+        .getByRole('button', { name: 'Texto', exact: true })
+        .click();
       const dialog = page.getByRole('dialog', { name: 'Plantea una pregunta' });
       await dialog.locator('#consultation-title').fill('¿Qué plan nos apetece?');
       await dialog.getByRole('textbox', { name: 'Texto de la opción 1' }).fill('Café y paseo');
@@ -647,6 +656,7 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/consultas#t=${accessToken}`, 'light');
       await page.locator(`[data-consultation-id="${textConsultation.id}"]`).click();
+      await page.getByRole('button', { name: 'Acciones de la consulta' }).click();
       await page.getByRole('button', { name: 'Resolver consulta' }).click();
       await expect(page.getByRole('dialog', { name: 'Resolver consulta' })).toBeVisible();
     },

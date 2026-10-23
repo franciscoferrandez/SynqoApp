@@ -19,7 +19,7 @@ Agrupar ajustes funcionales de consultas, comenzando por la edición del título
 
 ## Evolución de consultas de fechas
 
-[SPEC-CON-005 — Calendario en consultas de fechas](../../08_especificaciones/99_archivadas/spec-con-005-calendario-en-consultas-fechas.md) está cerrada y validada localmente con diez criterios PASS, API completa 198 tests/2071 assertions, WEB 33 tests y E2E focalizados, relacionados y reales. Revisión independiente REVIEW_OK. El build pasa con aviso de 503,04 kB sobre el presupuesto de aviso de 500 kB, sin ampliarlo. Sin commit ni despliegue; regresión visual pendiente para la release. La reutilización posterior desde el calendario principal se valida en [SPEC-CON-006 — Crear consultas desde el calendario con el diálogo compartido](../../08_especificaciones/99_archivadas/spec-con-006-crear-consulta-dialogo-calendario.md), descrita a continuación.
+[SPEC-CON-005 — Calendario en consultas de fechas](../../08_especificaciones/99_archivadas/spec-con-005-calendario-en-consultas-fechas.md) está cerrada y validada localmente con diez criterios PASS, API completa 198 tests/2071 assertions, WEB 33 tests y E2E focalizados, relacionados y reales. Revisión independiente REVIEW_OK. El build pasa con aviso de 503,04 kB sobre el presupuesto de aviso de 500 kB, sin ampliarlo. Evidencia del cierre original sin commit ni despliegue; actualización posterior de referencias y commit registrada abajo. La reutilización posterior desde el calendario principal se valida en [SPEC-CON-006 — Crear consultas desde el calendario con el diálogo compartido](../../08_especificaciones/99_archivadas/spec-con-006-crear-consulta-dialogo-calendario.md), descrita a continuación.
 
 ## Evidencia y pendientes
 
@@ -27,7 +27,13 @@ Agrupar ajustes funcionales de consultas, comenzando por la edición del título
 
 La matriz y los comandos ejecutados de [SPEC-CON-004 — Editar una consulta con opciones de texto](../../08_especificaciones/99_archivadas/spec-con-004-editar-consulta-texto.md) registran nueve criterios PASS, API completa con 185 tests y 1781 assertions, 26 tests WEB y 80 casos E2E nuevos y relacionados. La evidencia posterior de consultas de fechas se registra en su sección anterior. Checks estáticos, formato, build, esquema y revisión independiente PASS. Esta evidencia acredita validación local, sin modificar el estado documental de los requisitos.
 
-La persona impulsora confirma la implementación de [SPEC-CON-005 — Calendario en consultas de fechas](../../08_especificaciones/99_archivadas/spec-con-005-calendario-en-consultas-fechas.md) tras probarla en local el 2026-10-21; ese Change no tiene pendientes funcionales ni de aceptación local. La revisión de edición de texto se mantiene según su fila de alcance. Las regresiones visuales están omitidas por instrucción expresa y pendientes antes del cierre de la entrega; el despliegue sigue pendiente. No se declara la release entregada.
+La persona impulsora confirma la implementación de [SPEC-CON-005 — Calendario en consultas de fechas](../../08_especificaciones/99_archivadas/spec-con-005-calendario-en-consultas-fechas.md) tras probarla en local el 2026-10-21; ese Change no tiene pendientes funcionales ni de aceptación local. La revisión de edición de texto se mantiene según su fila de alcance. La omisión visual original queda sustituida por la autorización y ejecución de 2026-10-23 registradas abajo; el despliegue sigue pendiente. No se declara la release entregada.
+
+## Actualización visual y publicación — 2026-10-23
+
+La persona impulsora autoriza expresamente actualizar toda la suite de snapshots y aprueba visualmente lo probado en local. Con NVM activado desde raíz, `npm --prefix apps/web run test:visual:update`: **136/136 PASS**, móvil 390×844 y escritorio 1280×800, ambos temas. Se actualizan 44 referencias y se adaptan las fixtures al diálogo compartido y a los menús de acciones; la confirmación visual de fechas corresponde al descarte del borrador. Corregidos permisos locales de capturas antiguas sin cambiar producto.
+
+El commit funcional `b7ef024` conserva los Changes previos y supera los hooks API/WEB. Esta actualización de referencias va en un commit posterior; la comparación sin actualización vuelve a ejecutarse en el hook de subida y el resultado del CI se comprueba después de publicar. Las menciones anteriores a omisión visual o ausencia de commit describen la evidencia original de los cierres. Sin evidencia de despliegue ni declaración ENTREGADA.
 
 ## Coordinación de entregas y despliegue
 
