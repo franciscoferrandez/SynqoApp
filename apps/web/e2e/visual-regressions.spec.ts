@@ -589,6 +589,8 @@ const scenarios: Scenario[] = [
       await page.getByRole('button', { name: 'Acciones del evento' }).click();
       await page.getByRole('button', { name: 'Recuperar evento' }).click();
       await expect(page.getByRole('dialog', { name: '¿Recuperar este evento?' })).toBeVisible();
+      // Opening the action can leave the inert background a few pixels scrolled.
+      await page.evaluate(() => window.scrollTo(0, 0));
     },
   },
   {
