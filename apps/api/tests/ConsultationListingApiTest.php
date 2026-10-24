@@ -204,12 +204,12 @@ final class ConsultationListingApiTest extends WebTestCase
         self::assertSame([], $this->listing($team)['archived']);
         $this->client->request('GET', '/api/teams/current/events', server: $server);
         self::assertResponseStatusCodeSame(200);
-        $occupants = array_column($this->body()['unfinalized'], 'openConsultationId', 'id');
+        $occupants = array_column($this->body()['active'], 'openConsultationId', 'id');
         self::assertSame($consultation['id'], $occupants[$event['id']]);
         self::assertNull($occupants[$free['id']]);
         $other = $this->team();
         $this->client->request('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $other['token']]);
-        self::assertSame([], $this->body()['unfinalized']);
+        self::assertSame([], $this->body()['active']);
     }
 
     public function testPhpFixedOffsetsAliasesAndAbbreviationsKeepTheirCivilDayInSql(): void

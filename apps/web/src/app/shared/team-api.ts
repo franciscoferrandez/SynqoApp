@@ -29,13 +29,16 @@ export interface TeamEvent extends TeamEventSummary {
   consultations?: { id: string; title: string; state: ConsultationState }[];
 }
 export interface TeamEventListItem extends TeamEventSummary {
+  effectiveDate: string;
   openConsultationId: string | null;
 }
-export interface TeamEventGroups {
-  unfinalized: TeamEventListItem[];
-  future: TeamEventListItem[];
-  past: TeamEventListItem[];
-  rejected: TeamEventListItem[];
+export interface ArchivedEvents {
+  archived: TeamEventListItem[];
+  archivedCursor: string | null;
+  listContext: ListContext;
+}
+export interface TeamEventGroups extends ArchivedEvents {
+  active: TeamEventListItem[];
 }
 export interface CalendarEvent {
   id: string;
@@ -231,6 +234,11 @@ export class TeamApi {
   }
   events(): Observable<TeamEventGroups> {
     return this.http.get<TeamEventGroups>('/api/teams/current/events');
+  }
+  loadArchivedEvents(archivedCursor: string): Observable<ArchivedEvents> {
+    return this.http.get<ArchivedEvents>('/api/teams/current/events', {
+      params: { archivedCursor },
+    });
   }
   event(id: string): Observable<{ event: TeamEvent }> {
     return this.http.get<{ event: TeamEvent }>(`/api/teams/current/events/${id}`);

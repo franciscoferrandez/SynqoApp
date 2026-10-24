@@ -25,20 +25,20 @@ const team = {
 const accessToken = 'visual-token';
 const teamUrl = `/e/calendario#t=${accessToken}`;
 
-type ScenarioOptions = {
+interface ScenarioOptions {
   emailMode?: 'hidden' | 'demo' | 'send';
   activeParticipant?: boolean;
   emptyConsultations?: boolean;
   currentStatus?: number;
   noOwnVote?: boolean;
-};
-type Scenario = {
+}
+interface Scenario {
   id: string;
   title: string;
   options?: ScenarioOptions;
   fullPage?: boolean;
   run: (page: Page) => Promise<void>;
-};
+}
 
 function availabilityDays(from: string, to: string) {
   const days = [];
@@ -140,65 +140,82 @@ const resolvedConsultation = {
     acceptedOptionIds: ['visual-option-cafe'],
   },
 };
+const rejectedConsultation = {
+  ...textConsultation,
+  id: 'visual-rejected-consultation',
+  title: 'Plan rechazado en la ventana reciente',
+  state: 'rejected' as const,
+  resolution: {
+    participant: participants[1],
+    resolvedAt: '2026-10-14T11:30:00+02:00',
+    acceptedOptionIds: [],
+  },
+};
 const eventGroups = {
-  unfinalized: [
+  active: [
     {
       id: 'visual-event-provisional',
       title: 'Ensayo general',
       date: '2026-10-24',
+      effectiveDate: '2026-10-24',
       status: 'provisional',
       openConsultationId: null,
       lastModifiedAt: null,
       version: 1,
     },
-  ],
-  future: [
     {
       id: 'visual-event-future',
       title: 'Concierto de otoño',
       date: '2026-10-30',
+      effectiveDate: '2026-10-30',
       status: 'definitive',
       openConsultationId: null,
       lastModifiedAt: '2026-10-14T11:00:00+02:00',
       version: 2,
     },
   ],
-  past: [
+  archived: [
+    {
+      id: 'visual-event-rejected',
+      title: 'Plan descartado',
+      date: null,
+      effectiveDate: '2026-10-14',
+      status: 'rejected',
+      openConsultationId: null,
+      lastModifiedAt: '2026-10-14T11:30:00+02:00',
+      version: 2,
+    },
     {
       id: 'visual-event-past',
       title: 'Actuación en la plaza',
       date: '2026-10-10',
+      effectiveDate: '2026-10-10',
       status: 'definitive',
       openConsultationId: null,
       lastModifiedAt: null,
       version: 1,
     },
   ],
-  rejected: [
-    {
-      id: 'visual-event-rejected',
-      title: 'Plan descartado',
-      date: null,
-      status: 'rejected',
-      openConsultationId: null,
-      lastModifiedAt: '2026-10-14T11:30:00+02:00',
-      version: 2,
-    },
-  ],
 };
 const eventDetail = {
-  ...eventGroups.unfinalized[0],
+  ...eventGroups.active[0],
   notes: 'Repasar las canciones nuevas antes del ensayo.',
   createdBy: participants[0],
   createdAt: '2026-10-12T10:00:00+02:00',
   lastModifiedBy: null,
 };
 const rejectedEventDetail = {
-  ...eventGroups.rejected[0],
+  ...eventGroups.archived[0],
   notes: null,
   createdBy: participants[0],
   createdAt: '2026-10-12T10:00:00+02:00',
   lastModifiedBy: participants[1],
+};
+const eventListFixture = {
+  active: eventGroups.active,
+  archived: eventGroups.archived,
+  archivedCursor: null,
+  listContext: { today: '2026-10-14', timeZone: 'Europe/Madrid', recentDays: 7, loadMoreCount: 10 },
 };
 
 async function installFixtures(page: Page, options: ScenarioOptions = {}): Promise<void> {
@@ -266,12 +283,15 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({
       json: options.emptyConsultations
-        ? consultationListFixture([], [], '2026-10-15')
-        : consultationListFixture(
-            [dateConsultation, resolvedConsultation, textConsultation],
-            [],
-            '2026-10-15',
-          ),
+        ? consultationListFixture([], [], '2026-10-14')
+        : {
+            ...consultationListFixture(
+              [dateConsultation, resolvedConsultation, textConsultation],
+              [rejectedConsultation],
+              '2026-10-14',
+            ),
+            archivedCursor: 'visual-older-archive',
+          },
     }),
   );
   await page.route(/\/api\/teams\/current\/consultations\/[^/]+$/, (route) => {
@@ -287,7 +307,9 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
               : textConsultation,
     });
   });
-  await page.route('**/api/teams/current/events', (route) => route.fulfill({ json: eventGroups }));
+  await page.route('**/api/teams/current/events', (route) =>
+    route.fulfill({ json: eventListFixture }),
+  );
   await page.route('**/api/teams/current/events/calendar**', (route) =>
     route.fulfill({ json: { events: [] } }),
   );
@@ -528,13 +550,11 @@ const scenarios: Scenario[] = [
   },
   {
     id: 'eventos-lista-agrupada',
-    title: 'eventos organizados por estado y fecha',
+    title: 'eventos organizados por vigencia',
     run: async (page) => {
       await open(page, `/e/eventos#t=${accessToken}`, 'light');
-      await expect(page.getByRole('heading', { name: 'Sin fecha definitiva' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Futuros' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Pasados' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Rechazados' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Activos' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Archivados' })).toBeVisible();
     },
   },
   {

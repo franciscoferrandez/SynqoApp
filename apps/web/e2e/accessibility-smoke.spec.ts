@@ -1,4 +1,5 @@
 import { consultationListFixture } from './fixtures/consultation-list';
+import { eventListFixture } from './fixtures/event-list';
 import { expect, Locator, Page, test } from '@playwright/test';
 
 // HTTP-fixtured presentation smoke, not a WCAG audit or API integration test.
@@ -106,22 +107,18 @@ for (const viewport of viewports) {
       );
       await page.route('**/api/teams/current/events', (route) =>
         route.fulfill({
-          json: {
-            unfinalized: [
-              {
-                id: 'smoke-event',
-                title: 'Ensayo del equipo',
-                date: null,
-                status: 'provisional',
-                openConsultationId: null,
-                lastModifiedAt: null,
-                version: 1,
-              },
-            ],
-            future: [],
-            past: [],
-            rejected: [],
-          },
+          json: eventListFixture([
+            {
+              id: 'smoke-event',
+              title: 'Ensayo del equipo',
+              date: null,
+              effectiveDate: '2026-10-18',
+              status: 'provisional',
+              openConsultationId: null,
+              lastModifiedAt: null,
+              version: 1,
+            },
+          ]),
         }),
       );
     });
@@ -230,7 +227,7 @@ for (const viewport of viewports) {
         localStorage.setItem('synqo-participant-smoke-team', 'smoke-person'),
       );
       await page.goto('/e/eventos#t=smoke-token');
-      await expect(page.getByRole('heading', { name: 'Sin fecha definitiva' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Activos' })).toBeVisible();
       await reflow(page);
 
       const create = page.locator('.section-heading').getByRole('button', { name: /Crear evento/ });

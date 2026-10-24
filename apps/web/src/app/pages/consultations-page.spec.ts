@@ -204,50 +204,60 @@ it('does not move focus when another detail opens before list focus is restored'
   }
 });
 
-it('keeps the linked event selected while excluding an event occupied outside loaded history', async () => {
-  const event = (id: string, openConsultationId: string | null) => ({
-    id,
-    title: id,
-    status: 'provisional' as const,
-    date: null,
-    version: 1,
-    lastModifiedAt: null,
-    openConsultationId,
-  });
-  const api = {
-    events: vi.fn(() =>
-      of({
-        unfinalized: [
-          event('current', 'consultation'),
-          event('free', null),
-          event('occupied-outside-window', 'old-open-consultation'),
-          { ...event('definitive', null), status: 'definitive' },
-        ],
-        future: [],
-        past: [],
-        rejected: [],
-      }),
-    ),
-  };
-  TestBed.configureTestingModule({
-    imports: [ConsultationDetailPage],
-    providers: [
-      { provide: TeamApi, useValue: api },
-      { provide: TeamLayout, useValue: { handleAccessError: () => false } },
-    ],
-  });
-  await TestBed.compileComponents();
-  const fixture = TestBed.createComponent(ConsultationDetailPage);
-  const page = fixture.componentInstance;
-  page.consultationId = 'consultation';
-  page.consultation = {
-    ...item('consultation'),
-    options: [],
-    event: event('current', 'consultation'),
-  };
-  page.openEventEditor();
-  expect(page.draftEventId).toBe('current');
-  expect(page.eligibleEvents.map((entry) => entry.id)).toEqual(['current', 'free']);
-  expect(api.events).toHaveBeenCalledTimes(1);
-  fixture.destroy();
-});
+it.each(['provisional', 'definitive', 'rejected'] as const)(
+  'keeps a %s linked event selected while excluding an event occupied outside loaded history',
+  async (currentStatus) => {
+    const event = (id: string, openConsultationId: string | null) => ({
+      id,
+      title: id,
+      status: 'provisional' as const,
+      date: null,
+      version: 1,
+      lastModifiedAt: null,
+      openConsultationId,
+    });
+    const current = { ...event('current', 'consultation'), status: currentStatus };
+    const api = {
+      events: vi.fn(() =>
+        of({
+          active: [
+            current,
+            event('free', null),
+            { ...event('past-provisional', null), date: '2020-01-01' },
+            event('occupied-outside-window', 'old-open-consultation'),
+            { ...event('definitive', null), status: 'definitive' },
+            { ...event('rejected', null), status: 'rejected' },
+          ],
+          archived: [],
+          archivedCursor: null,
+          listContext: context,
+        }),
+      ),
+    };
+    TestBed.configureTestingModule({
+      imports: [ConsultationDetailPage],
+      providers: [
+        { provide: TeamApi, useValue: api },
+        { provide: TeamLayout, useValue: { handleAccessError: () => false } },
+      ],
+    });
+    await TestBed.compileComponents();
+    const fixture = TestBed.createComponent(ConsultationDetailPage);
+    const page = fixture.componentInstance;
+    page.consultationId = 'consultation';
+    page.consultation = {
+      ...item('consultation'),
+      options: [],
+      event: current,
+    };
+    page.openEventEditor();
+    expect(page.draftEventId).toBe('current');
+    expect(page.eligibleEvents.map((entry) => entry.id)).toEqual([
+      ...(currentStatus === 'provisional' ? ['current'] : []),
+      'free',
+      'past-provisional',
+    ]);
+    expect(api.events).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+  },
+);

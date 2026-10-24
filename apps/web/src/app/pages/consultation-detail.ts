@@ -852,7 +852,7 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     this.subscriptions.add(
       this.api.events().subscribe({
         next: (events) => {
-          this.eligibleEvents = events.unfinalized.filter(
+          this.eligibleEvents = events.active.filter(
             (event) =>
               event.status === 'provisional' &&
               (event.openConsultationId === null ||

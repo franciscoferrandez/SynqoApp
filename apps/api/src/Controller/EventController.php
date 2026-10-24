@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Application\Event\EventService;
 use App\Application\Exception\EventConflict;
 use App\Application\Exception\InvalidEventInput;
+use App\Application\Exception\InvalidListCursor;
+use App\Application\Exception\ListContextChanged;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
@@ -20,7 +22,7 @@ final readonly class EventController
 
     public function list(Request $request): JsonResponse
     {
-        return $this->execute($request, fn(): JsonResponse => $this->success($this->events->list($this->bearerToken($request))));
+        return $this->execute($request, fn(): JsonResponse => $this->success($this->events->list($this->bearerToken($request), $request->query->all()['archivedCursor'] ?? null)));
     }
 
     public function calendar(Request $request): JsonResponse
@@ -107,6 +109,10 @@ final readonly class EventController
         try {
             $this->teams->current($this->bearerToken($request));
             return $work();
+        } catch (InvalidListCursor) {
+            return $this->problem(400, 'El cursor de archivados no es válido.');
+        } catch (ListContextChanged) {
+            return $this->problem(409, 'El día o la zona del equipo han cambiado. Recarga la lista.', type: 'urn:synqo:problem:list-context-changed');
         } catch (InvalidEventInput $error) {
             return $this->problem(422, 'Revisa los datos del evento.', $error->fields);
         } catch (EventConflict) {

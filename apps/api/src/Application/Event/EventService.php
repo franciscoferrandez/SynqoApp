@@ -9,6 +9,8 @@ use App\Application\Exception\InvalidEventInput;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
+use App\Application\Listing\ListPolicy;
+use App\Application\Listing\ListCursor;
 use App\Application\Team\IdentifierGenerator;
 use App\Application\Team\TeamRepository;
 use App\Application\Team\TeamService;
@@ -28,38 +30,22 @@ final readonly class EventService
         private IdentifierGenerator $identifiers,
         private ClockInterface $clock,
         private ExpiryCalculator $expiry,
+        private ListPolicy $listPolicy,
+        private ListCursor $listCursor,
     ) {}
 
-    /** @return array{unfinalized: list<array<string, mixed>>, future: list<array<string, mixed>>, past: list<array<string, mixed>>, rejected: list<array<string, mixed>>} */
-    public function list(?string $token): array
+    /** @return array<string, mixed> */
+    public function list(?string $token, mixed $archivedCursor = null): array
     {
         $team = $this->access->current($token);
-        $today = $this->now()->setTimezone(new DateTimeZone($team['timeZone']))->format('Y-m-d');
-        $groups = ['unfinalized' => [], 'future' => [], 'past' => [], 'rejected' => []];
-        foreach ($this->events->listForTeam($team['id']) as $item) {
-            $item['_sortAt'] = $item['lastModifiedAt'] ?? $item['_createdAt'];
-            $group = match ($item['status']) {
-                'rejected' => 'rejected',
-                'definitive' => $item['date'] >= $today ? 'future' : 'past',
-                default => 'unfinalized',
-            };
-            $groups[$group][] = $item;
-        }
+        $context = $this->listPolicy->context($this->clock->now(), $team['timeZone']);
+        $frontier = $archivedCursor === null ? null : $this->listCursor->decode($archivedCursor, 'events', $team['id'], $context);
+        $result = $this->events->listForTeam($team['id'], $context, $frontier);
+        $result['archivedCursor'] = $result['nextFrontier'] === null ? null : $this->listCursor->encode('events', $team['id'], $context, $result['nextFrontier']);
+        unset($result['nextFrontier']);
+        $result['listContext'] = $context->toArray();
 
-        usort($groups['future'], static fn(array $a, array $b): int => strcmp($a['date'], $b['date']) ?: strcmp($b['_sortAt'], $a['_sortAt']) ?: strcmp($a['id'], $b['id']));
-        usort($groups['past'], static fn(array $a, array $b): int => strcmp($b['date'], $a['date']) ?: strcmp($b['_sortAt'], $a['_sortAt']) ?: strcmp($a['id'], $b['id']));
-        foreach (['unfinalized', 'rejected'] as $group) {
-            usort($groups[$group], static fn(array $a, array $b): int => strcmp($b['_sortAt'], $a['_sortAt']) ?: strcmp($a['id'], $b['id']));
-        }
-        foreach ($groups as &$items) {
-            foreach ($items as &$item) {
-                unset($item['_createdAt'], $item['_sortAt']);
-            }
-            unset($item);
-        }
-        unset($items);
-
-        return $groups;
+        return $result;
     }
 
     /** @return array{events: list<array{id: string, date: string|null, title: string, status: string}>} */

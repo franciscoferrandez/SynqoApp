@@ -110,7 +110,13 @@ final class TeamApiTest extends WebTestCase
         self::assertSame('date', $listShapes[0]['properties']['active']['items']['properties']['effectiveDate']['format']);
         self::assertArrayNotHasKey('active', $listShapes[1]['properties']);
         self::assertSame(['archived', 'archivedCursor', 'listContext'], $listShapes[1]['required']);
-        $eventList = $spec['paths']['/api/teams/current/events']['get']['responses']['200']['content']['application/json']['schema']['properties']['unfinalized']['items'];
+        $eventListResponse = $spec['paths']['/api/teams/current/events']['get']['responses']['200']['content']['application/json']['schema']['oneOf'];
+        self::assertSame(['active', 'archived', 'archivedCursor', 'listContext'], $eventListResponse[0]['required']);
+        self::assertArrayNotHasKey('active', $eventListResponse[1]['properties']);
+        self::assertSame(['archived', 'archivedCursor', 'listContext'], $eventListResponse[1]['required']);
+        $eventList = $eventListResponse[0]['properties']['active']['items'];
+        self::assertContains('effectiveDate', $eventList['required']);
+        self::assertSame('date', $eventList['properties']['effectiveDate']['format']);
         self::assertContains('openConsultationId', $eventList['required']);
         self::assertTrue($eventList['properties']['openConsultationId']['nullable']);
         $calendarEvent = $spec['paths']['/api/teams/current/events/calendar']['get']['responses']['200']['content']['application/json']['schema']['properties']['events']['items'];

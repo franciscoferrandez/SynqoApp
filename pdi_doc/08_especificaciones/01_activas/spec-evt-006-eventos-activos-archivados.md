@@ -1,7 +1,7 @@
 ---
 id: SPEC-EVT-006
 nivel: N2
-estado: ready_for_change_apply
+estado: verificado
 release: REL-004
 ---
 
@@ -80,16 +80,16 @@ El principal mantiene dominio, autorización, contrato y límites temporales. De
 
 | Acceptance criterion | Evidence | Result |
 |---|---|---|
-| Matriz completa, provisional vencido activo y rechazo con/sin fecha archivado por rechazo | Tests de política y EventApiTest con reloj fijo | UNKNOWN — pendiente apply |
-| Fechas civiles y hoy por zona del equipo; medianoche, ventana inclusiva y cambio horario | API con reloj y zonas distintas de UTC | UNKNOWN — pendiente apply |
-| Activos completos ASC, archivados DESC, empates ID y Vigencia visible | API y E2E de listas mixtas | UNKNOWN — pendiente apply |
-| Inicial >10, ventana vacía con historial, cargas 10/10/resto, agotado sin duplicados | API/DB y E2E de cursor con empates | UNKNOWN — pendiente apply |
-| Siete/diez parametrizables sin duplicar literales | Test con política alternativa y revisión | UNKNOWN — pendiente apply |
-| Editar/rechazar/recuperar reclasifica sin guardar pseudoestado; rechazo conserva su momento | EventApiTest y E2E reales con antes/después | UNKNOWN — pendiente apply |
-| Cursor inválido/ajeno, autorización/caducidad y cambio de contexto | API Problem Details + E2E de reinicio | UNKNOWN — pendiente apply |
-| Errores conservan filas, doble pulsación y respuestas tardías controladas | WEB/E2E focalizados | UNKNOWN — pendiente apply |
-| Selector incluye provisionales pasados elegibles y asociado actual preseleccionado; excluye definitivos/rechazados y eventos ocupados por abierta archivada fuera de ventana en ambos órdenes de aplicación | API de openConsultationId y Event-consultations E2E | UNKNOWN — pendiente apply |
-| Calendario, navegación histórica, temas, cuatro anchuras y teclado conservados | E2E relacionados y revisión independiente | UNKNOWN — pendiente apply |
+| Matriz completa, provisional vencido activo y rechazo con/sin fecha archivado por rechazo | EventApiTest con reloj fijo; EventListingApiTest comprueba fecha de rechazo y anomalía NULL con error genérico 500 | PASS |
+| Fechas civiles y hoy por zona del equipo; medianoche, ventana inclusiva y cambio horario | EventListingApiTest: Madrid/DST, Los Ángeles, US/Eastern, GMT+0100 y offsets de ambos signos; límite de ventana | PASS |
+| Activos completos ASC, archivados DESC, empates ID y Vigencia visible | EventApiTest, unitarias de página y events.spec.ts | PASS |
+| Inicial >10, ventana vacía con historial, cargas 10/10/resto, agotado sin duplicados | EventListingApiTest: 13 recientes y 23 anteriores; E2E con 12/10/10/3 | PASS |
+| Siete/diez parametrizables sin duplicar literales | Política compartida, API con configuración 3/2 y WEB con valores alternativos | PASS |
+| Editar/rechazar/recuperar reclasifica sin guardar pseudoestado; rechazo conserva su momento | EventApiTest; events-real.spec.ts, incluido provisional vencido que vuelve a Activos; lectura no altera actividad | PASS |
+| Cursor inválido/ajeno, autorización/caducidad y cambio de contexto | API 400/401/409/410, recurso/equipo/versión/zona/día; unitaria WEB de reinicio 409 | PASS |
+| Errores conservan filas, doble pulsación y respuestas tardías controladas | events-page.spec.ts: reintento, deduplicación, bloqueo, generación y retorno de foco | PASS |
+| Selector incluye provisionales pasados elegibles y asociado actual preseleccionado; excluye definitivos/rechazados y eventos ocupados por abierta archivada fuera de ventana en ambos órdenes de aplicación | API de ocupación, unitarias de selector y event-consultations.spec.ts; contrato anterior verificado en el Change de consultas | PASS |
+| Calendario, navegación histórica, temas, cuatro anchuras y teclado conservados | Suite completa 191/191 E2E; matrices responsive y revisión independiente REVIEW_OK | PASS |
 
 ## Plan por slices y validación
 
@@ -106,3 +106,13 @@ En apply: docker compose exec -T api composer test, y dentro del servicio api co
 ## Evidencia de preparación — 2026-10-24
 
 Exploración delegada y revisión independiente completadas: REVIEW_OK, sin BLOCKER/MAJOR ni decisiones funcionales abiertas. Validación documental: python3 pdi/scripts/validate_structure.py PASS (69 directorios, 17 skills), python3 pdi/scripts/artifact_links.py sin incidencias y git diff --check PASS. Baseline, release e índice de trazabilidad actualizados. No se han ejecutado tests de producto ni alterado código, snapshots, commits o despliegues; estos resultados acreditan preparación y no sustituyen apply/verify.
+
+## Ejecución de apply — 2026-10-24
+
+Implementación delegada con propiedad disjunta de API, WEB y tests; revisión independiente de solo lectura. El principal conserva las decisiones de dominio, autorización y contrato. Se reutilizan ListPolicy, ListContext y ListCursor introducidos por [SPEC-CON-008 — Consultas activas y archivadas por vigencia calculada](spec-con-008-consultas-activas-archivadas.md), incluida la compatibilidad temporal de alias y offsets PHP mediante intervalos PostgreSQL. Sin migraciones ni cambios del ciclo de vida.
+
+Comprobación previa de solo lectura sobre desarrollo: SELECT COUNT(*) FROM team_event WHERE status = 'rejected' AND last_modified_at IS NULL, resultado **0**. La proyección incluye una guarda para detectar esa inconsistencia sin inventar fechas; el manejador existente devuelve el error genérico y registra la excepción. Las pruebas usan la base synqo_test aislada, sin limpiar ni modificar datos de desarrollo.
+
+Con NVM activado: npm --prefix apps/web test, **61 pruebas PASS**; lint, format:check y build PASS (497,67 kB iniciales). docker compose exec -T api composer test, **219 tests / 2394 assertions PASS**; cs:check, stan, rector:check y doctrine:schema:validate --env=test PASS. La focal de API verifica 35 tests / 520 assertions. Los E2E focalizados de eventos, vínculos y calendario pasan 28/28, incluidos tres recorridos reales con PostgreSQL. Revisión independiente final de código/tests: REVIEW_OK, sin hallazgos pendientes.
+
+Suite final con NVM: WEB_TEST_PORT=4210 npm --prefix apps/web run test:e2e -- --workers=1, **191/191 PASS en 5,8 minutos**, con API/PostgreSQL y Mailpit reales. Benchmark automatizado 12,9 s, PASS. Se ajustaron los fixtures al nuevo contrato sin cambiar los criterios funcionales. Convergencia funcional PASS, sin drift significativo ni escalados pendientes. La referencia Symfony autogenerada fuera de scope se restaura antes del commit. La regresión visual y el cierre documental se harán después del tercer commit funcional, conforme a la secuencia autorizada; las releases siguen en implementación.

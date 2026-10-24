@@ -47,17 +47,19 @@ flowchart LR
 
 Las rutas del equipo vigente comprueban el Bearer del enlace. Las respuestas son JSON o Problem Details y se describen en `/api/docs`.
 
-## Listado de consultas por vigencia
+## Listados de consultas y eventos por vigencia
 
-`GET /api/teams/current/consultations` devuelve `active`, `archived`, `archivedCursor` y `listContext` (`today`, `timeZone`, `recentDays`, `loadMoreCount`). Los resúmenes añaden `effectiveDate` como fecha civil; conservan el estado y el tipo persistidos. La clasificación corresponde a [RF-CON-008 — Listar consultas por vigencia](../../pdi_doc/03_requisitos/01_funcionales/CON/rf-con-008-listar-consultas-vigencia.md).
+`GET /api/teams/current/consultations` y `GET /api/teams/current/events` devuelven `active`, `archived`, `archivedCursor` y `listContext` (`today`, `timeZone`, `recentDays`, `loadMoreCount`). Los resúmenes añaden `effectiveDate` como fecha civil; conservan el estado y el tipo persistidos. Las clasificaciones corresponden a [RF-CON-008 — Listar consultas por vigencia](../../pdi_doc/03_requisitos/01_funcionales/CON/rf-con-008-listar-consultas-vigencia.md) y [RF-EVT-002 — Listar y consultar eventos](../../pdi_doc/03_requisitos/01_funcionales/EVT/rf-evt-002-listar-consultar-eventos.md).
 
 La primera lectura incluye todas las activas y todas las archivadas de la ventana reciente, sin limitar esta última al tamaño de página. Con `?archivedCursor=...`, la continuación devuelve solo `archived`, el siguiente cursor o `null` y el contexto. La WEB conserva las activas y concatena el historial. `Application/Listing/ListPolicy` centraliza los valores iniciales de siete días civiles y diez elementos adicionales; el servidor publica los valores efectivos, sin duplicar la política en la WEB.
 
 El servicio autoriza primero el equipo y obtiene el día de su zona con el reloj inyectado. El repositorio proyecta la clasificación y fecha, aplica filtros, orden y límite en PostgreSQL y solo hidrata los resúmenes seleccionados. El orden usa día ASC para activas y DESC para archivadas, con ID ASC como desempate. No se persisten pseudoestados ni vigencia. Se preservan las zonas válidas de PHP, incluidos alias y offsets fijos: los offsets se trasladan a PostgreSQL como intervalos de segundos para evitar interpretar sus signos con reglas POSIX.
 
-El cursor versionado vincula recurso, equipo, contexto y frontera de fecha/ID; no contiene ni reemplaza la credencial Bearer. Un cursor inválido devuelve `400`; un cambio de día o zona devuelve `409` con `urn:synqo:problem:list-context-changed` y obliga a recargar la ventana inicial. Los datos entre peticiones son vivos; crear, editar o resolver invalida el cursor del cliente. Las operaciones de escritura conservan sus restricciones y transacciones.
+El cursor versionado vincula recurso, equipo, contexto y frontera de fecha/ID; no contiene ni reemplaza la credencial Bearer. Un cursor inválido devuelve `400`; un cambio de día o zona devuelve `409` con `urn:synqo:problem:list-context-changed` y obliga a recargar la ventana inicial. Los datos entre peticiones son vivos; crear, editar, resolver, rechazar o recuperar invalida el cursor del cliente. Las operaciones de escritura conservan sus restricciones y transacciones.
 
-La lista de eventos añade `openConsultationId` (UUID o `null`), derivado de `consultation.open_event_id` en una lectura filtrada por equipo. El selector de vínculo usa este campo en lugar de deducir ocupación del historial paginado: una consulta abierta archivada sigue ocupando su evento aunque no esté en la ventana cargada. El resumen de lista tiene esquema propio; los eventos embebidos o de detalle conservan su contrato. En este incremento los cuatro grupos de eventos y `/events/calendar` siguen vigentes.
+La lista de eventos añade `openConsultationId` (UUID o `null`), derivado de `consultation.open_event_id` en una lectura filtrada por equipo. El selector de vínculo usa este campo en lugar de deducir ocupación del historial paginado: una consulta abierta archivada sigue ocupando su evento aunque no esté en la ventana cargada. El resumen de lista tiene esquema propio; los eventos embebidos o de detalle conservan su contrato. `/events/calendar` conserva su proyección independiente de eventos fechados.
+
+La vigencia de un evento rechazado procede de `lastModifiedAt`, que el rechazo siempre actualiza. Si un rechazado carece de ese momento, la lectura detecta la inconsistencia y devuelve el error genérico registrado por el manejador de excepciones; no inventa una fecha ni oculta el evento. Recuperar conserva la fecha del evento y devuelve su estado provisional, incluso cuando esa fecha ha pasado.
 
 ## Persistencia
 

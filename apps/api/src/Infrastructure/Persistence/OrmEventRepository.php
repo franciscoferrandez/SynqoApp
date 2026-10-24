@@ -8,6 +8,7 @@ use App\Application\Event\EventRepository;
 use App\Application\Exception\EventConflict;
 use App\Application\Exception\InvalidEventInput;
 use App\Application\Exception\TeamNotFound;
+use App\Application\Listing\ListContext;
 use App\Infrastructure\Persistence\Entity\ParticipantRecord;
 use App\Infrastructure\Persistence\Entity\TeamEventRecord;
 use App\Infrastructure\Persistence\Entity\ConsultationRecord;
@@ -22,14 +23,86 @@ final readonly class OrmEventRepository implements EventRepository
 {
     public function __construct(private ManagerRegistry $managers) {}
 
-    public function listForTeam(string $teamId): array
+    public function listForTeam(string $teamId, ListContext $context, ?array $frontier): array
     {
-        $manager = $this->manager();
-        $team = $manager->getReference(TeamRecord::class, $teamId);
-        $records = $manager->getRepository(TeamEventRecord::class)->findBy(['team' => $team]);
-        $occupied = $manager->getConnection()->fetchAllKeyValue('SELECT e.id, c.id FROM team_event e LEFT JOIN consultation c ON c.open_event_id = e.id AND c.team_id = e.team_id WHERE e.team_id = :team', ['team' => $teamId]);
+        $connection = $this->manager()->getConnection();
+        if ($connection->fetchOne("SELECT id FROM team_event WHERE team_id = :team AND status = 'rejected' AND last_modified_at IS NULL LIMIT 1", ['team' => $teamId]) !== false) {
+            throw new \LogicException('Rejected events require a rejection moment.');
+        }
+        $parameters = ['team' => $teamId, 'zone' => $context->timeZone, 'today' => $context->today, 'window' => $context->windowStart()];
+        $zoneSql = ':zone';
+        if (($zoneOffset = $context->fixedOffsetSeconds()) !== null) {
+            $parameters['zoneOffset'] = $zoneOffset;
+            $zoneSql = 'make_interval(secs => :zoneOffset)';
+        }
+        $projection = <<<'SQL'
+            WITH listing AS (
+                SELECT e.id, c.id AS open_consultation_id,
+                    CASE WHEN e.status = 'rejected' THEN (e.last_modified_at AT TIME ZONE :zone)::date
+                         WHEN e.event_date IS NOT NULL THEN e.event_date
+                         ELSE (e.created_at AT TIME ZONE :zone)::date END AS effective_date,
+                    CASE WHEN e.status = 'rejected' THEN 'archived'
+                         WHEN e.status = 'definitive' AND e.event_date < CAST(:today AS date) THEN 'archived'
+                         ELSE 'active' END AS bucket
+                FROM team_event e
+                LEFT JOIN consultation c ON c.open_event_id = e.id AND c.team_id = e.team_id
+                WHERE e.team_id = :team
+            )
+            SQL;
+        $projection = str_replace('AT TIME ZONE :zone', 'AT TIME ZONE ' . $zoneSql, $projection);
+        if ($frontier === null) {
+            $active = $connection->fetchAllAssociative($projection . " SELECT id, effective_date, open_consultation_id FROM listing WHERE bucket = 'active' ORDER BY effective_date ASC, id ASC", $parameters);
+            $archived = $connection->fetchAllAssociative($projection . " SELECT id, effective_date, open_consultation_id FROM listing WHERE bucket = 'archived' AND effective_date BETWEEN CAST(:window AS date) AND CAST(:today AS date) ORDER BY effective_date DESC, id ASC", $parameters);
+            $older = $connection->fetchOne($projection . " SELECT id FROM listing WHERE bucket = 'archived' AND effective_date < CAST(:window AS date) LIMIT 1", $parameters);
+            return [
+                'active' => $this->listItems($teamId, $active),
+                'archived' => $this->listItems($teamId, $archived),
+                'nextFrontier' => $older === false ? null : ['date' => $context->windowStart(), 'id' => null],
+            ];
+        }
+        $parameters['frontier_date'] = $frontier['date'];
+        $condition = 'effective_date < CAST(:frontier_date AS date)';
+        if ($frontier['id'] !== null) {
+            $parameters['frontier_id'] = $frontier['id'];
+            $condition .= ' OR (effective_date = CAST(:frontier_date AS date) AND id > CAST(:frontier_id AS uuid))';
+        }
+        $parameters['limit'] = $context->loadMoreCount + 1;
+        $rows = $connection->fetchAllAssociative($projection . " SELECT id, effective_date, open_consultation_id FROM listing WHERE bucket = 'archived' AND (" . $condition . ') ORDER BY effective_date DESC, id ASC LIMIT :limit', $parameters, ['limit' => \Doctrine\DBAL\ParameterType::INTEGER]);
+        $hasMore = count($rows) > $context->loadMoreCount;
+        if ($hasMore) {
+            array_pop($rows);
+        }
+        $last = $rows === [] ? null : array_last($rows);
+        return [
+            'archived' => $this->listItems($teamId, $rows),
+            'nextFrontier' => $hasMore && $last !== null ? ['date' => (string) $last['effective_date'], 'id' => (string) $last['id']] : null,
+        ];
+    }
 
-        return array_map(static fn(TeamEventRecord $record): array => [...$record->toSummary(), '_createdAt' => $record->createdAt()->format(DATE_ATOM), 'openConsultationId' => $occupied[$record->toSummary()['id']] ?? null], $records);
+    /** @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function listItems(string $teamId, array $rows): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+        $records = $this->manager()->createQueryBuilder()
+            ->select('event')
+            ->from(TeamEventRecord::class, 'event')
+            ->where('IDENTITY(event.team) = :team')
+            ->andWhere('event.id IN (:ids)')
+            ->setParameter('team', $teamId)
+            ->setParameter('ids', array_column($rows, 'id'))
+            ->getQuery()->getResult();
+        $items = [];
+        foreach ($records as $record) {
+            if ($record instanceof TeamEventRecord) {
+                $item = $record->toSummary();
+                $items[$item['id']] = $item;
+            }
+        }
+        return array_map(static fn(array $row): array => [...$items[$row['id']], 'effectiveDate' => (string) $row['effective_date'], 'openConsultationId' => $row['open_consultation_id']], $rows);
     }
 
     public function calendarForTeam(string $teamId, string $from, string $to): array

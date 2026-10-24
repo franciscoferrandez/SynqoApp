@@ -1,4 +1,5 @@
 import { consultationListFixture } from './fixtures/consultation-list';
+import { eventListFixture } from './fixtures/event-list';
 import { expect, test } from '@playwright/test';
 
 const team = {
@@ -41,7 +42,7 @@ async function openCalendar(page: import('@playwright/test').Page): Promise<void
     route.fulfill({ json: { events } }),
   );
   await page.route('**/api/teams/current/events', (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+    route.fulfill({ json: eventListFixture() }),
   );
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({ json: consultationListFixture() }),

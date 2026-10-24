@@ -1,4 +1,5 @@
 import { consultationListFixture } from './fixtures/consultation-list';
+import { eventListFixture } from './fixtures/event-list';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Focused responsive smoke for the event/consultation linking controls. This is
@@ -33,6 +34,7 @@ const event = {
   id: 'evt-responsive-event',
   title: 'Excursión del equipo',
   date: null,
+  effectiveDate: '2026-10-18',
   status: 'provisional',
   version: 1,
   notes: null,
@@ -178,7 +180,7 @@ for (const viewport of viewports) {
             await firstEvents;
             return route.fulfill({ status: 500, json: { status: 500 } });
           }
-          return route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } });
+          return route.fulfill({ json: eventListFixture() });
         });
 
         await page.goto('/e/consultas/evt-responsive-consultation#t=evt-responsive-token');
@@ -240,7 +242,7 @@ for (const viewport of viewports) {
           route.fulfill({ json: { events: [] } }),
         );
         await page.route('**/api/teams/current/events', (route) =>
-          route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+          route.fulfill({ json: eventListFixture() }),
         );
 
         await page.goto('/e/calendario#t=evt-responsive-token');

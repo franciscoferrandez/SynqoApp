@@ -21,7 +21,7 @@ import {
 import { TeamLayout } from './team-layout';
 import { DetailAction, DetailActions } from '../shared/detail-actions';
 
-type EventGroupKey = keyof TeamEventGroups;
+type EventGroupKey = 'active' | 'archived';
 type LifecycleAction = 'reject' | 'recover';
 
 @Component({
@@ -144,7 +144,7 @@ type LifecycleAction = 'reject' | 'recover';
           </div>
         } @else {
           @for (group of groupDefinitions; track group.key) {
-            @if (events(group.key).length) {
+            @if (events(group.key).length || (group.key === 'archived' && groups.archivedCursor)) {
               <section class="list-section" [attr.aria-labelledby]="group.key + '-events-heading'">
                 <h3 [id]="group.key + '-events-heading'">{{ group.label }}</h3>
                 @for (item of events(group.key); track item.id) {
@@ -157,6 +157,7 @@ type LifecycleAction = 'reject' | 'recover';
                     <span class="consultation-card-content">
                       <strong>{{ item.title }}</strong>
                       <small>{{ eventDate(item) }}</small>
+                      <small>Vigencia: {{ effectiveDateLabel(item.effectiveDate) }}</small>
                     </span>
                     <span
                       class="badge"
@@ -167,6 +168,25 @@ type LifecycleAction = 'reject' | 'recover';
                       {{ statusLabel(item.status) }}
                     </span>
                   </button>
+                }
+                @if (group.key === 'archived') {
+                  @if (archiveError) {
+                    <p role="alert">
+                      No se pudieron cargar los eventos anteriores. Puedes reintentar.
+                    </p>
+                  }
+                  @if (groups.archivedCursor) {
+                    <button
+                      class="outline"
+                      type="button"
+                      [disabled]="archiveLoading"
+                      (click)="loadMore()"
+                    >
+                      {{
+                        archiveLoading ? 'Cargando…' : archiveError ? 'Reintentar' : 'Cargar más'
+                      }}
+                    </button>
+                  }
                 }
               </section>
             }
@@ -304,7 +324,7 @@ type LifecycleAction = 'reject' | 'recover';
           <p>
             {{
               lifecycleAction === 'reject'
-                ? 'El evento se conservará en la agrupación Rechazados y no aparecerá en el calendario.'
+                ? 'El evento se conservará en Archivados y no aparecerá en el calendario.'
                 : 'El evento volverá a Provisional y conservará la fecha que tenía.'
             }}
           </p>
@@ -378,10 +398,8 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   readonly groupDefinitions: { key: EventGroupKey; label: string }[] = [
-    { key: 'unfinalized', label: 'Sin fecha definitiva' },
-    { key: 'future', label: 'Futuros' },
-    { key: 'past', label: 'Pasados' },
-    { key: 'rejected', label: 'Rechazados' },
+    { key: 'active', label: 'Activos' },
+    { key: 'archived', label: 'Archivados' },
   ];
   groups?: TeamEventGroups;
   event?: TeamEvent;
@@ -389,6 +407,8 @@ export class EventsPage implements OnInit, OnDestroy {
   loading = true;
   detailLoading = false;
   loadFailed = false;
+  archiveLoading = false;
+  archiveError = false;
   detailFailed = false;
   showEditor = false;
   showDiscardConfirmation = false;
@@ -409,11 +429,19 @@ export class EventsPage implements OnInit, OnDestroy {
   private originalDraft = '';
   private focusReturnId?: string;
   private request?: Subscription;
+  private listRequest?: Subscription;
+  private archiveRequest?: Subscription;
+  private listGeneration = 0;
+  private routeInitialized = false;
   private routeRequest?: Subscription;
 
   ngOnInit(): void {
     this.routeRequest = this.route.paramMap.subscribe((params) => {
-      this.selectedEventId = params.get('eventId') ?? undefined;
+      const id = params.get('eventId') ?? undefined;
+      if (this.routeInitialized && id === this.selectedEventId) return;
+      this.routeInitialized = true;
+      this.invalidateList();
+      this.selectedEventId = id;
       this.event = undefined;
       if (this.selectedEventId) {
         this.loading = false;
@@ -425,13 +453,17 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.invalidateList();
     this.request?.unsubscribe();
     this.routeRequest?.unsubscribe();
   }
 
   get isEmpty(): boolean {
     return (
-      !!this.groups && this.groupDefinitions.every((group) => this.events(group.key).length === 0)
+      !!this.groups &&
+      !this.groups.active.length &&
+      !this.groups.archived.length &&
+      !this.groups.archivedCursor
     );
   }
 
@@ -459,25 +491,34 @@ export class EventsPage implements OnInit, OnDestroy {
   }
 
   load(): void {
-    this.request?.unsubscribe();
+    this.invalidateList();
+    const generation = this.listGeneration;
+    this.groups = undefined;
     this.loading = true;
     this.loadFailed = false;
-    this.request = this.api.events().subscribe({
+    this.listRequest = this.api.events().subscribe({
       next: (groups) => {
+        if (generation !== this.listGeneration) return;
         this.groups = groups;
         this.loading = false;
         this.changeDetector.markForCheck();
         if (this.focusReturnId) {
           const id = this.focusReturnId;
           this.focusReturnId = undefined;
-          setTimeout(() =>
-            document
-              .querySelector<HTMLButtonElement>(`[data-event-id="${CSS.escape(id)}"]`)
-              ?.focus(),
-          );
+          setTimeout(() => {
+            if (generation !== this.listGeneration || this.selectedEventId) return;
+            for (const card of document.querySelectorAll<HTMLButtonElement>('[data-event-id]')) {
+              if (card.dataset['eventId'] === id) {
+                card.focus();
+                return;
+              }
+            }
+            this.createButton?.nativeElement.focus();
+          });
         }
       },
       error: (error: HttpErrorResponse) => {
+        if (generation !== this.listGeneration) return;
         this.loading = false;
         this.loadFailed = !this.team.handleAccessError(error);
         this.changeDetector.markForCheck();
@@ -485,28 +526,81 @@ export class EventsPage implements OnInit, OnDestroy {
     });
   }
 
-  events(group: EventGroupKey): TeamEventSummary[] {
+  loadMore(): void {
+    const cursor = this.groups?.archivedCursor;
+    if (!cursor || this.archiveLoading) return;
+    const generation = this.listGeneration;
+    this.archiveLoading = true;
+    this.archiveError = false;
+    this.archiveRequest = this.api.loadArchivedEvents(cursor).subscribe({
+      next: (page) => {
+        if (generation !== this.listGeneration || !this.groups) return;
+        const ids = new Set(this.groups.archived.map((item) => item.id));
+        const additions = page.archived.filter((item) => {
+          if (ids.has(item.id)) return false;
+          ids.add(item.id);
+          return true;
+        });
+        this.groups = {
+          ...this.groups,
+          archived: [...this.groups.archived, ...additions],
+          archivedCursor: page.archivedCursor,
+          listContext: page.listContext,
+        };
+        this.archiveLoading = false;
+        this.message = 'Historial de eventos actualizado.';
+        this.changeDetector.markForCheck();
+      },
+      error: (error: HttpErrorResponse) => {
+        if (generation !== this.listGeneration) return;
+        this.archiveLoading = false;
+        if (
+          error.status === 409 &&
+          error.error?.type === 'urn:synqo:problem:list-context-changed'
+        ) {
+          this.load();
+          return;
+        }
+        this.archiveError = !this.team.handleAccessError(error);
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  private invalidateList(): void {
+    this.listGeneration++;
+    this.listRequest?.unsubscribe();
+    this.archiveRequest?.unsubscribe();
+    this.archiveLoading = false;
+    this.archiveError = false;
+  }
+
+  events(group: EventGroupKey) {
     return this.groups?.[group] ?? [];
   }
 
   openDetail(id: string): void {
+    this.invalidateList();
     this.selectedEventId = id;
     this.loadDetail();
   }
 
   loadDetail(): void {
     if (!this.selectedEventId) return;
+    const id = this.selectedEventId;
     this.request?.unsubscribe();
     this.detailLoading = true;
     this.detailFailed = false;
     this.request = this.api.event(this.selectedEventId).subscribe({
       next: ({ event }) => {
+        if (this.selectedEventId !== id) return;
         this.event = event;
         this.detailLoading = false;
         this.actionError = '';
         this.changeDetector.markForCheck();
       },
       error: (error: HttpErrorResponse) => {
+        if (this.selectedEventId !== id) return;
         this.detailLoading = false;
         this.detailFailed = !this.team.handleAccessError(error);
         this.changeDetector.markForCheck();
@@ -516,6 +610,7 @@ export class EventsPage implements OnInit, OnDestroy {
 
   closeDetail(): void {
     if (!this.selectedEventId) return;
+    this.request?.unsubscribe();
     this.focusReturnId = this.selectedEventId;
     this.selectedEventId = undefined;
     this.event = undefined;
@@ -723,14 +818,24 @@ export class EventsPage implements OnInit, OnDestroy {
 
   eventDate(item: TeamEventSummary): string {
     if (!item.date) return 'Sin fecha';
-    const date = new Date(`${item.date}T12:00:00`);
+    const date = new Date(`${item.date}T12:00:00Z`);
     const value = new Intl.DateTimeFormat('es-ES', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+      timeZone: 'UTC',
     }).format(date);
     return item.status === 'definitive' ? value : `${value} · ${this.statusLabel(item.status)}`;
+  }
+
+  effectiveDateLabel(date: string): string {
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${date}T12:00:00Z`));
   }
 
   dateTime(value: string): string {

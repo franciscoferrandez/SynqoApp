@@ -149,12 +149,21 @@ test('eventos persisten y se gestionan desde WEB contra API y PostgreSQL', async
   });
   expect(listAfterCreate.status()).toBe(200);
   expect(await listAfterCreate.json()).toMatchObject({
-    unfinalized: [
+    active: [
       {
         title: 'Ensayo E2E persistente',
         status: 'provisional',
+        effectiveDate: expect.any(String),
       },
     ],
+    archived: [],
+    archivedCursor: null,
+    listContext: {
+      today: expect.any(String),
+      timeZone: 'Europe/Madrid',
+      recentDays: 7,
+      loadMoreCount: 10,
+    },
   });
 
   await page.reload();
@@ -184,7 +193,7 @@ test('eventos persisten y se gestionan desde WEB contra API y PostgreSQL', async
   await expect(page.locator('.event-detail-card .badge')).toHaveText('Provisional');
 
   const eventResponse = await request.get(
-    `/api/teams/current/events/${(await listAfterCreate.json()).unfinalized[0].id}`,
+    `/api/teams/current/events/${(await listAfterCreate.json()).active[0].id}`,
     { headers: authorization },
   );
   expect(eventResponse.status()).toBe(200);
@@ -195,4 +204,63 @@ test('eventos persisten y se gestionan desde WEB contra API y PostgreSQL', async
       notes: 'Comprobar lectura desde otra petición.',
     },
   });
+});
+
+test('rechazar y recuperar un provisional pasado lo mueve entre Archivados y Activos', async ({
+  page,
+  request,
+}) => {
+  const created = await request.post('/api/teams', {
+    data: {
+      name: 'Equipo E2E Vigencia pasada',
+      firstParticipantName: 'Ana Vigencia',
+      timeZone: 'Europe/Madrid',
+    },
+  });
+  expect(created.status()).toBe(201);
+  const team = await created.json();
+  const token = new URL(team.accessUrl).hash.slice('#t='.length);
+  const headers = { Authorization: `Bearer ${token}` };
+  await page.addInitScript(
+    ({ id, actor }) => localStorage.setItem(`synqo-participant-${id}`, actor),
+    { id: team.id, actor: team.firstParticipant.id },
+  );
+  const createEvent = await request.post('/api/teams/current/events', {
+    headers,
+    data: {
+      participantId: team.firstParticipant.id,
+      title: 'Provisional de fecha vencida',
+      date: '2000-01-01',
+      status: 'provisional',
+    },
+  });
+  expect(createEvent.status()).toBe(201);
+  const eventId = (await createEvent.json()).event.id as string;
+
+  await page.goto(`/e/eventos#t=${token}`);
+  const card = page.locator(`[data-event-id="${eventId}"]`);
+  await expect(page.getByRole('heading', { name: 'Activos' })).toBeVisible();
+  await expect(card).toContainText('Provisional');
+  await expect(card).toContainText('Vigencia: 1 de enero de 2000');
+  await card.click();
+  await eventAction(page, 'Rechazar evento');
+  await page
+    .getByRole('dialog', { name: '¿Rechazar este evento?' })
+    .getByRole('button', { name: 'Rechazar evento' })
+    .click();
+  await expect(page.locator('.event-detail-card .badge')).toHaveText('Rechazado');
+  await page.getByRole('button', { name: '← Volver a Eventos' }).click();
+  await expect(page.getByRole('heading', { name: 'Archivados' })).toBeVisible();
+  await expect(page.locator(`[data-event-id="${eventId}"]`)).toContainText('Rechazado');
+
+  await page.locator(`[data-event-id="${eventId}"]`).click();
+  await eventAction(page, 'Recuperar evento');
+  await page
+    .getByRole('dialog', { name: '¿Recuperar este evento?' })
+    .getByRole('button', { name: 'Recuperar evento' })
+    .click();
+  await expect(page.locator('.event-detail-card .badge')).toHaveText('Provisional');
+  await page.getByRole('button', { name: '← Volver a Eventos' }).click();
+  await expect(page.getByRole('heading', { name: 'Activos' })).toBeVisible();
+  await expect(page.locator(`[data-event-id="${eventId}"]`)).toContainText('Provisional');
 });

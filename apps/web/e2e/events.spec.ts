@@ -8,7 +8,7 @@ const team = {
   participants: [{ id: 'participant-ana', name: 'Ana' }],
 };
 
-type EventItem = {
+interface EventItem {
   id: string;
   title: string;
   notes: string | null;
@@ -19,17 +19,32 @@ type EventItem = {
   lastModifiedAt: string | null;
   lastModifiedBy: { id: string; name: string } | null;
   version: number;
-};
+}
 
 function summary(item: EventItem) {
   return {
     id: item.id,
     title: item.title,
     date: item.date,
+    effectiveDate: item.date ?? '2026-10-18',
     status: item.status,
     lastModifiedAt: item.lastModifiedAt,
     version: item.version,
     openConsultationId: null,
+  };
+}
+
+function listFixture(active: ReturnType<typeof summary>[], archived: ReturnType<typeof summary>[]) {
+  return {
+    active,
+    archived,
+    archivedCursor: null,
+    listContext: {
+      today: '2026-10-18',
+      timeZone: 'Europe/Madrid',
+      recentDays: 7,
+      loadMoreCount: 10,
+    },
   };
 }
 
@@ -40,6 +55,7 @@ async function eventAction(page: import('@playwright/test').Page, name: string):
 
 test('creates, edits, rejects and recovers an event with confirmations', async ({ page }) => {
   let item: EventItem | undefined;
+  let itemBucket: 'active' | 'archived' = 'active';
   await page.addInitScript(() =>
     localStorage.setItem('synqo-participant-events-team', 'participant-ana'),
   );
@@ -59,10 +75,10 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
     if (request.method() === 'GET' && url.pathname.endsWith('/events')) {
       return route.fulfill({
         json: {
-          unfinalized: item && item.status === 'provisional' ? [summary(item)] : [],
-          future: item && item.status === 'definitive' ? [summary(item)] : [],
-          past: [],
-          rejected: item && item.status === 'rejected' ? [summary(item)] : [],
+          ...listFixture(
+            item && itemBucket === 'active' ? [summary(item)] : [],
+            item && itemBucket === 'archived' ? [summary(item)] : [],
+          ),
         },
       });
     }
@@ -80,6 +96,7 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
         lastModifiedBy: null,
         version: 1,
       };
+      itemBucket = 'active';
       return route.fulfill({ status: 201, json: { event: item, expiresAt: team.expiresAt } });
     }
     if (!item) return route.fulfill({ status: 404, json: { status: 404 } });
@@ -92,6 +109,7 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
         lastModifiedBy: team.participants[0],
         version: item.version + 1,
       };
+      itemBucket = 'archived';
       return route.fulfill({ json: { event: item, expiresAt: team.expiresAt } });
     }
     if (request.method() === 'PUT' && url.pathname.endsWith('/recovery')) {
@@ -102,6 +120,7 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
         lastModifiedBy: team.participants[0],
         version: item.version + 1,
       };
+      itemBucket = 'active';
       return route.fulfill({ json: { event: item, expiresAt: team.expiresAt } });
     }
     if (request.method() === 'PUT') {
@@ -132,7 +151,7 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
   await expect(editor.locator('#event-status')).toHaveValue('provisional');
   await editor.locator('#event-status').selectOption('definitive');
   await editor.getByRole('button', { name: 'Guardar evento' }).click();
-  await expect(page.getByRole('heading', { name: 'Futuros' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activos' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ensayo general/ })).toContainText('Definitivo');
 
   await page.getByRole('button', { name: /Ensayo general/ }).click();
@@ -183,7 +202,7 @@ test('creates, edits, rejects and recovers an event with confirmations', async (
     .click();
   await expect(page.locator('.event-detail-card .badge')).toHaveText('Provisional');
   await page.getByRole('button', { name: '← Volver a Eventos' }).click();
-  await expect(page.getByRole('heading', { name: 'Sin fecha definitiva' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activos' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Ensayo y repertorio/ })).toContainText(
     'Provisional',
   );
@@ -205,7 +224,7 @@ test('the event list and editor fit a narrow mobile viewport', async ({ page }) 
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/events', (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+    route.fulfill({ json: listFixture([], []) }),
   );
 
   await page.goto('/e/eventos#t=events-token');
@@ -245,22 +264,23 @@ test('load and save errors allow retry without losing the event draft', async ({
       if (++loadAttempts === 1) return route.fulfill({ status: 500, json: { status: 500 } });
       return route.fulfill({
         json: {
-          unfinalized: savedTitle
-            ? [
-                {
-                  id: 'event-retried',
-                  title: savedTitle,
-                  date: null,
-                  status: 'provisional',
-                  openConsultationId: null,
-                  lastModifiedAt: null,
-                  version: 1,
-                },
-              ]
-            : [],
-          future: [],
-          past: [],
-          rejected: [],
+          ...listFixture(
+            savedTitle
+              ? [
+                  {
+                    id: 'event-retried',
+                    title: savedTitle,
+                    date: null,
+                    effectiveDate: '2026-10-18',
+                    status: 'provisional',
+                    openConsultationId: null,
+                    lastModifiedAt: null,
+                    version: 1,
+                  },
+                ]
+              : [],
+            [],
+          ),
         },
       });
     }
@@ -303,4 +323,78 @@ test('load and save errors allow retry without losing the event draft', async ({
   await expect(editor.locator('#event-title')).toHaveValue('Ensayo para reintentar');
   await editor.getByRole('button', { name: 'Guardar evento' }).click();
   await expect(page.getByRole('button', { name: /Ensayo para reintentar/ })).toBeVisible();
+});
+
+test('shows the full recent archive window and appends older pages of ten without duplicates', async ({
+  page,
+}) => {
+  const summaryFor = (id: string, effectiveDate: string) => ({
+    id,
+    title: `Evento ${id}`,
+    date: effectiveDate,
+    effectiveDate,
+    status: 'definitive',
+    lastModifiedAt: null,
+    version: 1,
+    openConsultationId: null,
+  });
+  const recent = Array.from({ length: 12 }, (_, index) =>
+    summaryFor(`recent-${index}`, '2026-10-14'),
+  );
+  const olderPages = [
+    Array.from({ length: 10 }, (_, index) => summaryFor(`older-a-${index}`, '2026-10-01')),
+    Array.from({ length: 10 }, (_, index) => summaryFor(`older-b-${index}`, '2026-09-30')),
+    Array.from({ length: 3 }, (_, index) => summaryFor(`older-c-${index}`, '2026-09-29')),
+  ];
+  let continuation = 0;
+  await page.addInitScript(() =>
+    localStorage.setItem('synqo-participant-events-team', 'participant-ana'),
+  );
+  await page.route('**/api/configuration', (route) =>
+    route.fulfill({
+      json: {
+        teamCreationEmailMode: 'hidden',
+        teamCreationMaxTeams: 10,
+        teamCreationWindowMinutes: 60,
+      },
+    }),
+  );
+  await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
+  await page.route('**/api/teams/current/events**', (route) => {
+    const url = new URL(route.request().url());
+    if (!url.searchParams.has('archivedCursor')) {
+      return route.fulfill({
+        json: {
+          ...listFixture([], recent),
+          archivedCursor: 'older-0',
+        },
+      });
+    }
+    const pageIndex = continuation++;
+    return route.fulfill({
+      json: {
+        archived: olderPages[pageIndex],
+        archivedCursor: pageIndex < 2 ? `older-${pageIndex + 1}` : null,
+        listContext: {
+          today: '2026-10-18',
+          timeZone: 'Europe/Madrid',
+          recentDays: 7,
+          loadMoreCount: 10,
+        },
+      },
+    });
+  });
+
+  await page.goto('/e/eventos#t=events-token');
+  await expect(page.getByRole('heading', { name: 'Archivados' })).toBeVisible();
+  await expect(page.locator('.event-card')).toHaveCount(12);
+  await expect(page.getByRole('button', { name: /Evento recent-0/ })).toContainText('Vigencia');
+  await page.getByRole('button', { name: 'Cargar más' }).click();
+  await expect(page.locator('.event-card')).toHaveCount(22);
+  await page.getByRole('button', { name: 'Cargar más' }).click();
+  await expect(page.locator('.event-card')).toHaveCount(32);
+  await page.getByRole('button', { name: 'Cargar más' }).click();
+  await expect(page.locator('.event-card')).toHaveCount(35);
+  await expect(page.getByRole('button', { name: 'Cargar más' })).toHaveCount(0);
+  expect(continuation).toBe(3);
 });

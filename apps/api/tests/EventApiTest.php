@@ -46,11 +46,15 @@ final class EventApiTest extends WebTestCase
         $this->client->request('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         self::assertResponseStatusCodeSame(200);
         $list = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertCount(1, $list['unfinalized']);
-        self::assertSame($event['id'], $list['unfinalized'][0]['id']);
-        self::assertSame([], $list['future']);
-        self::assertSame([], $list['past']);
-        self::assertSame([], $list['rejected']);
+        self::assertCount(1, $list['active']);
+        self::assertSame($event['id'], $list['active'][0]['id']);
+        self::assertSame('2026-10-18', $list['active'][0]['effectiveDate']);
+        self::assertNull($list['active'][0]['openConsultationId']);
+        self::assertSame([], $list['archived']);
+        self::assertSame('2026-10-18', $list['listContext']['today']);
+        self::assertSame('UTC', $list['listContext']['timeZone']);
+        self::assertSame(7, $list['listContext']['recentDays']);
+        self::assertSame(10, $list['listContext']['loadMoreCount']);
 
         $this->client->request('GET', '/api/teams/current/events/' . $event['id'], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         self::assertResponseStatusCodeSame(200);
@@ -149,13 +153,35 @@ final class EventApiTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
         self::assertSame($before, (int) $connection->fetchOne('SELECT COUNT(*) FROM team_event'));
 
+        $undatedProvisional = $this->createEvent($team, ['title' => 'Provisional sin fecha']);
+        $rejectedUndated = $this->createEvent($team, ['title' => 'Rechazado sin fecha']);
+        $rejectedDated = $this->createEvent($team, ['title' => 'Rechazado con fecha', 'date' => '2026-10-15']);
+        foreach ([$rejectedUndated, $rejectedDated] as $event) {
+            $this->client->jsonRequest('PUT', '/api/teams/current/events/' . $event['id'] . '/rejection', ['participantId' => $team['participantId']], server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
+            self::assertResponseStatusCodeSame(200);
+        }
+
         $this->client->request('GET', '/api/teams/current/events');
         self::assertResponseStatusCodeSame(401);
         $this->client->request('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         $groups = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['Hoy para el equipo', 'Después'], array_column($groups['future'], 'title'));
-        self::assertSame(['Ayer'], array_column($groups['past'], 'title'));
-        self::assertSame(['Provisional anterior'], array_column($groups['unfinalized'], 'title'));
+        self::assertContains('Provisional sin fecha', array_column($groups['active'], 'title'));
+        self::assertContains('Provisional anterior', array_column($groups['active'], 'title'));
+        self::assertContains('Hoy para el equipo', array_column($groups['active'], 'title'));
+        self::assertContains('Después', array_column($groups['active'], 'title'));
+        self::assertSame(['2026-10-15', '2026-10-17', '2026-10-17', '2026-10-18'], array_column($groups['active'], 'effectiveDate'));
+        $undated = array_values(array_filter($groups['active'], static fn(array $summary): bool => $summary['id'] === $undatedProvisional['id']))[0];
+        self::assertNull($undated['date']);
+        self::assertSame('2026-10-17', $undated['effectiveDate']);
+        self::assertContains('Ayer', array_column($groups['archived'], 'title'));
+        self::assertContains('Rechazado sin fecha', array_column($groups['archived'], 'title'));
+        self::assertContains('Rechazado con fecha', array_column($groups['archived'], 'title'));
+        foreach ($groups['archived'] as $eventSummary) {
+            if ($eventSummary['status'] === 'rejected') {
+                self::assertSame('2026-10-17', $eventSummary['effectiveDate']);
+                self::assertNotNull($eventSummary['lastModifiedAt']);
+            }
+        }
     }
 
     public function testExpiredTeamsRejectEventAccessWithoutChangingStoredEvents(): void
@@ -243,7 +269,7 @@ final class EventApiTest extends WebTestCase
         self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM team_event WHERE team_id = ?', [$team['id']]));
     }
 
-    public function testSameDateEventsPutMostRecentlyModifiedFirst(): void
+    public function testSameDateEventsHaveStableIdOrderRegardlessOfModificationTime(): void
     {
         $this->client->disableReboot();
         $clock = new MockClock('2026-10-18T12:00:00+00:00');
@@ -251,7 +277,7 @@ final class EventApiTest extends WebTestCase
         $team = $this->createTeam('Julia');
         $olderChange = $this->createEvent($team, ['title' => 'Primer futuro', 'date' => '2026-10-20', 'status' => 'definitive']);
         $clock->modify('+1 second');
-        $this->createEvent($team, ['title' => 'Segundo futuro', 'date' => '2026-10-20', 'status' => 'definitive']);
+        $secondFuture = $this->createEvent($team, ['title' => 'Segundo futuro', 'date' => '2026-10-20', 'status' => 'definitive']);
         $clock->modify('+1 second');
         $this->client->jsonRequest('PUT', '/api/teams/current/events/' . $olderChange['id'], [
             'participantId' => $team['participantId'],
@@ -263,10 +289,14 @@ final class EventApiTest extends WebTestCase
 
         $this->client->request('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         $groups = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['Primer futuro editado', 'Segundo futuro'], array_column($groups['future'], 'title'));
+        $expectedIds = [$olderChange['id'], $secondFuture['id']];
+        sort($expectedIds, SORT_STRING);
+        self::assertSame($expectedIds, array_column($groups['active'], 'id'));
+        self::assertSame('2026-10-20', $groups['active'][0]['effectiveDate']);
+        self::assertSame('2026-10-20', $groups['active'][1]['effectiveDate']);
     }
 
-    public function testUnfinalizedAndRejectedGroupsUseMostRecentModificationOrCreation(): void
+    public function testActiveAndArchivedListsUseEffectiveDayAndRejectionMoment(): void
     {
         $this->client->disableReboot();
         $clock = new MockClock('2026-10-18T12:00:00+00:00');
@@ -278,7 +308,7 @@ final class EventApiTest extends WebTestCase
         $clock->modify('+1 second');
         $this->client->request('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         $groups = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['Provisional reciente', 'Provisional anterior'], array_column($groups['unfinalized'], 'title'));
+        self::assertSame(['Provisional anterior', 'Provisional reciente'], array_column($groups['active'], 'title'));
 
         $this->client->jsonRequest('PUT', '/api/teams/current/events/' . $olderUnfinalized['id'], [
             'participantId' => $team['participantId'],
@@ -290,7 +320,7 @@ final class EventApiTest extends WebTestCase
         $clock->modify('+1 second');
         $this->client->jsonRequest('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         $groups = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['Provisional anterior editado', 'Provisional reciente'], array_column($groups['unfinalized'], 'title'));
+        self::assertSame(['Provisional anterior editado', 'Provisional reciente'], array_column($groups['active'], 'title'));
 
         $firstRejected = $this->createEvent($team, ['title' => 'Rechazado primero']);
         $clock->modify('+1 second');
@@ -302,7 +332,10 @@ final class EventApiTest extends WebTestCase
         }
         $this->client->request('GET', '/api/teams/current/events', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         $groups = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['Rechazado segundo', 'Rechazado primero'], array_column($groups['rejected'], 'title'));
+        $rejectedIds = [$firstRejected['id'], $secondRejected['id']];
+        sort($rejectedIds, SORT_STRING);
+        self::assertSame($rejectedIds, array_column($groups['archived'], 'id'));
+        self::assertSame(['2026-10-18', '2026-10-18'], array_column($groups['archived'], 'effectiveDate'));
     }
 
     public function testCalendarReturnsDatedActiveEventsInTabOrderAndExcludesRejectedOrUndatedEvents(): void

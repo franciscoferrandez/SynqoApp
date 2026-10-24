@@ -206,9 +206,10 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             get: new Operation(
                 operationId: 'listTeamEvents',
                 tags: ['Events'],
-                summary: 'List team events grouped by planning state',
+                summary: 'List active and archived team events by calculated effective date',
                 security: $security,
-                responses: ['200' => $this->response('Events grouped and sorted for the team', ['unfinalized' => $eventList, 'future' => $eventList, 'past' => $eventList, 'rejected' => $eventList])] + $eventErrors,
+                parameters: [new Parameter(name: 'archivedCursor', in: 'query', required: false, description: 'Opaque continuation cursor. Initial response includes all active and all archived in the recent window. Continuation omits active and returns at most listContext.loadMoreCount older rows. Malformed, foreign resource/team/version cursors return 400; changed team day/time zone returns 409.', schema: ['type' => 'string'])],
+                responses: ['200' => $this->listingResponse($eventList), '400' => $this->problem('Invalid archive cursor'), '409' => $this->problem('List day or time zone changed; restart the initial request', 'urn:synqo:problem:list-context-changed'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team not found'), '410' => $this->problem('Team expired'), '500' => $this->problem('Unexpected internal error')],
             ),
             post: new Operation(
                 operationId: 'createTeamEvent',
@@ -471,7 +472,8 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
         $occupant = $this->schema('string', format: 'uuid');
         $occupant['nullable'] = true;
         $event['properties']['openConsultationId'] = $occupant;
-        $event['required'] = [...$event['required'], 'openConsultationId'];
+        $event['properties']['effectiveDate'] = $this->schema('string', format: 'date');
+        $event['required'] = [...$event['required'], 'openConsultationId', 'effectiveDate'];
         return $event;
     }
 

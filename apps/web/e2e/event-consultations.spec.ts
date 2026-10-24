@@ -1,4 +1,5 @@
 import { consultationListFixture } from './fixtures/consultation-list';
+import { eventListFixture } from './fixtures/event-list';
 import { expect, test } from '@playwright/test';
 
 const team = {
@@ -14,6 +15,7 @@ const event = {
   id: 'evt-1',
   title: 'Excursión',
   date: null as string | null,
+  effectiveDate: '2026-10-18',
   status: 'provisional' as 'provisional' | 'definitive' | 'rejected',
   version: 3,
   lastModifiedAt: null,
@@ -51,7 +53,7 @@ async function installTeam(page: import('@playwright/test').Page): Promise<void>
     }),
   );
   await page.route('**/api/teams/current/events', (route) =>
-    route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
+    route.fulfill({ json: eventListFixture() }),
   );
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({ json: consultationListFixture() }),
@@ -126,7 +128,7 @@ test('consulta abierta permite cambiar o retirar vínculo y cancelar sin guardar
   );
   await page.route('**/api/teams/current/events', (route) =>
     route.fulfill({
-      json: { unfinalized: [event, secondEvent], future: [], past: [], rejected: [] },
+      json: eventListFixture([event, secondEvent]),
     }),
   );
   await page.route('**/api/teams/current/consultations/con-1/event', async (route) => {
@@ -173,7 +175,7 @@ test('consulta sin vínculo inicia en Sin evento y cancelar la selección no esc
     route.fulfill({ json: consultation() }),
   );
   await page.route('**/api/teams/current/events', (route) =>
-    route.fulfill({ json: { unfinalized: [event], future: [], past: [], rejected: [] } }),
+    route.fulfill({ json: eventListFixture([event]) }),
   );
   await page.route('**/api/teams/current/consultations/con-1/event', (route) => {
     writes += 1;
@@ -217,7 +219,7 @@ test('el vínculo excluye ocupados por abiertas archivadas fuera de ventana y co
   );
   await page.route('**/api/teams/current/events', (route) =>
     route.fulfill({
-      json: { unfinalized: [occupied, current, available], future: [], past: [], rejected: [] },
+      json: eventListFixture([occupied, current, available]),
     }),
   );
   await page.goto('/e/consultas/con-1#t=evt-token');
@@ -259,12 +261,12 @@ for (const status of ['provisional', 'definitive', 'rejected'] as const) {
       if (eventReads === 1) return route.fulfill({ status: 500, json: { status: 500 } });
       await eventsReady;
       return route.fulfill({
-        json: {
-          unfinalized: eventsAfterRetry,
-          future: status === 'definitive' ? [current] : [],
-          past: [],
-          rejected: status === 'rejected' ? [current] : [],
-        },
+        json: eventListFixture(
+          status === 'rejected'
+            ? eventsAfterRetry
+            : [...eventsAfterRetry, ...(status === 'provisional' ? [] : [current])],
+          status === 'rejected' ? [current] : [],
+        ),
       });
     });
     await page.route('**/api/teams/current/consultations/con-1/event', async (route) => {
@@ -570,7 +572,7 @@ for (const disposition of ['unlink', 'reject_both'] as const) {
       consultations: [{ id: 'con-1', title: '¿Cuándo hacemos la excursión?', state: 'open' }],
     };
     await page.route('**/api/teams/current/events', (route) =>
-      route.fulfill({ json: { unfinalized: [event], future: [], past: [], rejected: [] } }),
+      route.fulfill({ json: eventListFixture([event]) }),
     );
     await page.route('**/api/teams/current/events/evt-1', (route) =>
       route.fulfill({ json: { event: linked } }),
