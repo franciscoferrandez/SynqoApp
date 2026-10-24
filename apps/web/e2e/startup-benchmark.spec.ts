@@ -155,10 +155,6 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
         .locator('.section-heading')
         .getByRole('button', { name: /Crear consulta/ })
         .click();
-      await page
-        .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-        .getByRole('button', { name: 'Texto' })
-        .click();
       const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
       await editor.locator('#consultation-title').fill('¿Qué plan hacemos?');
       await editor

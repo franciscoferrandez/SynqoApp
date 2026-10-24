@@ -609,10 +609,6 @@ const scenarios: Scenario[] = [
     run: async (page) => {
       await open(page, `/e/consultas#t=${accessToken}`, 'light');
       await page.getByRole('button', { name: '+ Crear consulta' }).click();
-      await page
-        .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-        .getByRole('button', { name: 'Texto', exact: true })
-        .click();
       const dialog = page.getByRole('dialog', { name: 'Plantea una pregunta' });
       await dialog.locator('#consultation-title').fill('¿Qué plan nos apetece?');
       await dialog.getByRole('textbox', { name: 'Texto de la opción 1' }).fill('Café y paseo');

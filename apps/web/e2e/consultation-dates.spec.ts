@@ -74,7 +74,7 @@ async function installCreateFixture(
   await page.route('**/api/teams/current/availability**', async (route) => {
     const url = new URL(route.request().url());
     availabilityRequests.push(`${url.searchParams.get('from')}/${url.searchParams.get('to')}`);
-    if (availabilityFailures > 0) {
+    if (availabilityFailures > 0 && availabilityRequests.length > 1) {
       availabilityFailures -= 1;
       return route.fulfill({ status: 503, json: { detail: 'Temporalmente no disponible' } });
     }
@@ -85,7 +85,7 @@ async function installCreateFixture(
   await page.route('**/api/teams/current/events/calendar**', async (route) => {
     const url = new URL(route.request().url());
     eventRequests.push(`${url.searchParams.get('from')}/${url.searchParams.get('to')}`);
-    if (eventFailures > 0) {
+    if (eventFailures > 0 && eventRequests.length > 1) {
       eventFailures -= 1;
       return route.fulfill({ status: 503, json: { detail: 'Temporalmente no disponible' } });
     }
@@ -108,19 +108,12 @@ async function installCreateFixture(
 }
 
 async function openDateCreator(page: import('@playwright/test').Page) {
-  await page.goto('/e/consultas#t=dates-token');
-  await page
-    .locator('.consultations-empty')
-    .getByRole('button', { name: /Crear consulta/ })
-    .click();
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Fechas' })
-    .click();
+  await page.goto('/e/calendario#t=dates-token');
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
   return page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
 }
 
-test('crea fechas desde Consultas usando selección persistente, preferencias y evento provisional', async ({
+test('crea fechas desde Calendario usando selección persistente, preferencias y evento provisional', async ({
   page,
 }) => {
   let submitted: Record<string, unknown> | undefined;
@@ -328,9 +321,7 @@ test('cancelar y Escape conservan el borrador hasta confirmar descarte', async (
     .getByRole('button', { name: 'Abandonar edición' })
     .click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(
-    page.locator('.section-heading').getByRole('button', { name: /Crear consulta/ }),
-  ).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Crear consulta de fechas' })).toBeFocused();
 });
 
 test('mantiene el borrador y ofrece reintentar cuando fallan disponibilidad o eventos', async ({
@@ -347,9 +338,14 @@ test('mantiene el borrador y ofrece reintentar cuando fallan disponibilidad o ev
     'Consulta conservada',
   );
   const retry = editor.getByRole('button', { name: 'Reintentar calendario' });
+  const availabilityReadsBeforeRetry = requests.availabilityRequests.length;
+  const eventReadsBeforeRetry = requests.eventRequests.length;
   await retry.click();
-  await expect.poll(() => requests.availabilityRequests.length).toBeGreaterThan(1);
-  await expect.poll(() => requests.eventRequests.length).toBeGreaterThan(1);
+  await expect
+    .poll(() => requests.availabilityRequests.length)
+    .toBeGreaterThan(availabilityReadsBeforeRetry);
+  await expect.poll(() => requests.eventRequests.length).toBeGreaterThan(eventReadsBeforeRetry);
+  await expect(editor.getByRole('alert')).toHaveCount(0);
   await expect(editor.getByRole('textbox', { name: 'Título breve' })).toHaveValue(
     'Consulta conservada',
   );
@@ -363,7 +359,7 @@ test('recupera preferencias de calendario inválidas con los valores predetermin
   await expect(editor.getByRole('textbox', { name: 'Título breve' })).toBeVisible();
   await expect(editor.getByRole('button', { name: 'Mes siguiente' })).toBeEnabled();
   expect(await page.evaluate(() => localStorage.getItem('synqo:calendar-view:v2'))).toBe(
-    '{invalid json',
+    JSON.stringify({ extended: false, overlay: false, counts: false, rule: 'worst' }),
   );
 });
 
@@ -371,7 +367,7 @@ test('abre el calendario con valores predeterminados si el almacenamiento local 
   page,
 }) => {
   await installCreateFixture(page);
-  await page.goto('/e/consultas#t=dates-token');
+  await page.goto('/e/calendario#t=dates-token');
   await page.evaluate(() => {
     Object.defineProperty(window, 'localStorage', {
       configurable: true,
@@ -380,14 +376,7 @@ test('abre el calendario con valores predeterminados si el almacenamiento local 
       },
     });
   });
-  await page
-    .locator('.consultations-empty')
-    .getByRole('button', { name: /Crear consulta/ })
-    .click();
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Fechas' })
-    .click();
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
   const editor = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
   await expect(editor.getByRole('textbox', { name: 'Título breve' })).toBeVisible();
   await expect(editor.getByRole('button', { name: 'Mes siguiente' })).toBeEnabled();
@@ -423,6 +412,54 @@ test('presenta el formulario usable en tamaños y temas acordados', async ({ pag
             .map((item) => item.textContent?.trim()),
         );
       expect(statusOverflow).toEqual([]);
+    }
+  }
+});
+
+test('edita fechas por teclado sin desbordar en cuatro anchuras y ambos temas', async ({
+  page,
+}) => {
+  await installCreateFixture(page);
+  await page.route('**/api/teams/current/consultations/edit-responsive', (route) =>
+    route.fulfill({
+      json: {
+        id: 'edit-responsive',
+        type: 'date',
+        title: 'Fechas por teclado',
+        state: 'open',
+        createdAt: new Date().toISOString(),
+        createdBy: participant,
+        options: [{ id: 'retained', date: civilDate(0), position: 0, count: 0, voters: [] }],
+      },
+    }),
+  );
+  await page.goto('/e/consultas/edit-responsive#t=dates-token');
+  for (const width of [390, 768, 769, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const theme of ['light', 'dark']) {
+      await page
+        .locator('html')
+        .evaluate((element, value) => element.setAttribute('data-theme', value), theme);
+      await page.getByRole('button', { name: 'Acciones de la consulta' }).press('Enter');
+      await page.getByRole('button', { name: 'Editar consulta', exact: true }).press('Enter');
+      const editor = page.getByRole('dialog', { name: 'Editar consulta' });
+      await expect(editor.getByRole('textbox', { name: 'Título breve' })).toBeFocused();
+      const selected = editor.locator(`[data-date="${civilDate(0)}"]`);
+      await expect(selected).toHaveAttribute('aria-pressed', 'true');
+      await selected.focus();
+      await page.keyboard.press('Space');
+      await expect(selected).toHaveAttribute('aria-pressed', 'false');
+      await expect(selected).toBeFocused();
+      const bounds = await editor.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+      await page.keyboard.press('Escape');
+      const discard = page.getByRole('dialog', { name: '¿Descartar los cambios?' });
+      await expect(discard.getByRole('button', { name: 'Seguir editando' })).toBeFocused();
+      await discard.getByRole('button', { name: 'Descartar cambios' }).press('Enter');
+      await expect(editor).toBeHidden();
+      await expect(page.getByRole('button', { name: 'Acciones de la consulta' })).toBeFocused();
     }
   }
 });

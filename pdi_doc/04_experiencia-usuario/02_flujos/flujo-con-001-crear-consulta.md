@@ -11,7 +11,7 @@ estado: en_revision
 
 ## Entrada
 
-Vista de calendario de un equipo vigente; acción «Crear consulta de fechas». Este flujo conserva la entrada del calendario principal y no exige seleccionar ni revisar un día antes. La entrada adicional desde Consultas se define en [FLUJO-CON-006 — Crear una consulta de fechas desde Consultas](flujo-con-006-crear-consulta-fechas-desde-consultas.md).
+Vista de calendario de un equipo vigente; acción «Crear consulta de fechas». Es la única entrada de creación de consultas de fechas y no exige seleccionar ni revisar un día antes. Por decisión expresa del 2026-10-24, sustituye la entrada adicional de [FLUJO-CON-006 — Crear una consulta de fechas desde Consultas](flujo-con-006-crear-consulta-fechas-desde-consultas.md), que queda obsoleta; el comportamiento del diálogo del calendario se conserva.
 
 ## Precondiciones
 
@@ -22,7 +22,7 @@ El equipo está vigente y hay una identidad de participante seleccionada.
 1. La persona pulsa el icono «Crear consulta de fechas» dentro del calendario. Se abre directamente el diálogo de fechas compartido, sin elegir tipo, en el mismo mes visible y sin fechas seleccionadas. El día abierto en el calendario de fondo no se incluye automáticamente.
 2. Escribe un título de hasta 250 caracteres. Pulsa días de hoy en adelante para añadirlos y vuelve a pulsarlos para retirarlos. Puede recorrer varios meses dentro del diálogo sin alterar el mes del calendario de fondo. Las fechas incluidas quedan marcadas sin lista apilada ni contadores; el máximo se comunica como instrucción fija. Se aplican las preferencias guardadas, selección sin tick y campanita de eventos del [WF-CON-008 — Crear y editar consultas de fechas en un diálogo](../03_wireframes/wf-con-008-calendario-dialogo-consultas-fechas.md).
 3. Opcionalmente activa «Crear evento provisional». No elige un evento existente: al confirmar se creará uno sin fecha, con el mismo título de la consulta. Desactivar el switch conserva la creación de una consulta sin evento.
-4. Pulsa «Crear consulta» con al menos una fecha; se guarda directamente sin confirmación general. La consulta y, si se activó el switch, el evento y su vínculo se guardan juntos. Se actualiza la caducidad del equipo y se navega a la lista de Consultas, con la nueva consulta en Abiertas y manteniendo el valor de acceso.
+4. Pulsa «Crear consulta» con al menos una fecha; se guarda directamente sin confirmación general. La consulta y, si se activó el switch, el evento y su vínculo se guardan juntos. Se actualiza la caducidad del equipo y se navega a la lista de Consultas, con la nueva consulta clasificada según [RF-CON-008 — Listar consultas por vigencia](../../03_requisitos/01_funcionales/CON/rf-con-008-listar-consultas-vigencia.md) y manteniendo el valor de acceso.
 
 ## Resultado
 

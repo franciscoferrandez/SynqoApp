@@ -1,9 +1,15 @@
 ---
 id: FLUJO-CON-006
-estado: en_revision
+estado: obsoleto
 ---
 
 # FLUJO-CON-006 — Crear una consulta de fechas desde Consultas
+
+## Sustitución
+
+**OBSOLETO desde el 2026-10-24**, por decisión expresa de la persona impulsora: las consultas de fechas se crean únicamente desde el botón del calendario, según [FLUJO-CON-001 — Crear una consulta de fechas](flujo-con-001-crear-consulta.md). Desde Consultas se abre directamente la creación de opciones de texto según [FLUJO-CON-004 — Crear una consulta con opciones de texto](flujo-con-004-crear-consulta-texto.md). La edición de consultas de fechas desde su ficha se conserva según [FLUJO-CON-007 — Editar una consulta de fechas](flujo-con-007-editar-consulta-fechas.md).
+
+El contenido que sigue conserva el contexto del recorrido aprobado el 2026-10-21 como referencia histórica; ya no prescribe una entrada vigente de creación.
 
 ## Actor
 

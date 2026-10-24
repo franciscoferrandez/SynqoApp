@@ -14,6 +14,7 @@ El sistema debe permitir que un usuario con acceso al equipo cree desde «Consul
 - [HU-CON-005 — Crear una consulta con opciones de texto](../../../01_producto/07_historias-usuario/hu-con-005-crear-consulta-texto.md)
 - Decisión expresa de quien impulsa Synqo: ambos tipos de consulta forman parte de la primera entrega y tienen puntos de entrada distintos.
 - Ajuste expreso del 2026-10-21: desde Consultas se elige «Fechas» o «Texto» antes de abrir su formulario; el formulario de texto conserva su comportamiento.
+- Ajuste expreso del 2026-10-24: desde Consultas solo se crean consultas de opciones libres y se abre directamente su formulario, sin elección de tipo. Sustituye la elección acordada el 2026-10-21; la creación de fechas queda en el calendario.
 
 ## Precondiciones
 
@@ -22,7 +23,7 @@ El equipo está vigente y el usuario ha seleccionado una identidad de participan
 ## Criterios de aceptación
 
 - La creación se inicia desde la sección «Consultas» y no exige pasar por el calendario.
-- «Crear consulta» permite elegir «Fechas» o «Texto» antes de abrir el formulario. Elegir «Texto» abre el diálogo de opciones escritas; no hay cambio de tipo dentro del borrador.
+- «Crear consulta», tanto en la cabecera como en el estado sin consultas, abre directamente el diálogo de opciones escritas. No hay selector de tipo ni cambio de tipo dentro del borrador. Las consultas de fechas se crean únicamente desde el calendario según [RF-CON-001 — Crear una consulta de fechas](rf-con-001-crear-consulta.md).
 - La persona escribe un título y una o varias opciones de texto. No se crea la consulta sin título ni sin opciones conforme a [RN-CON-003 — Mínimo de una opción por consulta](../../02_reglas-negocio/CON/rn-con-003-minimo-opciones-consulta.md).
 - El título admite hasta 250 caracteres según [RD-CON-003 — Título de la consulta](../../03_datos/CON/rd-con-003-titulo-consulta.md); cada opción admite hasta 50 según [RD-CON-005 — Texto de opción de una consulta](../../03_datos/CON/rd-con-005-texto-opcion-consulta.md). Los campos limitan la entrada sin mostrar contadores ni avisos de longitud mientras se escribe.
 - La consulta admite de una a diez opciones según [RN-CON-003 — Mínimo de una opción por consulta](../../02_reglas-negocio/CON/rn-con-003-minimo-opciones-consulta.md) y [RN-CON-007 — Máximo de diez opciones por consulta](../../02_reglas-negocio/CON/rn-con-007-maximo-opciones-consulta.md); el diálogo indica visualmente el máximo.

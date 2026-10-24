@@ -7,7 +7,7 @@ estado: en_revision
 
 ## Regla
 
-Un evento provisional o definitivo puede rechazarse. El rechazo no borra sus datos. Un evento rechazado puede recuperarse: conserva la fecha que tuviera y vuelve siempre a provisional. Mientras está rechazado se agrupa aparte en la pestaña de eventos, no se puede editar y no aparece en la campanita ni en el detalle del día del calendario.
+Un evento provisional o definitivo puede rechazarse. El rechazo no borra sus datos. Un evento rechazado puede recuperarse: conserva la fecha que tuviera y vuelve siempre a provisional. Mientras está rechazado se clasifica en Archivados según [RF-EVT-002 — Listar y consultar eventos](../../01_funcionales/EVT/rf-evt-002-listar-consultar-eventos.md), no se puede editar y no aparece en la campanita ni en el detalle del día del calendario. Archivados también contiene definitivos vencidos y no sustituye el estado real del evento.
 
 No se ofrece borrado individual de eventos; rechazo y recuperación son las acciones disponibles para retirarlo del uso activo y volver a incorporarlo.
 

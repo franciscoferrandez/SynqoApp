@@ -13,6 +13,58 @@ const team = {
   participants: [{ id: 'participant-ana', name: 'Ana' }],
 };
 
+for (const width of [390, 768, 769, 1280]) {
+  for (const theme of ['light', 'dark']) {
+    test(`opens text directly from both consultation entries with keyboard at ${width}px in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript(
+        ({ teamId, participantId, theme }) => {
+          localStorage.setItem(`synqo-participant-${teamId}`, participantId);
+          localStorage.setItem('synqo:theme', theme);
+        },
+        { teamId: team.id, participantId: team.participants[0].id, theme },
+      );
+      await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
+      await page.route('**/api/teams/current/consultations', (route) =>
+        route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+      );
+      await page.goto('/e/consultas#t=consultation-token');
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+      for (const container of ['.section-heading', '.consultations-empty']) {
+        const trigger = page.locator(container).getByRole('button', { name: /Crear consulta/ });
+        await activate(trigger);
+        const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
+        await expect(editor.getByRole('textbox', { name: 'Título breve' })).toBeFocused();
+        await expect(page.getByRole('dialog', { name: '¿Qué quieres consultar?' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Fechas', exact: true })).toHaveCount(0);
+        await expect(page.getByRole('dialog', { name: 'Nueva consulta de fechas' })).toHaveCount(0);
+        const bounds = await editor.boundingBox();
+        expect(bounds).not.toBeNull();
+        expect(bounds!.x).toBeGreaterThanOrEqual(0);
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+        await page.keyboard.press('Escape');
+        await expect(editor).toBeHidden();
+        await expect(trigger).toBeFocused();
+        await activate(trigger);
+        const title = editor.getByRole('textbox', { name: 'Título breve' });
+        await title.fill('Borrador conservado');
+        await page.keyboard.press('Escape');
+        const discard = page.getByRole('dialog', { name: '¿Cancelar esta consulta?' });
+        await expect(discard.getByRole('button', { name: 'Seguir editando' })).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(title).toHaveValue('Borrador conservado');
+        await page.keyboard.press('Escape');
+        await activate(discard.getByRole('button', { name: 'Abandonar edición' }));
+        await expect(editor).toBeHidden();
+        await expect(trigger).toBeFocused();
+      }
+      await expect(page).toHaveURL('/e/consultas#t=consultation-token');
+    });
+  }
+}
+
 test('creates a text consultation, confirms the action, and retains it after reload and in another browser', async ({
   browser,
 }) => {
@@ -55,10 +107,7 @@ test('creates a text consultation, confirms the action, and retains it after rel
     .not.toBe('rgba(0, 0, 0, 0)');
   await emptyCreate.focus();
   await emptyCreate.press('Enter');
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Texto' })
-    .click();
+  await expect(page.getByRole('dialog', { name: '¿Qué quieres consultar?' })).toHaveCount(0);
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   await expect(editor).toBeVisible();
   await expect(editor.locator('#consultation-title')).toBeFocused();
@@ -149,10 +198,6 @@ test('cancel confirms only when a draft has text and keeps it when continuing', 
   await expect(createButton).toBeVisible();
   await createButton.focus();
   await createButton.press('Enter');
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Texto' })
-    .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   const geometry = await editor.evaluate((dialog) => {
     const rect = dialog.getBoundingClientRect();
@@ -168,14 +213,11 @@ test('cancel confirms only when a draft has text and keeps it when continuing', 
   await activate(editor.getByRole('button', { name: 'Cancelar', exact: true }));
   await expect(editor).toBeHidden();
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(createButton).toBeFocused();
 
   await expect(createButton).toBeVisible();
   await createButton.focus();
   await createButton.press('Enter');
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Texto' })
-    .click();
   await editor.locator('#consultation-title').fill('Una idea');
   await activate(editor.getByRole('button', { name: 'Cancelar', exact: true }));
   const confirmation = page.getByRole('dialog', { name: '¿Cancelar esta consulta?' });
@@ -207,10 +249,6 @@ test('reports missing title and options and keeps invalid drafts from confirmati
     .getByRole('button', { name: /Crear consulta/ });
   await createButton.focus();
   await createButton.press('Enter');
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Texto' })
-    .click();
 
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   const title = editor.locator('#consultation-title');
@@ -272,10 +310,6 @@ test('server failure keeps the draft and offers a confirmed retry', async ({ pag
   await expect(createButton).toBeVisible();
   await createButton.focus();
   await createButton.press('Enter');
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Texto' })
-    .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   await editor.locator('#consultation-title').fill('Pregunta guardada');
   await editor.getByRole('textbox', { name: 'Texto de la opción 1' }).fill('Opción guardada');

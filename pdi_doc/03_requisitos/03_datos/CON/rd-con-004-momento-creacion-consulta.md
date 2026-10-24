@@ -11,11 +11,11 @@ Momento en que se crea una consulta del equipo.
 
 ## Significado
 
-Permite ordenar las consultas de cada estado desde la más reciente a la más antigua según su creación.
+Identifica cuándo se creó la consulta y aporta la vigencia de las abiertas que siguen activas, conforme a [RF-CON-008 — Listar consultas por vigencia](../../01_funcionales/CON/rf-con-008-listar-consultas-vigencia.md). Las resueltas, rechazadas y consultas de fechas vencidas usan las fuentes de vigencia allí definidas.
 
 ## Integridad
 
-Cada consulta conserva su momento de creación. Los votos, la resolución y la edición posteriores no lo modifican ni alteran ese criterio de orden. La edición se atribuye separadamente según [RD-CON-006 — Autoría y momento de última edición de la consulta](rd-con-006-ultima-edicion-consulta.md).
+Cada consulta conserva su momento de creación. Los votos, la resolución y la edición posteriores no lo modifican, aunque su vigencia y ubicación calculadas pueden cambiar por estado o fechas. La edición se atribuye separadamente según [RD-CON-006 — Autoría y momento de última edición de la consulta](rd-con-006-ultima-edicion-consulta.md).
 
 ## Retención / ciclo de vida
 
@@ -23,11 +23,11 @@ El dato pertenece a la consulta; queda inaccesible al caducar el equipo y se eli
 
 ## Privacidad
 
-Se utiliza para ordenar la lista visible a los usuarios con acceso al equipo. No se ha definido mostrar el momento exacto en pantalla.
+Se utiliza como una de las fuentes de vigencia de la lista visible a las personas con acceso al equipo. La tarjeta muestra la fecha de vigencia; no se exige mostrar la hora exacta de creación.
 
 ## Origen
 
-Decisión expresa de quien impulsa Synqo sobre el orden de las consultas dentro de cada estado.
+Decisión expresa de quien impulsa Synqo sobre creación y, el 2026-10-24, sustitución del orden por estado por listas de vigencia calculada.
 
 ## Relaciones
 

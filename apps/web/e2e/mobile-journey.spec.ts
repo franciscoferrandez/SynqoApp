@@ -96,10 +96,6 @@ for (const viewport of matrix) {
           .locator('.section-heading')
           .getByRole('button', { name: /Crear consulta/ })
           .click();
-        await page
-          .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-          .getByRole('button', { name: 'Texto' })
-          .click();
         const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
         await editor.locator('#consultation-title').fill(textTitle);
         await editor.getByRole('textbox', { name: 'Texto de la opción 1' }).fill('Paseo');
@@ -253,10 +249,6 @@ test('keeps team navigation and the consultation editor within an enlarged mobil
   await page
     .locator('.section-heading')
     .getByRole('button', { name: /Crear consulta/ })
-    .click();
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Texto' })
     .click();
   const editor = page.getByRole('dialog', { name: 'Plantea una pregunta' });
   await editor.getByRole('textbox', { name: 'Título breve' }).fill('Texto ampliado');

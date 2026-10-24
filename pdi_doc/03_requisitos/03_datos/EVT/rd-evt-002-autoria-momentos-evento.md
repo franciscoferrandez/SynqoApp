@@ -15,7 +15,9 @@ Permiten saber quién creó el evento y cuándo, así como quién registró su c
 
 ## Integridad
 
-El participante identificado pertenece al equipo del evento. La creación conserva su autoría y momento propios. Antes del primer cambio real no hay dato de última modificación ni se muestra ese campo; para ordenar el evento se usa el momento de creación. Después, el dato de última modificación describe el cambio más reciente sin constituir un historial de versiones. Si una consulta de fechas asigna una fecha al evento, la última modificación se atribuye al participante que resolvió esa consulta. Vincular, cambiar o quitar una consulta sin modificar los campos propios del evento no altera este dato ni su orden basado en él.
+El participante identificado pertenece al equipo del evento. La creación conserva su autoría y momento propios. Antes del primer cambio real no hay dato de última modificación ni se muestra ese campo. Después, el dato de última modificación describe el cambio más reciente sin constituir un historial de versiones. Si una consulta de fechas asigna una fecha al evento, la última modificación se atribuye al participante que resolvió esa consulta. Vincular, cambiar o quitar una consulta sin modificar los campos propios del evento no altera este dato.
+
+El rechazo registra una modificación real. Mientras el evento permanece rechazado, su última modificación representa el momento del último rechazo y permite calcular su vigencia para la lista de archivados. Recuperarlo actualiza la última modificación y devuelve el evento a provisional según su ciclo de vida; no crea un historial de rechazos. La clasificación y orden de las listas se derivan de los datos actuales según [RF-EVT-002 — Listar y consultar eventos](../../01_funcionales/EVT/rf-evt-002-listar-consultar-eventos.md), sin persistir la agrupación ni su vigencia.
 
 ## Retención / ciclo de vida
 
@@ -28,6 +30,8 @@ Las personas con acceso al equipo pueden ver esos participantes y momentos en la
 ## Origen
 
 Decisión expresa de la persona que impulsa Synqo de mostrar participante y momento de creación y de última modificación, sin historial de versiones.
+
+Decisión expresa del 24 de octubre de 2026 de calcular las listas de eventos y usar el momento del último rechazo como vigencia mientras el evento esté rechazado.
 
 ## Relaciones
 

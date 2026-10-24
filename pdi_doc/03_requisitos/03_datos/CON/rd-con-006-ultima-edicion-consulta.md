@@ -17,7 +17,7 @@ Permite reconocer en la ficha quién registró la edición más reciente y cuán
 
 El participante pertenece al equipo de la consulta. Antes de la primera edición efectiva no existe este dato y no se muestra un bloque vacío. Guardar datos sin cambios no altera la última edición. Votar, resolver o modificar un vínculo con un evento no constituye una edición del título o las opciones y no cambia este dato.
 
-La autoría de creación permanece intacta. El momento de creación y el orden de la lista siguen [RD-CON-004 — Momento de creación de la consulta](rd-con-004-momento-creacion-consulta.md); editar no mueve la consulta en la lista por antigüedad. La última edición permanece visible después del cierre de la consulta.
+La autoría y el momento de creación permanecen intactos según [RD-CON-004 — Momento de creación de la consulta](rd-con-004-momento-creacion-consulta.md). La edición no se usa como fuente de vigencia. Cambiar fechas puede modificar la clasificación y su vigencia derivada según [RF-CON-008 — Listar consultas por vigencia](../../01_funcionales/CON/rf-con-008-listar-consultas-vigencia.md), sin cambiar la creación. La última edición permanece visible después del cierre de la consulta.
 
 ## Retención / ciclo de vida
 

@@ -20,7 +20,7 @@ La persona tiene acceso al equipo vigente.
 
 ## Criterios de aceptación
 
-- Un evento rechazado pasa a la agrupación de rechazados y conserva título, notas y fecha informada.
+- Un evento rechazado se clasifica en Archivados por fecha de rechazo y conserva título, notas y fecha informada, según [RF-EVT-002 — Listar y consultar eventos](rf-evt-002-listar-consultar-eventos.md).
 - El evento rechazado puede recuperarse.
 - Al recuperarlo conserva la fecha que tuviera y vuelve a provisional.
 - Mientras está rechazado, no puede editarse; hay que recuperarlo primero.

@@ -11,7 +11,7 @@ estado: en_revision
 
 ## Estado representado
 
-La persona ha abierto un evento desde la lista. La ficha puede estar en consulta, edición o recuperación desde la agrupación de rechazados.
+La persona ha abierto un evento desde Activos o Archivados según [RF-EVT-002 — Listar y consultar eventos](../../03_requisitos/01_funcionales/EVT/rf-evt-002-listar-consultar-eventos.md). La ficha permite consulta, edición o recuperación según el estado real, sin restringir acciones por pertenecer a Archivados.
 
 ## Jerarquía
 
@@ -38,7 +38,7 @@ La persona ha abierto un evento desde la lista. La ficha puede estar en consulta
 
 Para un evento rechazado, la ficha conserva sus datos, indica «Rechazado» y ofrece «Recuperar». No ofrece edición hasta que se recupere.
 
-Las acciones se agrupan en el menú hamburguesa «Acciones del evento», arriba a la derecha y alineado con «Detalle del evento». El título y el badge comparten la fila siguiente. El menú ofrece «Editar evento» y «Rechazar evento» en activos, y «Recuperar evento» en rechazados. Las confirmaciones se mantienen. Escape o clic fuera cierran el menú; al cancelar un diálogo, el foco vuelve al disparador del menú.
+Las acciones se agrupan en el menú hamburguesa «Acciones del evento», arriba a la derecha y alineado con «Detalle del evento». El título y el badge comparten la fila siguiente. El menú ofrece «Editar evento» y «Rechazar evento» en provisionales y definitivos, incluidos los archivados por fecha, y «Recuperar evento» en rechazados. Las confirmaciones se mantienen. Escape o clic fuera cierran el menú; al cancelar un diálogo, el foco vuelve al disparador del menú.
 
 La edición propuesta ocupa el mismo espacio de contenido, manteniendo la cabecera común y el regreso a «Eventos»:
 
@@ -72,7 +72,7 @@ En móvil, los campos y botones se apilan en una columna y ocupan el ancho dispo
 
 - Volver a la lista sin modificar el evento.
 - Editar título, notas, fecha y estado; guardar los cambios o cancelar.
-- Rechazar un evento activo mediante una confirmación; si se cancela, el evento no cambia.
+- Rechazar un evento provisional o definitivo mediante una confirmación; si se cancela, el evento no cambia.
 - Recuperar un evento rechazado mediante una confirmación; si se cancela, el evento no cambia. Al recuperarlo conserva su fecha y pasa a provisional.
 - Consultar participante y momento de creación y, tras una modificación real, participante y momento de última modificación.
 

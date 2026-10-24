@@ -28,7 +28,7 @@ Fechas · hasta diez
 [ ] Crear evento provisional
 [Cancelar] [Crear consulta]
                          ↓ guardar directamente
-Lista de Consultas · Abiertas · nueva consulta
+Lista de Consultas · nueva consulta según vigencia calculada
 ```
 
 ## Acciones
@@ -37,8 +37,9 @@ Lista de Consultas · Abiertas · nueva consulta
 - Cambiar de mes sin perder selección. Las fechas incluidas se indican por contorno, sin tick ni lista apilada. Se aplican preferencias guardadas del equipo; la esquina se reserva a la campanita de eventos, sin recuentos.
 - Mostrar la instrucción fija del máximo de diez fechas e impedir añadir una undécima; retirar una fecha permite elegir otra.
 - Guardar directamente con título y al menos una fecha; navegar a la lista de Consultas conservando acceso e identidad del equipo y actualizando su caducidad.
+- La consulta se ubica según [RF-CON-008 — Listar consultas por vigencia](../../03_requisitos/01_funcionales/CON/rf-con-008-listar-consultas-vigencia.md), sin forzar Activas si el día admitido por la zona del dispositivo ya ha vencido en la del equipo.
 - Cancelar/Escape directamente si no hay título ni fechas. Con cambios, confirmar con «Seguir editando» enfocado inicialmente y «Descartar cambios». Volver al calendario de fondo preservando mes, día y preferencias; devolver foco al botón de creación.
-- Si una fecha ya pasó al guardar, impedir la creación y conservar el borrador para corregirla. Los fallos de lectura/escritura ofrecen reintento sin perder cambios, como el diálogo desde Consultas.
+- Si una fecha ya pasó al guardar, impedir la creación y conservar el borrador para corregirla. Los fallos de lectura/escritura del diálogo compartido ofrecen reintento sin perder cambios.
 
 ## Notas
 

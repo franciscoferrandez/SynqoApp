@@ -108,7 +108,7 @@ test('creates and edits a date consultation through the API, confirming voted da
   expect((await persisted.json()).options).toEqual(result.options);
 });
 
-test('creates from Consultas and confirms a voted-date removal in the browser against the API', async ({
+test('creates from Calendar and confirms a voted-date removal in the browser against the API', async ({
   page,
   request,
 }) => {
@@ -135,15 +135,8 @@ test('creates from Consultas and confirms a voted-date removal in the browser ag
       localStorage.setItem(`synqo-participant-${teamId}`, participantId),
     { teamId: team.id, participantId: team.firstParticipant.id },
   );
-  await page.goto(`/e/consultas#t=${token}`);
-  await page
-    .locator('.consultations-empty')
-    .getByRole('button', { name: /Crear consulta/ })
-    .click();
-  await page
-    .getByRole('dialog', { name: '¿Qué quieres consultar?' })
-    .getByRole('button', { name: 'Fechas' })
-    .click();
+  await page.goto(`/e/calendario#t=${token}`);
+  await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();
   const creation = page.getByRole('dialog', { name: 'Nueva consulta de fechas' });
   await creation.getByRole('textbox', { name: 'Título breve' }).fill('¿Qué fechas nos van bien?');
   const firstDate = dateInDays(2);

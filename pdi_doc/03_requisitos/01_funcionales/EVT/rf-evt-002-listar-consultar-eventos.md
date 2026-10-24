@@ -7,11 +7,12 @@ estado: en_revision
 
 ## Requisito
 
-El sistema debe ofrecer una pestaña propia para consultar los eventos del equipo y separarlos entre eventos sin fecha definitiva, eventos con fecha definitiva futura, eventos con fecha definitiva pasada y eventos rechazados.
+El sistema debe ofrecer una pestaña propia para consultar los eventos del equipo en dos listas, «Activos» y «Archivados», con una fecha de vigencia calculada para clasificar y ordenar cada evento. Estas agrupaciones son derivadas y no son estados persistidos del evento.
 
 ## Origen
 
 - Petición expresa de la persona que impulsa Synqo para la nueva entrega de eventos.
+- Decisiones expresas del 24 de octubre de 2026: sustituir las cuatro agrupaciones anteriores por listas de activos y archivados, con vigencia calculada, ventana reciente y carga incremental.
 - [HU-EVT-002 — Consultar los eventos del equipo](../../../01_producto/07_historias-usuario/hu-evt-002-consultar-eventos.md)
 
 ## Precondiciones
@@ -24,19 +25,28 @@ La persona tiene acceso al equipo vigente.
 - La ficha muestra el participante y el momento de creación, así como el participante y el momento de la última modificación.
 - Antes del primer cambio real del evento, la ficha no muestra datos de «última modificación».
 - La ficha permite navegar a todas las consultas de fechas que hayan quedado vinculadas al evento, incluidas las resueltas y rechazadas; desde cada ficha de consulta se puede volver al evento.
-- Los eventos sin fecha definitiva, incluidos los provisionales con fecha, se separan de los que tienen fecha definitiva.
-- Los eventos con fecha definitiva se agrupan en futuros y pasados.
-- Un evento provisional permanece entre los eventos sin fecha definitiva aunque su fecha informada ya sea pasada.
-- La separación entre fecha definitiva futura y pasada toma el día actual en la zona horaria del equipo.
-- Un evento definitivo fechado hoy en esa zona figura en «Futuros».
-- Los eventos definitivos futuros se ordenan por fecha ascendente y los pasados por fecha descendente.
-- Si varios definitivos tienen la misma fecha, se muestran primero los modificados más recientemente.
-- Los eventos sin fecha definitiva y los rechazados se ordenan por el momento de la última modificación, desde el más reciente; para los que nunca se han modificado se usa su momento de creación.
-- Los eventos rechazados tienen una agrupación propia.
+- La clasificación y la vigencia se calculan con la siguiente matriz, sin almacenar nuevos campos de agrupación ni de vigencia:
+
+| Estado y fecha del evento | Lista | Fecha de vigencia |
+|---|---|---|
+| Provisional sin fecha | Activos | Momento de creación |
+| Provisional con fecha, incluso pasada | Activos | Fecha del evento |
+| Definitivo con fecha de hoy o futura | Activos | Fecha del evento |
+| Definitivo con fecha pasada | Archivados | Fecha del evento |
+| Rechazado, con fecha o sin ella | Archivados | Momento del último rechazo |
+
+- Activos muestra todos sus elementos, ordenados por vigencia ascendente: primero los más antiguos o próximos.
+- Archivados se ordena por vigencia descendente: primero los más recientes.
+- Todas las fuentes de vigencia se comparan por día civil en la zona del equipo, sin tener en cuenta la hora. Los empates mantienen un orden estable.
+- El día actual y los límites de fecha se calculan en la zona horaria del equipo. Una fecha de hoy sigue vigente hasta que comienza mañana en esa zona.
+- La ventana inicial de Archivados comprende hoy y los seis días anteriores en la zona del equipo e incluye todos sus eventos, aunque sean más de diez. «Cargar más» incorpora diez eventos archivados más antiguos por activación, o los que resten si son menos, mientras queden resultados.
+- Cada tarjeta muestra «Vigencia» y la fecha utilizada para ordenar el evento, además de su estado real.
+- Los valores de siete días de ventana y diez elementos por carga se definen mediante constantes fácilmente parametrizables en la implementación.
+- Archivar por clasificación calculada no rechaza ni modifica un evento ni impide las acciones permitidas por su estado real.
 
 ## Casos límite
 
-El cambio de un vínculo sin modificar los campos propios del evento no altera su momento de última modificación ni su posición por ese criterio.
+Un provisional con fecha vencida sigue activo con esa misma fecha como vigencia. Recuperar un rechazado conserva la fecha y lo devuelve a Activos como provisional, según las reglas de recuperación existentes. El cambio de un vínculo sin modificar los campos propios del evento no altera su momento de última modificación ni su vigencia. Para un rechazado, el momento del último rechazo se obtiene del dato de última modificación mientras conserva ese estado; no se requiere un historial adicional.
 
 ## Relaciones
 
