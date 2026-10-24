@@ -29,6 +29,7 @@ function summary(item: EventItem) {
     status: item.status,
     lastModifiedAt: item.lastModifiedAt,
     version: item.version,
+    openConsultationId: null,
   };
 }
 
@@ -251,6 +252,7 @@ test('load and save errors allow retry without losing the event draft', async ({
                   title: savedTitle,
                   date: null,
                   status: 'provisional',
+                  openConsultationId: null,
                   lastModifiedAt: null,
                   version: 1,
                 },
@@ -274,6 +276,7 @@ test('load and save errors allow retry without losing the event draft', async ({
           notes: null,
           date: null,
           status: 'provisional',
+          openConsultationId: null,
           createdBy: team.participants[0],
           createdAt: '2026-10-18T10:00:00Z',
           lastModifiedAt: null,

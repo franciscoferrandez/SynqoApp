@@ -27,8 +27,9 @@ final readonly class OrmEventRepository implements EventRepository
         $manager = $this->manager();
         $team = $manager->getReference(TeamRecord::class, $teamId);
         $records = $manager->getRepository(TeamEventRecord::class)->findBy(['team' => $team]);
+        $occupied = $manager->getConnection()->fetchAllKeyValue('SELECT e.id, c.id FROM team_event e LEFT JOIN consultation c ON c.open_event_id = e.id AND c.team_id = e.team_id WHERE e.team_id = :team', ['team' => $teamId]);
 
-        return array_map(static fn(TeamEventRecord $record): array => [...$record->toSummary(), '_createdAt' => $record->createdAt()->format(DATE_ATOM)], $records);
+        return array_map(static fn(TeamEventRecord $record): array => [...$record->toSummary(), '_createdAt' => $record->createdAt()->format(DATE_ATOM), 'openConsultationId' => $occupied[$record->toSummary()['id']] ?? null], $records);
     }
 
     public function calendarForTeam(string $teamId, string $from, string $to): array

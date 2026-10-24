@@ -55,9 +55,8 @@ test('crear evento provisional desde consulta y resolver conserva vínculo con A
   expect(createdConsultationResponse.status()).toBe(200);
   const createdConsultations = await createdConsultationResponse.json();
   const linkedConsultation = [
-    ...createdConsultations.open,
-    ...createdConsultations.resolved,
-    ...createdConsultations.rejected,
+    ...createdConsultations.active,
+    ...createdConsultations.archived,
   ].find((item: { title: string }) => item.title === title);
   expect(linkedConsultation).toMatchObject({ title, event: { title } });
   const eventId = linkedConsultation.event.id;

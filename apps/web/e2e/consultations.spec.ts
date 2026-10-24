@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, Locator, test } from '@playwright/test';
 
 async function activate(button: Locator): Promise<void> {
@@ -28,7 +29,7 @@ for (const width of [390, 768, 769, 1280]) {
       );
       await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
       await page.route('**/api/teams/current/consultations', (route) =>
-        route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+        route.fulfill({ json: consultationListFixture() }),
       );
       await page.goto('/e/consultas#t=consultation-token');
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
@@ -77,7 +78,7 @@ test('creates a text consultation, confirms the action, and retains it after rel
   await context.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await context.route('**/api/teams/current/consultations', async (route) => {
     if (route.request().method() === 'GET') {
-      return route.fulfill({ json: { open: created, resolved: [], rejected: [] } });
+      return route.fulfill({ json: consultationListFixture(created) });
     }
     submitted = route.request().postDataJSON() as Record<string, unknown>;
     const bodyOptions = submitted['options'] as string[];
@@ -96,7 +97,7 @@ test('creates a text consultation, confirms the action, and retains it after rel
   const page = await context.newPage();
   await page.goto('/e/consultas#t=consultation-token');
   await expect(page.getByRole('heading', { name: 'Aún no hay consultas' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Abiertas' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Activas' })).toHaveCount(0);
 
   const emptyCreate = page
     .locator('.consultations-empty')
@@ -150,7 +151,7 @@ test('creates a text consultation, confirms the action, and retains it after rel
       .getByRole('button', { name: 'Confirmar creación' }),
   );
 
-  await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
   await expect(page.getByText('¿Qué tomamos?', { exact: true })).toBeVisible();
   expect(submitted).toEqual({
     participantId: 'participant-ana',
@@ -159,7 +160,7 @@ test('creates a text consultation, confirms the action, and retains it after rel
   });
 
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
   await expect(page.getByText('¿Qué tomamos?', { exact: true })).toBeVisible();
 
   const secondContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -168,7 +169,7 @@ test('creates a text consultation, confirms the action, and retains it after rel
   );
   await secondContext.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await secondContext.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: created, resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture(created) }),
   );
   const secondPage = await secondContext.newPage();
   await secondPage.goto('/e/consultas#t=consultation-token');
@@ -189,7 +190,7 @@ test('cancel confirms only when a draft has text and keeps it when continuing', 
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.goto('/e/consultas#t=consultation-token');
   const createButton = page
@@ -241,7 +242,7 @@ test('reports missing title and options and keeps invalid drafts from confirmati
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.goto('/e/consultas#t=consultation-token');
   const createButton = page
@@ -283,9 +284,10 @@ test('server failure keeps the draft and offers a confirmed retry', async ({ pag
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   let submissions = 0;
+  let persisted: Record<string, unknown>[] = [];
   await page.route('**/api/teams/current/consultations', async (route) => {
     if (route.request().method() === 'GET')
-      return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+      return route.fulfill({ json: consultationListFixture(persisted) });
     if (++submissions === 1) return route.fulfill({ status: 500, json: { status: 500 } });
     const body = route.request().postDataJSON() as {
       participantId: string;
@@ -300,6 +302,7 @@ test('server failure keeps the draft and offers a confirmed retry', async ({ pag
       createdAt: '2026-10-05T12:00:00+00:00',
       options: body.options.map((text, position) => ({ id: `option-${position}`, text, position })),
     };
+    persisted = [consultation];
     return route.fulfill({ status: 201, json: { consultation, expiresAt: team.expiresAt } });
   });
 

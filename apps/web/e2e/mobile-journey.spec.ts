@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, Page, test } from '@playwright/test';
 
 const matrix = [
@@ -142,8 +143,8 @@ for (const viewport of matrix) {
           await fitsViewport(page);
           await page.getByRole('button', { name: 'Volver a Consultas' }).click();
         }
-        await expect(page.getByRole('heading', { name: 'Resueltas', exact: true })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'Rechazadas', exact: true })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Activas', exact: true })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Archivadas', exact: true })).toBeVisible();
         await testInfo.attach('responsive-result', {
           body: JSON.stringify({
             viewport,
@@ -233,7 +234,7 @@ test('keeps team navigation and the consultation editor within an enlarged mobil
     }),
   );
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.goto('/e/consultas#t=zoom-token');
   await expect(page.getByRole('heading', { name: 'Aún no hay consultas' })).toBeVisible();

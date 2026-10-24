@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Application\Consultation;
 
+use App\Application\Listing\ListContext;
+
 interface ConsultationRepository
 {
-    /** @return array{open: list<array<string, mixed>>, resolved: list<array<string, mixed>>, rejected: list<array<string, mixed>>} */
-    public function listForTeam(string $teamId): array;
+    /** @param array{date: string, id: string|null}|null $frontier
+     * @return array{active?: list<array<string, mixed>>, archived: list<array<string, mixed>>, nextFrontier: array{date: string, id: string|null}|null}
+     */
+    public function listForTeam(string $teamId, ListContext $context, ?array $frontier): array;
 
     /**
      * @param list<string> $options

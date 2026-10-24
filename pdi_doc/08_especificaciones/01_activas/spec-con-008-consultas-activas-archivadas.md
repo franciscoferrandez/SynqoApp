@@ -1,7 +1,7 @@
 ---
 id: SPEC-CON-008
 nivel: N2
-estado: ready_for_change_apply
+estado: verificado
 release: REL-005
 ---
 
@@ -60,6 +60,8 @@ Conservar GET /api/teams/current/consultations y autorización Bearer/equipo vig
 
 Derivar bucket/fecha en una proyección de lectura del repositorio y aplicar allí filtro, orden y límite de archivadas; no cargar todo el historial en PHP o WEB para cortarlo después. Se permite QueryBuilder o DBAL parametrizado dentro del repositorio, sin trasladar SQL a servicio/controlador. Agregados separados de ofrecidas/aceptadas evitan duplicados por joins y pérdida de opciones. Sin migración prevista; si la implementación detecta necesidad de persistir datos nuevos o cambiar reglas, escalar antes de ampliar scope.
 
+Compatibilidad temporal comprobada durante apply: el equipo admite zonas PHP válidas, incluidos alias y offsets fijos. Validar el cursor con DateTimeZone, sin restringirlo al catálogo IANA. En PostgreSQL, un offset textual positivo tiene semántica POSIX diferente de PHP: para zonas sin transiciones usar el offset fijo en segundos mediante make_interval; para zonas con transiciones usar su nombre. El helper de contexto es compartido y la expresión SQL permanece en el repositorio. Verificar ambos signos y alias cerca de medianoche sin cambiar la validación del equipo.
+
 ## Integración del selector de vínculo, independiente de la paginación
 
 ConsultationDetailPage.loadEvents actualmente combina events con consultations.open para excluir eventos ocupados. Eso deja de ser válido al paginar: una abierta archivada anterior a la ventana sigue ocupando su evento. Como preparación técnica común de ambos Changes de listas, el primero que se aplique añade openConsultationId (UUID o null) al resumen de la lista de eventos, incluso si mantiene todavía los cuatro grupos anteriores. El otro Change reutiliza y conserva el campo. Derivarlo autoritativamente de la asociación única consultation.open_event_id, filtrada por equipo, mediante proyección/join de lectura; no añadir columna, ni cargar todas las consultas o páginas para inferirlo.
@@ -82,16 +84,16 @@ El principal mantiene contratos, reglas temporales, autorización y concurrencia
 
 | Acceptance criterion | Evidence | Result |
 |---|---|---|
-| Toda la matriz, rechazos y última aceptada frente a última propuesta | Tests de política y API con reloj fijo y PostgreSQL | UNKNOWN — pendiente apply |
-| Día del equipo, hoy, medianoche y ventana inclusiva de siete días | Tests con zona distinta de UTC, dispositivo en día distinto del equipo y cambio horario | UNKNOWN — pendiente apply |
-| Activas completas ASC, archivadas DESC, empate ID estable, Vigencia visible | API + E2E con mezcla de tipos y estados | UNKNOWN — pendiente apply |
-| Inicial >10, ventana vacía con anteriores, cargas 10/10/resto y agotado sin duplicados | API y E2E de cursor, incluidos empates | UNKNOWN — pendiente apply |
-| Parámetros ajustables sin literales duplicados | Test de política con valores alternativos + revisión | UNKNOWN — pendiente apply |
-| Pseudoestado no escribe, abierta archivada conserva voto/editar/resolver y puede volver activa | API y E2E con fechas pasadas, edición y resolución | UNKNOWN — pendiente apply |
-| Autorización, acceso caducado, cursor inválido/ajeno y cambio de contexto | API Problem Details y E2E de reinicio | UNKNOWN — pendiente apply |
-| Selector excluye eventos ocupados por abiertas archivadas fuera de ventana y conserva asociado actual preseleccionado, en ambos órdenes de aplicación | API de openConsultationId y E2E de vínculo con historial anterior a siete días | UNKNOWN — pendiente apply |
-| Reintento conserva filas, doble pulsación, respuesta tardía y navegación | WEB/E2E de errores y transición | UNKNOWN — pendiente apply |
-| Creación, evento asociado, detalle, teclado, cuatro anchuras y dos temas conservados | E2E relacionados y revisión independiente | UNKNOWN — pendiente apply |
+| Toda la matriz, rechazos y última aceptada frente a última propuesta | ConsultationListingApiTest::testMatrixUsesTeamCivilDatesAndLatestAcceptedRatherThanOfferedWithoutWriting | PASS |
+| Día del equipo, hoy, medianoche y ventana inclusiva de siete días | ListPolicyTest y ConsultationListingApiTest: DST, offsets, alias y creación en día distinto del dispositivo | PASS |
+| Activas completas ASC, archivadas DESC, empate ID estable, Vigencia visible | API de matriz/empates y consultation-listing.spec.ts | PASS |
+| Inicial >10, ventana vacía con anteriores, cargas 10/10/resto y agotado sin duplicados | API y E2E de doce recientes y veintitrés anteriores | PASS |
+| Parámetros ajustables sin literales duplicados | ListPolicyTest y API con política alternativa | PASS |
+| Pseudoestado no escribe, abierta archivada conserva voto/editar/resolver y puede volver activa | API compara datos/actividad y E2E de abierta archivada editada/votada | PASS |
+| Autorización, acceso caducado, cursor inválido/ajeno y cambio de contexto | API 400/401/404/409/410 y E2E de reinicio | PASS |
+| Selector excluye eventos ocupados por abiertas archivadas fuera de ventana y conserva asociado actual preseleccionado, en ambos órdenes de aplicación | Campo aditivo de eventos, API de ocupación y E2E de selector sin leer el historial; el contrato de dos grupos se revalida en el Change de eventos | PASS |
+| Reintento conserva filas, doble pulsación, respuesta tardía y navegación | Ocho unitarias de página/selector y seis E2E de listado, incluido foco al volver de historial | PASS |
+| Creación, evento asociado, detalle, teclado, cuatro anchuras y dos temas conservados | 189 casos E2E verificados y revisión independiente REVIEW_OK | PASS |
 
 ## Plan por slices y validación
 
@@ -108,3 +110,13 @@ READY_FOR_CHANGE_PREPARE completado; **READY_FOR_CHANGE_APPLY**, 2026-10-24. Tod
 ## Evidencia de preparación — 2026-10-24
 
 Exploración delegada y revisión independiente completadas: REVIEW_OK, sin BLOCKER/MAJOR ni decisiones funcionales abiertas. Validación documental: python3 pdi/scripts/validate_structure.py PASS (69 directorios, 17 skills), python3 pdi/scripts/artifact_links.py sin incidencias y git diff --check PASS. Baseline, release e índice de trazabilidad actualizados. No se han ejecutado tests de producto ni alterado código, snapshots, commits o despliegues; estos resultados acreditan preparación y no sustituyen apply/verify.
+
+## Apply, verify y convergencia funcional — 2026-10-24
+
+Implementación API, WEB y E2E en subagentes con archivos disjuntos y revisión independiente REVIEW_OK. Resueltos los hallazgos de foco tras reiniciar la ventana y separación del esquema OpenAPI de calendario respecto de los metadatos de lista. Un subagente de tests añadió el caso de alta válida por zona del dispositivo que nace archivada según el día del equipo. Sin decisiones funcionales nuevas, migraciones ni drift normativo.
+
+Validación final: docker compose exec -T api composer test, **210 tests / 2206 assertions PASS**; doctrine:schema:validate --env=test PASS. Composer cs:check, stan y rector:check PASS. Con NVM: 51 unitarias WEB PASS, lint/formato/build PASS (495,01 kB antes del último ajuste de foco; el hook revalida el artefacto final). Suite WEB_TEST_PORT=4210 npm --prefix apps/web run test:e2e -- --workers=1: 188 de 189 PASS; el único fallo era el selector antiguo del benchmark. Corregidos sus encabezados y expectativas de estados, repetición focal PASS en 14,3 s. Quedan verificados los 189 casos, con API/PostgreSQL y correo Mailpit reales; 35 focalizados también verificados.
+
+La continuación del subagente E2E falló por límite de uso; el principal ejecutó la suite y corrigió el fixture restante, sin atribuir esa ejecución al subagente. Se conservan todos los datos de desarrollo y se usa synqo_test aislada para las pruebas. La referencia Symfony autogenerada fuera de scope se restaura antes del commit.
+
+Convergencia funcional PASS. Screenshots y cierre documental se ejecutarán al final de las tres implementaciones conforme a la instrucción expresa; no se declara ENTREGADA la release.

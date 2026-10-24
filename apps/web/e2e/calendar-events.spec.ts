@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, test } from '@playwright/test';
 
 const team = {
@@ -43,7 +44,7 @@ async function openCalendar(page: import('@playwright/test').Page): Promise<void
     route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
   );
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.route('**/api/teams/current/events/calendar-event-one', (route) =>
     route.fulfill({ json: { event: { ...events[0], notes: null } } }),

@@ -122,8 +122,11 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             responses: ['200' => $this->response('Confirmed day', ['day' => $day, 'expiresAt' => $this->schema('string', format: 'date-time')]), '422' => $this->problem('Invalid state, civil date, time zone or past day', withViolations: true)] + $errors,
         )));
         $consultation = $this->consultation();
-        $consultations = $this->schema('array');
-        $consultations['items'] = $consultation;
+        $listedConsultations = $this->schema('array');
+        $listedConsultation = $this->consultation();
+        $listedConsultation['properties']['effectiveDate'] = $this->schema('string', format: 'date');
+        $listedConsultation['required'] = [...$listedConsultation['required'], 'effectiveDate'];
+        $listedConsultations['items'] = $listedConsultation;
         $consultationErrors = ['400' => $this->problem('Malformed JSON'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team or participant not found'), '410' => $this->problem('Team expired'), '500' => $this->problem('Unexpected internal error')];
         $paths->addPath('/api/teams/current/consultations', new PathItem(
             get: new Operation(
@@ -131,7 +134,8 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
                 tags: ['Consultations'],
                 summary: 'List the consultations for the current team',
                 security: $security,
-                responses: ['200' => $this->response('Consultations grouped by state', ['open' => $consultations, 'resolved' => $consultations, 'rejected' => $consultations])] + $consultationErrors,
+                parameters: [new Parameter(name: 'archivedCursor', in: 'query', required: false, description: 'Opaque continuation cursor. Initial response includes all active and all archived in the recent window. Continuation omits active and returns at most listContext.loadMoreCount older rows. Malformed, foreign resource/team/version cursors return 400; changed team day/time zone returns 409.', schema: ['type' => 'string'])],
+                responses: ['200' => $this->listingResponse($listedConsultations), '409' => $this->problem('List day or time zone changed; restart the initial request', 'urn:synqo:problem:list-context-changed')] + $consultationErrors,
             ),
             post: new Operation(
                 operationId: 'createConsultation',
@@ -193,7 +197,7 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             requestBody: new RequestBody(content: new \ArrayObject(['application/json' => new MediaType(schema: $this->schema('object', ['participantId' => $this->schema('string', format: 'uuid'), 'status' => $this->enumSchema(['resolved', 'rejected']), 'acceptedOptionIds' => $accepted, 'eventId' => $this->eventLinkInput(), 'expectedEventVersion' => $expectedEventVersion], ['participantId', 'status', 'acceptedOptionIds']))]), required: true),
             responses: ['200' => $this->response('Confirmed resolution and detail', ['consultation' => $consultationDetail, 'expiresAt' => $this->schema('string', format: 'date-time')]), '400' => $this->problem('Malformed JSON'), '409' => $this->problem('Different resolution, rejected event or stale definitive event version (urn:synqo:problem:consultation-closed / urn:synqo:problem:event-conflict)'), '422' => $this->problem('Invalid resolution', withViolations: true)] + $decisionErrors,
         )));
-        $event = $this->eventSummary();
+        $event = $this->eventListItem();
         $eventList = $this->schema('array');
         $eventList['items'] = $event;
         $eventErrors = ['400' => $this->problem('Malformed JSON'), '401' => $this->unauthorizedProblem(), '404' => $this->problem('Team, event or participant not found'), '409' => $this->problem('Event state does not allow this operation', 'urn:synqo:problem:event-conflict'), '410' => $this->problem('Team expired'), '422' => $this->problem('Invalid event fields', withViolations: true), '500' => $this->problem('Unexpected internal error')];
@@ -216,13 +220,20 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             ),
         ));
         $calendarRange = [new Parameter(name: 'from', in: 'query', required: true, schema: ['type' => 'string', 'format' => 'date']), new Parameter(name: 'to', in: 'query', required: true, schema: ['type' => 'string', 'format' => 'date'])];
+        $calendarEvents = $this->schema('array');
+        $calendarEvents['items'] = $this->schema('object', [
+            'id' => $this->schema('string', format: 'uuid'),
+            'date' => $this->schema('string', format: 'date'),
+            'title' => $this->schema('string', maxLength: 250),
+            'status' => $this->enumSchema(['provisional', 'definitive']),
+        ], ['id', 'date', 'title', 'status']);
         $paths->addPath('/api/teams/current/events/calendar', new PathItem(get: new Operation(
             operationId: 'calendarTeamEvents',
             tags: ['Events'],
             summary: 'List active dated events in a calendar range',
             security: $security,
             parameters: $calendarRange,
-            responses: ['200' => $this->response('Events in the requested range', ['events' => $eventList]), '401' => $this->unauthorizedProblem(), '410' => $this->problem('Team expired'), '422' => $this->problem('Invalid calendar range', withViolations: true)],
+            responses: ['200' => $this->response('Events in the requested range', ['events' => $calendarEvents]), '401' => $this->unauthorizedProblem(), '410' => $this->problem('Team expired'), '422' => $this->problem('Invalid calendar range', withViolations: true)],
         )));
         $eventId = new Parameter(name: 'eventId', in: 'path', required: true, schema: ['type' => 'string', 'format' => 'uuid']);
         $paths->addPath('/api/teams/current/events/{eventId}', new PathItem(
@@ -452,6 +463,31 @@ final readonly class TeamOpenApiFactory implements OpenApiFactoryInterface
             'lastModifiedAt' => $lastModifiedAt,
             'version' => $version,
         ], ['id', 'title', 'date', 'status', 'lastModifiedAt', 'version']);
+    }
+
+    private function eventListItem(): Schema
+    {
+        $event = $this->eventSummary();
+        $occupant = $this->schema('string', format: 'uuid');
+        $occupant['nullable'] = true;
+        $event['properties']['openConsultationId'] = $occupant;
+        $event['required'] = [...$event['required'], 'openConsultationId'];
+        return $event;
+    }
+
+    private function listingResponse(Schema $items): Response
+    {
+        $cursor = $this->schema('string');
+        $cursor['nullable'] = true;
+        $context = $this->schema('object', ['today' => $this->schema('string', format: 'date'), 'timeZone' => $this->schema('string'), 'recentDays' => $this->schema('integer'), 'loadMoreCount' => $this->schema('integer')], ['today', 'timeZone', 'recentDays', 'loadMoreCount']);
+        $properties = ['archived' => $items, 'archivedCursor' => $cursor, 'listContext' => $context];
+        $schema = new Schema();
+        $schema['oneOf'] = [
+            $this->schema('object', ['active' => $items] + $properties, ['active', 'archived', 'archivedCursor', 'listContext']),
+            $this->schema('object', $properties, ['archived', 'archivedCursor', 'listContext']),
+        ];
+        $schema['oneOf'][1]['additionalProperties'] = false;
+        return new Response('Calculated active/archived lists ordered by civil effectiveDate, then UUID ASC. Archive continuation is live, not a transaction snapshot.', new \ArrayObject(['application/json' => new MediaType(schema: $schema)]));
     }
 
     private function eventDetail(): Schema

@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, test } from '@playwright/test';
 
 const team = {
@@ -40,7 +41,7 @@ test('creates from the calendar in its visible month with an empty draft and sav
   await installCalendar(page);
   await page.route('**/api/teams/current/consultations', async (route) => {
     if (route.request().method() === 'GET') {
-      return route.fulfill({ json: { open: consultations, resolved: [], rejected: [] } });
+      return route.fulfill({ json: consultationListFixture(consultations) });
     }
     writes += 1;
     submitted = route.request().postDataJSON() as Record<string, unknown>;
@@ -122,7 +123,7 @@ test('creates from the calendar in its visible month with an empty draft and sav
   await submit.press('Enter');
   await expect(page.getByRole('dialog', { name: '¿Crear esta consulta?' })).toHaveCount(0);
   await expect(page).toHaveURL(/\/e\/consultas#t=date-token$/);
-  await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
   await expect(page.locator('.consultation-card')).toContainText('¿Qué días nos van bien?');
   expect(writes).toBe(1);
   expect(submitted).toMatchObject({
@@ -142,7 +143,7 @@ test('opens in a historical month with no selected dates and preserves the calen
   await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) => {
     if (route.request().method() === 'POST') writes += 1;
-    return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+    return route.fulfill({ json: consultationListFixture() });
   });
   await page.goto('/e/calendario#t=history-token');
   const mainCalendar = page.locator('.calendar-panel');
@@ -182,7 +183,7 @@ test('cancelling a changed draft asks before discarding and does not write', asy
   await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) => {
     if (route.request().method() === 'POST') writes += 1;
-    return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+    return route.fulfill({ json: consultationListFixture() });
   });
 
   await page.goto('/e/calendario#t=date-switch-token');
@@ -234,7 +235,7 @@ test('mobile date creation uses the shared dialog and retains its draft after ca
   await page.setViewportSize({ width: 390, height: 844 });
   await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.goto('/e/calendario#t=mobile-token');
   const createButton = page.getByRole('button', { name: 'Crear consulta de fechas' });
@@ -274,7 +275,7 @@ test('announces create errors and preserves the title and selected date for retr
   await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) => {
     if (route.request().method() === 'GET') {
-      return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+      return route.fulfill({ json: consultationListFixture() });
     }
     attempts += 1;
     return attempts === 1
@@ -320,7 +321,7 @@ test('limits selected dates to ten and allows a replacement after removing one',
 }) => {
   await installCalendar(page);
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.goto('/e/calendario#t=limit-token');
   await page.getByRole('button', { name: 'Crear consulta de fechas' }).click();

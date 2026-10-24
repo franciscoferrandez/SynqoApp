@@ -10,7 +10,12 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Consultation, ConsultationGroups, TeamApi } from '../shared/team-api';
+import {
+  Consultation,
+  ConsultationGroups,
+  ConsultationListItem,
+  TeamApi,
+} from '../shared/team-api';
 import { TeamLayout } from './team-layout';
 import { ConsultationDetailPage } from './consultation-detail';
 
@@ -59,11 +64,13 @@ type ConfirmationKind = 'create' | 'cancel';
             </button>
           </div>
         } @else {
-          @for (state of states; track state.key) {
-            @if (group(state.key).length) {
-              <section class="list-section" [attr.aria-labelledby]="state.key + '-heading'">
-                <h3 [id]="state.key + '-heading'">{{ state.label }}</h3>
-                @for (consultation of group(state.key); track consultation.id) {
+          @for (list of lists; track list.key) {
+            @if (
+              group(list.key).length || (list.key === 'archived' && consultations.archivedCursor)
+            ) {
+              <section class="list-section" [attr.aria-labelledby]="list.key + '-heading'">
+                <h3 [id]="list.key + '-heading'">{{ list.label }}</h3>
+                @for (consultation of group(list.key); track consultation.id) {
                   <button
                     class="consultation-card"
                     type="button"
@@ -72,6 +79,7 @@ type ConfirmationKind = 'create' | 'cancel';
                   >
                     <span class="consultation-card-content">
                       <strong>{{ consultation.title }}</strong>
+                      <small>Vigencia: {{ effectiveDateLabel(consultation.effectiveDate) }}</small>
                       <small>{{ optionSummary(consultation) }}</small>
                       @if (consultation.resolution) {
                         <small>{{ resolutionSummary(consultation) }}</small>
@@ -79,13 +87,32 @@ type ConfirmationKind = 'create' | 'cancel';
                     </span>
                     <span
                       class="badge"
-                      [class.open]="state.key === 'open'"
-                      [class.resolved]="state.key === 'resolved'"
-                      [class.rejected]="state.key === 'rejected'"
+                      [class.open]="consultation.state === 'open'"
+                      [class.resolved]="consultation.state === 'resolved'"
+                      [class.rejected]="consultation.state === 'rejected'"
                     >
-                      {{ state.labelSingular }}
+                      {{ stateLabels[consultation.state] }}
                     </span>
                   </button>
+                }
+                @if (list.key === 'archived') {
+                  @if (archiveError) {
+                    <p role="alert">
+                      No se pudieron cargar más consultas. Conservamos las ya visibles.
+                    </p>
+                  }
+                  @if (consultations.archivedCursor) {
+                    <button
+                      class="outline"
+                      type="button"
+                      [disabled]="archiveLoading"
+                      (click)="loadMore()"
+                    >
+                      {{
+                        archiveLoading ? 'Cargando…' : archiveError ? 'Reintentar' : 'Cargar más'
+                      }}
+                    </button>
+                  }
                 }
               </section>
             }
@@ -284,17 +311,19 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   }
 
   readonly maxOptions = 10;
-  readonly states = [
-    { key: 'open', label: 'Abiertas', labelSingular: 'Abierta' },
-    { key: 'resolved', label: 'Resueltas', labelSingular: 'Resuelta' },
-    { key: 'rejected', label: 'Rechazadas', labelSingular: 'Rechazada' },
+  readonly lists = [
+    { key: 'active', label: 'Activas' },
+    { key: 'archived', label: 'Archivadas' },
   ] as const;
+  readonly stateLabels = { open: 'Abierta', resolved: 'Resuelta', rejected: 'Rechazada' };
   consultations?: ConsultationGroups;
   selectedConsultationId?: string;
   private focusReturnId?: string;
   private createTrigger?: HTMLElement;
   loading = true;
   loadFailed = false;
+  archiveLoading = false;
+  archiveError = false;
   showEditor = false;
   showConfirmation = false;
   confirmationKind: ConfirmationKind = 'create';
@@ -309,17 +338,27 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   submitting = false;
   message = '';
   private request?: Subscription;
+  private listRequest?: Subscription;
+  private archiveRequest?: Subscription;
+  private listGeneration = 0;
   private routeRequest?: Subscription;
 
   ngOnInit(): void {
     this.routeRequest = this.route.paramMap.subscribe((params) => {
-      this.selectedConsultationId = params.get('consultationId') ?? undefined;
+      const id = params.get('consultationId') ?? undefined;
+      if (id !== this.selectedConsultationId) {
+        this.invalidateList();
+        const wasDetail = !!this.selectedConsultationId;
+        this.selectedConsultationId = id;
+        if (wasDetail && !id) this.load();
+      }
       this.changeDetector.markForCheck();
     });
     this.load();
   }
 
   ngOnDestroy(): void {
+    this.invalidateList();
     this.request?.unsubscribe();
     this.routeRequest?.unsubscribe();
   }
@@ -327,9 +366,9 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   get isEmpty(): boolean {
     return (
       !!this.consultations &&
-      !this.consultations.open.length &&
-      !this.consultations.resolved.length &&
-      !this.consultations.rejected.length
+      !this.consultations.active.length &&
+      !this.consultations.archived.length &&
+      !this.consultations.archivedCursor
     );
   }
 
@@ -394,11 +433,14 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   }
 
   load(): void {
-    this.request?.unsubscribe();
+    this.invalidateList();
+    const generation = this.listGeneration;
+    this.consultations = undefined;
     this.loading = true;
     this.loadFailed = false;
-    this.request = this.api.consultations().subscribe({
+    this.listRequest = this.api.consultations().subscribe({
       next: (consultations) => {
+        if (generation !== this.listGeneration) return;
         this.consultations = consultations;
         this.loading = false;
         this.changeDetector.markForCheck();
@@ -406,16 +448,19 @@ export class ConsultationsPage implements OnInit, OnDestroy {
           const id = this.focusReturnId;
           this.focusReturnId = undefined;
           setTimeout(() => {
+            if (generation !== this.listGeneration || this.selectedConsultationId) return;
             for (const card of document.querySelectorAll<HTMLButtonElement>('.consultation-card')) {
               if (card.dataset['consultationId'] === id) {
                 card.focus();
-                break;
+                return;
               }
             }
+            this.headerCreateButton?.nativeElement.focus();
           });
         }
       },
       error: (error: HttpErrorResponse) => {
+        if (generation !== this.listGeneration) return;
         this.loading = false;
         this.loadFailed = !this.team.handleAccessError(error);
         this.changeDetector.markForCheck();
@@ -423,8 +468,66 @@ export class ConsultationsPage implements OnInit, OnDestroy {
     });
   }
 
-  group(state: keyof ConsultationGroups): Consultation[] {
-    return this.consultations?.[state] ?? [];
+  loadMore(): void {
+    const cursor = this.consultations?.archivedCursor;
+    if (!cursor || this.archiveLoading) return;
+    const generation = this.listGeneration;
+    this.archiveLoading = true;
+    this.archiveError = false;
+    this.archiveRequest = this.api.loadArchivedConsultations(cursor).subscribe({
+      next: (page) => {
+        if (generation !== this.listGeneration || !this.consultations) return;
+        const ids = new Set(this.consultations.archived.map((item) => item.id));
+        const additions = page.archived.filter((item) => {
+          if (ids.has(item.id)) return false;
+          ids.add(item.id);
+          return true;
+        });
+        this.consultations = {
+          ...this.consultations,
+          archived: [...this.consultations.archived, ...additions],
+          archivedCursor: page.archivedCursor,
+          listContext: page.listContext,
+        };
+        this.archiveLoading = false;
+        this.message = 'Historial de consultas actualizado.';
+        this.changeDetector.markForCheck();
+      },
+      error: (error: HttpErrorResponse) => {
+        if (generation !== this.listGeneration) return;
+        this.archiveLoading = false;
+        if (
+          error.status === 409 &&
+          error.error?.type === 'urn:synqo:problem:list-context-changed'
+        ) {
+          this.load();
+          return;
+        }
+        this.archiveError = !this.team.handleAccessError(error);
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
+  private invalidateList(): void {
+    this.listGeneration++;
+    this.listRequest?.unsubscribe();
+    this.archiveRequest?.unsubscribe();
+    this.archiveLoading = false;
+    this.archiveError = false;
+  }
+
+  group(list: 'active' | 'archived'): ConsultationListItem[] {
+    return this.consultations?.[list] ?? [];
+  }
+
+  effectiveDateLabel(date: string): string {
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${date}T12:00:00Z`));
   }
 
   optionSummary(consultation: Consultation): string {
@@ -452,6 +555,7 @@ export class ConsultationsPage implements OnInit, OnDestroy {
   }
 
   openDetail(id: string): void {
+    this.invalidateList();
     this.selectedConsultationId = id;
   }
 
@@ -580,20 +684,13 @@ export class ConsultationsPage implements OnInit, OnDestroy {
     this.request = this.api
       .createConsultation(participantId, this.title, [...this.options])
       .subscribe({
-        next: ({ consultation, expiresAt }) => {
-          if (this.consultations) {
-            this.consultations = {
-              ...this.consultations,
-              open: [...this.consultations.open, consultation].sort((a, b) =>
-                b.createdAt.localeCompare(a.createdAt),
-              ),
-            };
-          }
+        next: ({ expiresAt }) => {
           this.team.updateExpiry(expiresAt);
           this.submitting = false;
           this.showConfirmation = false;
           this.resetDraft();
-          this.message = 'Consulta creada y añadida a Abiertas.';
+          this.message = 'Consulta creada.';
+          this.load();
           this.changeDetector.markForCheck();
           this.focusCreateButton();
         },

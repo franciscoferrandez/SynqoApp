@@ -168,7 +168,7 @@ final class ConsultationEditingApiTest extends WebTestCase
 
         $this->client->request('GET', '/api/teams/current/consultations', server: $server);
         self::assertResponseStatusCodeSame(200);
-        self::assertSame([$later['id'], $consultation['id']], array_column($this->body()['open'], 'id'));
+        self::assertSame([$consultation['id'], $later['id']], array_column($this->body()['active'], 'id'));
 
         $this->clock->modify('+30 seconds');
         $this->patch($consultation['id'], ['participantId' => $team['participantId']], $server);

@@ -71,8 +71,8 @@ final class ConsultationDecisionApiTest extends WebTestCase
         self::assertSame('urn:synqo:problem:consultation-closed', $this->body()['type']);
         $this->client->request('GET', '/api/teams/current/consultations', server: $server);
         self::assertResponseStatusCodeSame(200);
-        self::assertSame([], $this->body()['open']);
-        self::assertSame($id, $this->body()['resolved'][0]['id']);
+        self::assertSame([], $this->body()['archived']);
+        self::assertSame($id, $this->body()['active'][0]['id']);
     }
 
     public function testInvalidForeignOptionsAndRejectedResolutionDoNotWritePartially(): void

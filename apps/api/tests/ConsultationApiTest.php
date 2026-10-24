@@ -32,7 +32,7 @@ final class ConsultationApiTest extends WebTestCase
         $this->client->request('GET', '/api/teams/current/consultations', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         self::assertResponseStatusCodeSame(200);
         self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
-        self::assertSame(['open' => [], 'resolved' => [], 'rejected' => []], json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame(['active' => [], 'archived' => [], 'archivedCursor' => null, 'listContext' => ['today' => '2026-10-05', 'timeZone' => 'UTC', 'recentDays' => 7, 'loadMoreCount' => 10]], json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR));
 
         $clock->modify('+10 seconds');
         $this->client->jsonRequest('POST', '/api/teams/current/consultations', [
@@ -65,9 +65,8 @@ final class ConsultationApiTest extends WebTestCase
         $this->client->request('GET', '/api/teams/current/consultations', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         self::assertResponseStatusCodeSame(200);
         $list = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR);
-        self::assertSame(['¿Qué día?', '¿Qué merendamos?'], array_column($list['open'], 'title'));
-        self::assertSame([], $list['resolved']);
-        self::assertSame([], $list['rejected']);
+        self::assertSame(['¿Qué merendamos?', '¿Qué día?'], array_column($list['active'], 'title'));
+        self::assertSame([], $list['archived']);
     }
 
     public function testDateConsultationCanLinkOneEligibleEventAndReturnsTheRelationship(): void
@@ -263,7 +262,7 @@ final class ConsultationApiTest extends WebTestCase
 
         $this->client->request('GET', '/api/teams/current/consultations', server: ['HTTP_AUTHORIZATION' => 'Bearer ' . $team['token']]);
         self::assertResponseStatusCodeSame(200);
-        $listed = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['open'][0];
+        $listed = json_decode($this->client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['active'][0];
         self::assertSame('date', $listed['type']);
         self::assertSame(['2026-10-04', '2026-10-05'], array_column($listed['options'], 'date'));
 

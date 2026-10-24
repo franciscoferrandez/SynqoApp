@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { consultationListFixture } from './fixtures/consultation-list';
 
 async function activate(button: import('@playwright/test').Locator): Promise<void> {
   await button.focus();
@@ -56,14 +57,16 @@ test('opens votes, restores a failed change, retries and confirms a resolution',
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({
-      json: {
-        open: detail.state === 'open' ? [consultation] : [],
-        resolved:
-          detail.state === 'resolved'
-            ? [{ ...consultation, state: 'resolved', resolution: detail.resolution }]
-            : [],
-        rejected: [],
-      },
+      json: consultationListFixture([
+        detail.state === 'resolved'
+          ? {
+              ...consultation,
+              state: 'resolved',
+              resolution: detail.resolution,
+              effectiveDate: detail.resolution!.resolvedAt.slice(0, 10),
+            }
+          : consultation,
+      ]),
     }),
   );
   await page.route('**/api/teams/current/consultations/consultation-one', (route) =>
@@ -131,7 +134,7 @@ test('opens votes, restores a failed change, retries and confirms a resolution',
   await expect(page.getByText('Resolución registrada por Ana.')).toBeVisible();
   await expect(page.locator('.consultation-detail-view').getByRole('checkbox')).toHaveCount(0);
   await activate(page.getByRole('button', { name: 'Volver a Consultas' }));
-  await expect(page.getByRole('heading', { name: 'Resueltas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
   const closedCard = page.getByRole('button', { name: /¿Qué hacemos\?/ });
   await expect(closedCard).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });

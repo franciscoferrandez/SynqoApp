@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 // Focused responsive smoke for the event/consultation linking controls. This is
@@ -28,6 +29,7 @@ const consultation = {
   ],
 };
 const event = {
+  openConsultationId: consultation.id,
   id: 'evt-responsive-event',
   title: 'Excursión del equipo',
   date: null,
@@ -81,7 +83,7 @@ async function installFixture(page: Page, theme: 'light' | 'dark'): Promise<void
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
   await page.route('**/api/teams/current/consultations/evt-responsive-consultation', (route) =>
     route.fulfill({ json: consultation }),

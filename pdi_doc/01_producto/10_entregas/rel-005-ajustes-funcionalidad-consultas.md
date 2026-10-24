@@ -24,9 +24,9 @@ La evidencia VALIDADO anterior corresponde a los Changes ya cerrados. La petici�
 | Change | Estado delivery | Preparación y alcance |
 |---|---|---|
 | [SPEC-CON-007 — Separar las entradas de creación de consultas por tipo](../../08_especificaciones/01_activas/spec-con-007-entradas-creacion-por-tipo.md) | IMPLEMENTADO | Verificación funcional PASS: 43 unitarias, 182 E2E, checks WEB y revisión independiente. Consultas crea opciones libres directamente y Calendario crea fechas. Visuales y cierre conjunto pendientes por secuencia autorizada. |
-| [SPEC-CON-008 — Consultas activas y archivadas por vigencia calculada](../../08_especificaciones/01_activas/spec-con-008-consultas-activas-archivadas.md) | ESPECIFICADO | READY_FOR_CHANGE_APPLY. Matriz y fechas civiles confirmadas, Vigencia visible, siete días iniciales completos y diez anteriores por carga. Contrato, criterios y plan preparados; implementación pendiente. |
+| [SPEC-CON-008 — Consultas activas y archivadas por vigencia calculada](../../08_especificaciones/01_activas/spec-con-008-consultas-activas-archivadas.md) | IMPLEMENTADO | Verificación funcional PASS: API 210 tests/2206 assertions, WEB 51 unitarias, 189 casos E2E verificados, checks y revisión independiente. Visuales y cierre conjunto pendientes. |
 
-La entrada de creación de fechas desde Consultas descrita en la evidencia histórica queda sustituida por el Change de separación de entradas enlazado arriba, implementado y verificado funcionalmente el 2026-10-24. Las decisiones de las nuevas listas están aprobadas expresamente y su implementación queda pendiente; no heredan la evidencia de los Changes cerrados.
+La entrada de creación de fechas desde Consultas descrita en la evidencia histórica queda sustituida por el Change de separación de entradas enlazado arriba, implementado y verificado funcionalmente el 2026-10-24. Las nuevas listas también están implementadas y verificadas con evidencia propia, sin heredar la validación de los Changes históricos. Ambos cierres y la actualización visual quedan para el final de la secuencia autorizada.
 
 ## Evolución de consultas de fechas
 

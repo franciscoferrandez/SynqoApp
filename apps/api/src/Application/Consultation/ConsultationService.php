@@ -12,6 +12,8 @@ use App\Application\Team\TeamRepository as TeamRepositoryPort;
 use App\Application\Team\TeamService;
 use App\Application\Team\IdentifierGenerator;
 use App\Application\Event\EventRepository;
+use App\Application\Listing\ListPolicy;
+use App\Application\Listing\ListCursor;
 use App\Domain\Consultation\TextConsultationRules;
 use App\Domain\Consultation\DateConsultationRules;
 use App\Domain\Team\ExpiryCalculator;
@@ -29,14 +31,22 @@ final readonly class ConsultationService
         private ExpiryCalculator $expiry,
         private EventRepository $events,
         private IdentifierGenerator $ids,
+        private ListPolicy $listPolicy,
+        private ListCursor $listCursor,
     ) {}
 
-    /** @return array{open: list<array<string, mixed>>, resolved: list<array<string, mixed>>, rejected: list<array<string, mixed>>} */
-    public function list(?string $token): array
+    /** @return array<string, mixed> */
+    public function list(?string $token, mixed $archivedCursor = null): array
     {
         $team = $this->access->current($token);
+        $context = $this->listPolicy->context($this->clock->now(), $team['timeZone']);
+        $frontier = $archivedCursor === null ? null : $this->listCursor->decode($archivedCursor, 'consultations', $team['id'], $context);
+        $result = $this->consultations->listForTeam($team['id'], $context, $frontier);
+        $result['archivedCursor'] = $result['nextFrontier'] === null ? null : $this->listCursor->encode('consultations', $team['id'], $context, $result['nextFrontier']);
+        unset($result['nextFrontier']);
+        $result['listContext'] = $context->toArray();
 
-        return $this->consultations->listForTeam($team['id']);
+        return $result;
     }
 
     /** @return array<string, mixed> */

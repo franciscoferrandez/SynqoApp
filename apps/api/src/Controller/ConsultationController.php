@@ -13,6 +13,8 @@ use App\Application\Exception\EventConflict;
 use App\Application\Exception\MissingAccessCredential;
 use App\Application\Exception\TeamExpired;
 use App\Application\Exception\TeamNotFound;
+use App\Application\Exception\InvalidListCursor;
+use App\Application\Exception\ListContextChanged;
 use App\Application\Team\TeamService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +26,11 @@ final readonly class ConsultationController
     public function list(Request $request): JsonResponse
     {
         try {
-            return $this->success($this->consultations->list($this->bearerToken($request)));
+            return $this->success($this->consultations->list($this->bearerToken($request), $request->query->all()['archivedCursor'] ?? null));
+        } catch (InvalidListCursor) {
+            return $this->problem(400, 'El cursor de archivadas no es válido.');
+        } catch (ListContextChanged) {
+            return $this->problem(409, 'El día o la zona del equipo han cambiado. Recarga la lista.', type: 'urn:synqo:problem:list-context-changed');
         } catch (MissingAccessCredential) {
             return $this->missingCredential();
         } catch (TeamNotFound) {

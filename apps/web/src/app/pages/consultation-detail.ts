@@ -11,7 +11,7 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import { forkJoin, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ConsultationDetail, Participant, TeamApi, TeamEventSummary } from '../shared/team-api';
 import { TeamLayout } from './team-layout';
@@ -850,15 +850,13 @@ export class ConsultationDetailPage implements OnInit, OnDestroy {
     this.eventsLoading = true;
     this.eventsError = false;
     this.subscriptions.add(
-      forkJoin({ events: this.api.events(), consultations: this.api.consultations() }).subscribe({
-        next: ({ events, consultations }) => {
-          const occupied = new Set(
-            consultations.open
-              .filter((item) => item.id !== this.consultationId)
-              .map((item) => item.event?.id),
-          );
+      this.api.events().subscribe({
+        next: (events) => {
           this.eligibleEvents = events.unfinalized.filter(
-            (event) => event.status === 'provisional' && !occupied.has(event.id),
+            (event) =>
+              event.status === 'provisional' &&
+              (event.openConsultationId === null ||
+                event.openConsultationId === this.consultationId),
           );
           this.eventsLoading = false;
           this.changeDetector.markForCheck();

@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, test } from '@playwright/test';
 
 const team = {
@@ -9,6 +10,7 @@ const team = {
 };
 const participant = team.participants[0];
 const event = {
+  openConsultationId: null as string | null,
   id: 'evt-1',
   title: 'Excursión',
   date: null as string | null,
@@ -52,7 +54,7 @@ async function installTeam(page: import('@playwright/test').Page): Promise<void>
     route.fulfill({ json: { unfinalized: [], future: [], past: [], rejected: [] } }),
   );
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture() }),
   );
 }
 
@@ -80,7 +82,7 @@ test('crea consulta y evento provisional vinculados desde el switch opcional', a
   );
   await page.route('**/api/teams/current/consultations', async (route) => {
     if (route.request().method() === 'GET') {
-      return route.fulfill({ json: { open: [], resolved: [], rejected: [] } });
+      return route.fulfill({ json: consultationListFixture() });
     }
     created = route.request().postDataJSON() as Record<string, unknown>;
     const result = consultation({
@@ -186,6 +188,51 @@ test('consulta sin vínculo inicia en Sin evento y cancelar la selección no esc
   await selector.selectOption(event.id);
   await dialog.getByRole('button', { name: 'Cancelar' }).click();
   expect(writes).toBe(0);
+});
+
+test('el vínculo excluye ocupados por abiertas archivadas fuera de ventana y conserva el asociado', async ({
+  page,
+}) => {
+  await installTeam(page);
+  let consultationListReads = 0;
+  await page.route('**/api/teams/current/consultations', (route) => {
+    consultationListReads += 1;
+    return route.fulfill({ json: consultationListFixture() });
+  });
+  const current = { ...event, openConsultationId: 'con-1' };
+  const occupied = {
+    ...event,
+    id: 'occupied-old',
+    title: 'Ocupado por consulta abierta de hace meses',
+    openConsultationId: 'archived-old-open-consultation',
+  };
+  const available = {
+    ...event,
+    id: 'available-event',
+    title: 'Disponible',
+    openConsultationId: null,
+  };
+  await page.route('**/api/teams/current/consultations/con-1', (route) =>
+    route.fulfill({ json: consultation({ event: current }) }),
+  );
+  await page.route('**/api/teams/current/events', (route) =>
+    route.fulfill({
+      json: { unfinalized: [occupied, current, available], future: [], past: [], rejected: [] },
+    }),
+  );
+  await page.goto('/e/consultas/con-1#t=evt-token');
+  await expect(page.getByRole('heading', { name: consultation().title })).toBeVisible();
+  const readsBeforeSelector = consultationListReads;
+  await consultationAction(page, 'Cambiar evento');
+  const dialog = page.getByRole('dialog', { name: 'Evento vinculado' });
+  const select = dialog.getByLabel('Evento (opcional)');
+  await expect(select).toHaveValue(current.id);
+  await expect(select.locator(`option[value="${current.id}"]`)).toHaveCount(1);
+  await expect(select.locator(`option[value="${available.id}"]`)).toHaveCount(1);
+  await expect(select.locator(`option[value="${occupied.id}"]`)).toHaveCount(0);
+  expect(consultationListReads).toBe(readsBeforeSelector);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Acciones de la consulta' })).toBeFocused();
 });
 
 for (const status of ['provisional', 'definitive', 'rejected'] as const) {

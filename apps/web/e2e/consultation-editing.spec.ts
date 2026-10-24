@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { consultationListFixture } from './fixtures/consultation-list';
 
 const team = {
   id: 'editing-team',
@@ -48,11 +49,10 @@ async function installFixture(
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({
-      json: {
-        open: consultation.state === 'open' ? [consultation] : [],
-        resolved: consultation.state === 'resolved' ? [consultation] : [],
-        rejected: consultation.state === 'rejected' ? [consultation] : [],
-      },
+      json: consultationListFixture(
+        consultation.state === 'rejected' ? [] : [consultation],
+        consultation.state === 'rejected' ? [consultation] : [],
+      ),
     }),
   );
   await page.route('**/api/teams/current/consultations/editing-consultation', (route) =>

@@ -156,13 +156,13 @@ test('creates from Calendar and confirms a voted-date removal in the browser aga
   await moveToDate(creation, retainedDate);
   await creation.getByRole('switch', { name: 'Crear evento provisional' }).check();
   await creation.getByRole('button', { name: 'Crear consulta', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
   await expect(page.getByText('¿Qué fechas nos van bien?', { exact: true })).toBeVisible();
 
   const consultationsResponse = await request.get('/api/teams/current/consultations', { headers });
   expect(consultationsResponse.status()).toBe(200);
   const groups = await consultationsResponse.json();
-  const consultation = groups.open.find(
+  const consultation = [...groups.active, ...groups.archived].find(
     (item: { title: string }) => item.title === '¿Qué fechas nos van bien?',
   );
   expect(consultation).toBeDefined();

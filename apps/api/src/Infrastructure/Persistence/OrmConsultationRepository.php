@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence;
 
 use App\Application\Consultation\ConsultationRepository;
 use App\Application\Consultation\ConsultationEditInput;
+use App\Application\Listing\ListContext;
 use App\Application\Exception\ConsultationClosed;
 use App\Application\Exception\ConsultationEditConflict;
 use App\Application\Exception\ConsultationRemovalConfirmationRequired;
@@ -30,40 +31,98 @@ final readonly class OrmConsultationRepository implements ConsultationRepository
 {
     public function __construct(private ManagerRegistry $managers) {}
 
-    /** @return array{open: list<array<string, mixed>>, resolved: list<array<string, mixed>>, rejected: list<array<string, mixed>>} */
-    public function listForTeam(string $teamId): array
+    public function listForTeam(string $teamId, ListContext $context, ?array $frontier): array
     {
+        $parameters = ['team' => $teamId, 'zone' => $context->timeZone, 'today' => $context->today, 'window' => $context->windowStart()];
+        $zoneSql = ':zone';
+        if (($zoneOffset = $context->fixedOffsetSeconds()) !== null) {
+            $parameters['zoneOffset'] = $zoneOffset;
+            $zoneSql = 'make_interval(secs => :zoneOffset)';
+        }
+        $connection = $this->manager()->getConnection();
+        $projection = <<<'SQL'
+            WITH dates AS (
+                SELECT c.id, c.type, c.state, c.created_at, c.resolved_at,
+                    (SELECT MAX(o.option_date) FROM consultation_option o WHERE o.consultation_id = c.id) AS offered,
+                    (SELECT MAX(o.option_date) FROM consultation_resolution_option r
+                     JOIN consultation_option o ON o.id = r.option_id AND o.consultation_id = c.id
+                     WHERE r.consultation_id = c.id) AS accepted
+                FROM consultation c WHERE c.team_id = :team
+            ), listing AS (
+                SELECT id,
+                    CASE WHEN state = 'rejected' THEN (resolved_at AT TIME ZONE :zone)::date
+                         WHEN type = 'text' AND state = 'resolved' THEN (resolved_at AT TIME ZONE :zone)::date
+                         WHEN type = 'date' AND state = 'resolved' THEN accepted
+                         WHEN type = 'date' AND offered < CAST(:today AS date) THEN offered
+                         ELSE (created_at AT TIME ZONE :zone)::date END AS effective_date,
+                    CASE WHEN state = 'rejected' THEN 'archived'
+                         WHEN type = 'date' AND state = 'resolved' AND accepted < CAST(:today AS date) THEN 'archived'
+                         WHEN type = 'date' AND state = 'open' AND offered < CAST(:today AS date) THEN 'archived'
+                         ELSE 'active' END AS bucket
+                FROM dates
+            )
+            SQL;
+        $projection = str_replace('AT TIME ZONE :zone', 'AT TIME ZONE ' . $zoneSql, $projection);
+        if ($frontier === null) {
+            $active = $connection->fetchAllAssociative($projection . " SELECT id, effective_date FROM listing WHERE bucket = 'active' ORDER BY effective_date ASC, id ASC", $parameters);
+            $archived = $connection->fetchAllAssociative($projection . " SELECT id, effective_date FROM listing WHERE bucket = 'archived' AND effective_date BETWEEN CAST(:window AS date) AND CAST(:today AS date) ORDER BY effective_date DESC, id ASC", $parameters);
+            $older = $connection->fetchOne($projection . " SELECT id FROM listing WHERE bucket = 'archived' AND effective_date < CAST(:window AS date) LIMIT 1", $parameters);
+            return [
+                'active' => $this->listItems($teamId, $active),
+                'archived' => $this->listItems($teamId, $archived),
+                'nextFrontier' => $older === false ? null : ['date' => $context->windowStart(), 'id' => null],
+            ];
+        }
+        $parameters['frontier_date'] = $frontier['date'];
+        $condition = 'effective_date < CAST(:frontier_date AS date)';
+        if ($frontier['id'] !== null) {
+            $parameters['frontier_id'] = $frontier['id'];
+            $condition .= ' OR (effective_date = CAST(:frontier_date AS date) AND id > CAST(:frontier_id AS uuid))';
+        }
+        $parameters['limit'] = $context->loadMoreCount + 1;
+        $rows = $connection->fetchAllAssociative($projection . " SELECT id, effective_date FROM listing WHERE bucket = 'archived' AND (" . $condition . ') ORDER BY effective_date DESC, id ASC LIMIT :limit', $parameters, ['limit' => \Doctrine\DBAL\ParameterType::INTEGER]);
+        $hasMore = count($rows) > $context->loadMoreCount;
+        if ($hasMore) {
+            array_pop($rows);
+        }
+        $last = $rows === [] ? null : array_last($rows);
+        return [
+            'archived' => $this->listItems($teamId, $rows),
+            'nextFrontier' => $hasMore && $last !== null ? ['date' => (string) $last['effective_date'], 'id' => (string) $last['id']] : null,
+        ];
+    }
+
+    /** @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function listItems(string $teamId, array $rows): array
+    {
+        if ($rows === []) {
+            return [];
+        }
         $records = $this->manager()->createQueryBuilder()
-            ->select('consultation', 'option')
-            ->addSelect('creator')
+            ->select('consultation', 'option', 'creator', 'editor', 'resolver', 'accepted', 'event')
             ->from(ConsultationRecord::class, 'consultation')
             ->leftJoin('consultation.options', 'option')
             ->join('consultation.createdBy', 'creator')
+            ->leftJoin('consultation.lastModifiedBy', 'editor')
+            ->leftJoin('consultation.resolvedBy', 'resolver')
+            ->leftJoin('consultation.acceptedOptions', 'accepted')
+            ->leftJoin('consultation.event', 'event')
             ->where('IDENTITY(consultation.team) = :team')
+            ->andWhere('consultation.id IN (:ids)')
             ->setParameter('team', $teamId)
-            ->orderBy('consultation.createdAt', 'DESC')
-            ->addOrderBy('consultation.id', 'DESC')
-            ->addOrderBy('option.position', 'ASC')
-            ->getQuery()
-            ->getResult();
-
-        $open = [];
-        $resolved = [];
-        $rejected = [];
+            ->setParameter('ids', array_column($rows, 'id'))
+            ->orderBy('option.position', 'ASC')
+            ->getQuery()->getResult();
+        $items = [];
         foreach ($records as $record) {
-            if (!$record instanceof ConsultationRecord) {
-                continue;
+            if ($record instanceof ConsultationRecord) {
+                $item = $record->toItem();
+                $items[$item['id']] = $item;
             }
-            $item = $record->toItem();
-            match ($item['state']) {
-                'open' => $open[] = $item,
-                'resolved' => $resolved[] = $item,
-                'rejected' => $rejected[] = $item,
-                default => null,
-            };
         }
-
-        return ['open' => $open, 'resolved' => $resolved, 'rejected' => $rejected];
+        return array_map(static fn(array $row): array => [...$items[$row['id']], 'effectiveDate' => (string) $row['effective_date']], $rows);
     }
 
     /**

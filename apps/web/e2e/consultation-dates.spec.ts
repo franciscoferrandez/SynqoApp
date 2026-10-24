@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, test } from '@playwright/test';
 
 const participant = { id: 'dates-person', name: 'Ana' };
@@ -35,7 +36,7 @@ function day(offset: number, state: 'available' | 'maybe' | 'unavailable' | null
   };
 }
 
-const emptyGroups = { open: [], resolved: [], rejected: [] };
+const emptyGroups = consultationListFixture();
 
 function formattedDate(date: string): string {
   return new Intl.DateTimeFormat('es', {
@@ -137,7 +138,7 @@ test('crea fechas desde Calendario usando selección persistente, preferencias y
         position,
       })),
     };
-    groups = { open: [consultation], resolved: [], rejected: [] };
+    groups = consultationListFixture([consultation]);
     return route.fulfill({
       status: 201,
       json: { consultation, expiresAt: team.expiresAt },
@@ -186,7 +187,7 @@ test('crea fechas desde Calendario usando selección persistente, preferencias y
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('synqo:calendar-view:v2')))
     .toBe(JSON.stringify({ extended: true, overlay: true, counts: true, rule: 'median' }));
-  await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
 });
 
 test('edita fechas y confirma una retirada si llegan votos mientras se guarda', async ({
@@ -215,7 +216,7 @@ test('edita fechas y confirma una retirada si llegan votos mientras se guarda', 
       { id: 'retained-option', date: retained, position: 1, count: 1, voters: [participant] },
     ],
   };
-  const groups = { open: [original], resolved: [], rejected: [] };
+  const groups = consultationListFixture([original]);
   let patchBody: Record<string, unknown> | undefined;
   let patchCalls = 0;
   await page.addInitScript(
@@ -481,7 +482,7 @@ test('no ofrece edición para una consulta de fechas cerrada', async ({ page }) 
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [], resolved: [closed], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture([closed]) }),
   );
   await page.route('**/api/teams/current/consultations/closed-date', (route) =>
     route.fulfill({ json: closed }),

@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, test, type Page } from '@playwright/test';
 
 const viewports = [
@@ -54,7 +55,7 @@ async function installFixture(page: Page, theme: 'light' | 'dark'): Promise<void
   );
   await page.route('**/api/teams/current', (route) => route.fulfill({ json: team }));
   await page.route('**/api/teams/current/consultations', (route) =>
-    route.fulfill({ json: { open: [consultation], resolved: [], rejected: [] } }),
+    route.fulfill({ json: consultationListFixture([consultation]) }),
   );
   await page.route('**/api/teams/current/consultations/editing-responsive-consultation', (route) =>
     route.fulfill({ json: consultation }),

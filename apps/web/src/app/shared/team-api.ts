@@ -28,11 +28,14 @@ export interface TeamEvent extends TeamEventSummary {
   lastModifiedBy: Participant | null;
   consultations?: { id: string; title: string; state: ConsultationState }[];
 }
+export interface TeamEventListItem extends TeamEventSummary {
+  openConsultationId: string | null;
+}
 export interface TeamEventGroups {
-  unfinalized: TeamEventSummary[];
-  future: TeamEventSummary[];
-  past: TeamEventSummary[];
-  rejected: TeamEventSummary[];
+  unfinalized: TeamEventListItem[];
+  future: TeamEventListItem[];
+  past: TeamEventListItem[];
+  rejected: TeamEventListItem[];
 }
 export interface CalendarEvent {
   id: string;
@@ -64,10 +67,22 @@ export interface Consultation {
 export type ConsultationDetail = Omit<Consultation, 'options'> & {
   options: (ConsultationOption & { count: number; voters: Participant[] })[];
 };
-export interface ConsultationGroups {
-  open: Consultation[];
-  resolved: Consultation[];
-  rejected: Consultation[];
+export interface ListContext {
+  today: string;
+  timeZone: string;
+  recentDays: number;
+  loadMoreCount: number;
+}
+export interface ConsultationListItem extends Consultation {
+  effectiveDate: string;
+}
+export interface ArchivedConsultations {
+  archived: ConsultationListItem[];
+  archivedCursor: string | null;
+  listContext: ListContext;
+}
+export interface ConsultationGroups extends ArchivedConsultations {
+  active: ConsultationListItem[];
 }
 export interface ConsultationEdit {
   participantId: string;
@@ -173,6 +188,11 @@ export class TeamApi {
   }
   consultations(): Observable<ConsultationGroups> {
     return this.http.get<ConsultationGroups>('/api/teams/current/consultations');
+  }
+  loadArchivedConsultations(archivedCursor: string): Observable<ArchivedConsultations> {
+    return this.http.get<ArchivedConsultations>('/api/teams/current/consultations', {
+      params: { archivedCursor },
+    });
   }
   consultation(id: string): Observable<ConsultationDetail> {
     return this.http.get<ConsultationDetail>(`/api/teams/current/consultations/${id}`);

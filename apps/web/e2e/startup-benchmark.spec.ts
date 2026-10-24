@@ -171,7 +171,7 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
           .click(),
       );
       await expect(
-        page.locator('#open-heading').locator('..').locator('.consultation-card'),
+        page.locator('#active-heading').locator('..').locator('.consultation-card'),
       ).toHaveCount(2);
     });
     await step('Volver a P2 y votar en ambas consultas', async () => {
@@ -208,9 +208,12 @@ test('benchmark del recorrido completo de arranque con WEB/API y correo reales',
         );
         await expect(page.getByText('Resolución registrada por Ana.')).toBeVisible();
         await page.getByRole('button', { name: 'Volver a Consultas' }).click();
-        await expect(page.locator(`#${decision}-heading`).locator('..')).toContainText(title);
+        const group = decision === 'resolved' ? 'active' : 'archived';
+        await expect(page.locator(`#${group}-heading`).locator('..')).toContainText(title);
       }
-      await expect(page.locator('#open-heading')).toHaveCount(0);
+      await expect(page.locator('.consultation-card .badge.open')).toHaveCount(0);
+      await expect(page.locator('.consultation-card .badge.resolved')).toHaveCount(1);
+      await expect(page.locator('.consultation-card .badge.rejected')).toHaveCount(1);
     });
     await step('Comprobar recibo final del intento de correo sin error', async () => {
       await expect

@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, Page, test } from '@playwright/test';
 
 test.use({ locale: 'es-ES', timezoneId: 'Europe/Madrid', reducedMotion: 'reduce' });
@@ -146,6 +147,7 @@ const eventGroups = {
       title: 'Ensayo general',
       date: '2026-10-24',
       status: 'provisional',
+      openConsultationId: null,
       lastModifiedAt: null,
       version: 1,
     },
@@ -156,6 +158,7 @@ const eventGroups = {
       title: 'Concierto de otoño',
       date: '2026-10-30',
       status: 'definitive',
+      openConsultationId: null,
       lastModifiedAt: '2026-10-14T11:00:00+02:00',
       version: 2,
     },
@@ -166,6 +169,7 @@ const eventGroups = {
       title: 'Actuación en la plaza',
       date: '2026-10-10',
       status: 'definitive',
+      openConsultationId: null,
       lastModifiedAt: null,
       version: 1,
     },
@@ -176,6 +180,7 @@ const eventGroups = {
       title: 'Plan descartado',
       date: null,
       status: 'rejected',
+      openConsultationId: null,
       lastModifiedAt: '2026-10-14T11:30:00+02:00',
       version: 2,
     },
@@ -261,12 +266,12 @@ async function installFixtures(page: Page, options: ScenarioOptions = {}): Promi
   await page.route('**/api/teams/current/consultations', (route) =>
     route.fulfill({
       json: options.emptyConsultations
-        ? { open: [], resolved: [], rejected: [] }
-        : {
-            open: [textConsultation, dateConsultation],
-            resolved: [resolvedConsultation],
-            rejected: [],
-          },
+        ? consultationListFixture([], [], '2026-10-15')
+        : consultationListFixture(
+            [dateConsultation, resolvedConsultation, textConsultation],
+            [],
+            '2026-10-15',
+          ),
     }),
   );
   await page.route(/\/api\/teams\/current\/consultations\/[^/]+$/, (route) => {
@@ -598,8 +603,8 @@ const scenarios: Scenario[] = [
     title: 'consultas de texto y fecha abiertas y resueltas',
     run: async (page) => {
       await open(page, `/e/consultas#t=${accessToken}`, 'light');
-      await expect(page.getByRole('heading', { name: 'Abiertas' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Resueltas' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Activas' })).toBeVisible();
+      await expect(page.getByText(/Vigencia:/).first()).toBeVisible();
     },
   },
   {

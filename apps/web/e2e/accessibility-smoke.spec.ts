@@ -1,3 +1,4 @@
+import { consultationListFixture } from './fixtures/consultation-list';
 import { expect, Locator, Page, test } from '@playwright/test';
 
 // HTTP-fixtured presentation smoke, not a WCAG audit or API integration test.
@@ -101,7 +102,7 @@ for (const viewport of viewports) {
         route.fulfill({ json: { events: [] } }),
       );
       await page.route('**/api/teams/current/consultations', (route) =>
-        route.fulfill({ json: { open: [], resolved: [], rejected: [] } }),
+        route.fulfill({ json: consultationListFixture() }),
       );
       await page.route('**/api/teams/current/events', (route) =>
         route.fulfill({
@@ -112,6 +113,7 @@ for (const viewport of viewports) {
                 title: 'Ensayo del equipo',
                 date: null,
                 status: 'provisional',
+                openConsultationId: null,
                 lastModifiedAt: null,
                 version: 1,
               },
@@ -283,11 +285,11 @@ for (const viewport of viewports) {
           return route.fulfill({ status: 500, json: { status: 500 } });
         }
         return route.fulfill({
-          json: {
-            open: [consultations[0]],
-            resolved: [consultations[1]],
-            rejected: [consultations[2]],
-          },
+          json: consultationListFixture(
+            [consultations[0], { ...consultations[1], effectiveDate: '2026-10-05' }],
+            [{ ...consultations[2], effectiveDate: '2026-10-05' }],
+            '2026-10-05',
+          ),
         });
       });
       await page.route('**/api/teams/current/consultations/smoke-*', (route) =>
