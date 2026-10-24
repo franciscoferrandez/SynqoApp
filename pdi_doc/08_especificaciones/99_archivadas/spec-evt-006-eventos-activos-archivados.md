@@ -1,7 +1,7 @@
 ---
 id: SPEC-EVT-006
 nivel: N2
-estado: verificado
+estado: cerrada
 release: REL-004
 ---
 
@@ -76,7 +76,7 @@ API: EventController, EventService, EventRepository, OrmEventRepository, EventOp
 
 El principal mantiene dominio, autorización, contrato y límites temporales. Delegar API, WEB y evidencia con propiedad de archivos disjunta; integrar secuencialmente team-api.ts, OpenAPI y apoyo compartido con el Change de consultas. No subagentes de subagentes. Ninguna exploración ha implementado código.
 
-## Criterios de aceptación y evidencia prevista
+## Criterios de aceptación y evidencia
 
 | Acceptance criterion | Evidence | Result |
 |---|---|---|
@@ -116,3 +116,11 @@ Comprobación previa de solo lectura sobre desarrollo: SELECT COUNT(*) FROM team
 Con NVM activado: npm --prefix apps/web test, **61 pruebas PASS**; lint, format:check y build PASS (497,67 kB iniciales). docker compose exec -T api composer test, **219 tests / 2394 assertions PASS**; cs:check, stan, rector:check y doctrine:schema:validate --env=test PASS. La focal de API verifica 35 tests / 520 assertions. Los E2E focalizados de eventos, vínculos y calendario pasan 28/28, incluidos tres recorridos reales con PostgreSQL. Revisión independiente final de código/tests: REVIEW_OK, sin hallazgos pendientes.
 
 Suite final con NVM: WEB_TEST_PORT=4210 npm --prefix apps/web run test:e2e -- --workers=1, **191/191 PASS en 5,8 minutos**, con API/PostgreSQL y Mailpit reales. Benchmark automatizado 12,9 s, PASS. Se ajustaron los fixtures al nuevo contrato sin cambiar los criterios funcionales. Convergencia funcional PASS, sin drift significativo ni escalados pendientes. La referencia Symfony autogenerada fuera de scope se restaura antes del commit. La regresión visual y el cierre documental se harán después del tercer commit funcional, conforme a la secuencia autorizada; las releases siguen en implementación.
+
+## Cierre — 2026-10-24
+
+Commit funcional `72d263b`, creado con hooks activos. Regresión final común: API **219 tests / 2394 assertions PASS**, WEB **61 unitarias PASS**, E2E **191/191 PASS** en 5,8 minutos y benchmark automatizado 12,9 s. Checks estáticos, lint, formato, build y esquema PASS; revisión independiente REVIEW_OK.
+
+Con NVM activado, npm --prefix apps/web run test:visual:update ejecuta toda la suite reproducible: **136/136 PASS** en 3,2 minutos, móvil 390×844 y escritorio 1280×800, ambos temas. Se actualizan 20 referencias por la secuencia conjunta autorizada; inspeccionadas las nuevas listas de consultas y eventos. La comparación sin actualización se ejecutará en el hook pre-push y el CI se vigilará después de publicar.
+
+Verificación y convergencia PASS: criterios completos, baseline, código, contratos, tests y delivery coherentes; sin drift significativo ni hallazgos graves pendientes. DONE: SPEC cerrada y archivada con evidencia local y enlaces reparados. Las releases conservan en_implementacion y este cierre no acredita despliegue ni estado ENTREGADA.

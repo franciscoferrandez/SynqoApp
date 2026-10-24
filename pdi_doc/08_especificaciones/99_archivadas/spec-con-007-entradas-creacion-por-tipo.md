@@ -1,7 +1,7 @@
 ---
 id: SPEC-CON-007
 nivel: N1
-estado: verificado
+estado: cerrada
 release: REL-005
 ---
 
@@ -89,3 +89,11 @@ Autorización expresa posterior: aplicar las tres SPEC de una en una mediante su
 Comandos con NVM activado: npm --prefix apps/web test (43 PASS), run lint, run format:check y run build (492,71 kB iniciales, PASS). Suite final: WEB_TEST_PORT=4210 npm --prefix apps/web run test:e2e -- --workers=1, **182/182 PASS en 5,7 minutos**, con PostgreSQL y Mailpit reales; benchmark 14,6 s. El entorno aislado usa synqo_test y cuota de test, sin reset ni cambios de configuración de desarrollo. Los 429 de la ejecución inicial se identificaron como cuota del entorno y se resolvieron usando ese perfil de pruebas.
 
 Convergencia funcional PASS para este alcance; los ajustes de listas preparados permanecen pendientes en sus propios Changes. Regresión visual y cierre documental diferidos al final de las tres implementaciones por instrucción expresa; no se declara ninguna release ENTREGADA.
+
+## Cierre — 2026-10-24
+
+Commit funcional `6beb62a`, creado con hooks activos. Regresión final común: API **219 tests / 2394 assertions PASS**, WEB **61 unitarias PASS**, E2E **191/191 PASS** en 5,8 minutos y benchmark automatizado 12,9 s. Checks estáticos, lint, formato, build y esquema PASS; revisión independiente REVIEW_OK.
+
+Con NVM activado, npm --prefix apps/web run test:visual:update ejecuta toda la suite reproducible: **136/136 PASS** en 3,2 minutos, móvil 390×844 y escritorio 1280×800, ambos temas. Se actualizan 20 referencias por la secuencia conjunta autorizada; inspeccionadas las nuevas listas de consultas y eventos. La comparación sin actualización se ejecutará en el hook pre-push y el CI se vigilará después de publicar.
+
+Verificación y convergencia PASS: criterios completos, baseline, código, contratos, tests y delivery coherentes; sin drift significativo ni hallazgos graves pendientes. DONE: SPEC cerrada y archivada con evidencia local y enlaces reparados. Las releases conservan en_implementacion y este cierre no acredita despliegue ni estado ENTREGADA.

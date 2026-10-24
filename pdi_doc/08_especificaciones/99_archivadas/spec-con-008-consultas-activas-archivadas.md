@@ -1,7 +1,7 @@
 ---
 id: SPEC-CON-008
 nivel: N2
-estado: verificado
+estado: cerrada
 release: REL-005
 ---
 
@@ -80,7 +80,7 @@ API: ConsultationController, ConsultationService, puerto ConsultationRepository,
 
 El principal mantiene contratos, reglas temporales, autorización y concurrencia. Repartir API, WEB y evidencia en tareas acotadas; nadie escribe simultáneamente team-api.ts, OpenAPI, apoyo compartido ni la página con otro Change. Integrar esos archivos secuencialmente. Las exploraciones se han realizado de forma independiente; no subagentes de subagentes.
 
-## Criterios de aceptación y evidencia prevista
+## Criterios de aceptación y evidencia
 
 | Acceptance criterion | Evidence | Result |
 |---|---|---|
@@ -120,3 +120,11 @@ Validación final: docker compose exec -T api composer test, **210 tests / 2206 
 La continuación del subagente E2E falló por límite de uso; el principal ejecutó la suite y corrigió el fixture restante, sin atribuir esa ejecución al subagente. Se conservan todos los datos de desarrollo y se usa synqo_test aislada para las pruebas. La referencia Symfony autogenerada fuera de scope se restaura antes del commit.
 
 Convergencia funcional PASS. Screenshots y cierre documental se ejecutarán al final de las tres implementaciones conforme a la instrucción expresa; no se declara ENTREGADA la release.
+
+## Cierre — 2026-10-24
+
+Commit funcional `c90a369`, creado con hooks activos. Regresión final común: API **219 tests / 2394 assertions PASS**, WEB **61 unitarias PASS**, E2E **191/191 PASS** en 5,8 minutos y benchmark automatizado 12,9 s. Checks estáticos, lint, formato, build y esquema PASS; revisión independiente REVIEW_OK.
+
+Con NVM activado, npm --prefix apps/web run test:visual:update ejecuta toda la suite reproducible: **136/136 PASS** en 3,2 minutos, móvil 390×844 y escritorio 1280×800, ambos temas. Se actualizan 20 referencias por la secuencia conjunta autorizada; inspeccionadas las nuevas listas de consultas y eventos. La comparación sin actualización se ejecutará en el hook pre-push y el CI se vigilará después de publicar.
+
+Verificación y convergencia PASS: criterios completos, baseline, código, contratos, tests y delivery coherentes; sin drift significativo ni hallazgos graves pendientes. DONE: SPEC cerrada y archivada con evidencia local y enlaces reparados. Las releases conservan en_implementacion y este cierre no acredita despliegue ni estado ENTREGADA.
